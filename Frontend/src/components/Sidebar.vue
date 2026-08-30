@@ -27,11 +27,39 @@
         </nav>
 
         <div class="sidebar-foot">
-            <div class="avatar-ring">{{ userInitials }}</div>
-            <div>
-                <div class="foot-name">{{ userName }}</div>
-                <div class="foot-role">{{ userRole }}</div>
+
+            <div class="foot-user">
+
+                <div class="avatar-ring">
+                    {{ userInitials }}
+                </div>
+
+                <div class="foot-copy">
+
+                    <div class="foot-name">
+                        {{ userName }}
+                    </div>
+
+                    <div class="foot-role">
+                        {{ userRole }}
+                    </div>
+
+                </div>
+
             </div>
+
+
+            <button class="logout-btn" @click="logout" aria-label="Log out" title="Log out">
+
+                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                    <polyline points="16 17 21 12 16 7" />
+                    <line x1="21" y1="12" x2="9" y2="12" />
+                </svg>
+
+            </button>
+
         </div>
     </aside>
 </template>
@@ -157,6 +185,10 @@ function select(key) {
     emit('update:modelValue', false)
 }
 
+const logout = () => {
+    alert();
+}
+
 function isActive(key) {
     const routes = {
         dashboard: 'admin.dashboard',
@@ -267,11 +299,99 @@ function isActive(key) {
 }
 
 .sidebar-foot {
-    padding: 1rem 1.2rem 1.3rem;
-    border-top: 1px solid rgba(255, 255, 255, .08);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: .75rem;
+    padding: .85rem .9rem;
+}
+
+.foot-user {
     display: flex;
     align-items: center;
     gap: .65rem;
+    min-width: 0;
+}
+
+
+.avatar-ring {
+
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    flex-shrink: 0;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background: var(--amber-bg, #F6EEDB);
+    color: var(--gold-dark, #9C7726);
+    border: 2px dashed var(--gold, #C79A3D);
+
+    font-family: 'Fraunces', serif;
+    font-weight: 600;
+    font-size: .78rem;
+}
+
+
+.foot-copy {
+    min-width: 0;
+}
+
+
+.foot-name {
+
+    font-family: 'Fraunces', serif;
+    font-weight: 600;
+    font-size: .84rem;
+    color: var(--ink, #1C2B4A);
+
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+
+.foot-role {
+
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: .64rem;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    color: var(--slate, #6B7280);
+
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+
+.logout-btn {
+
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border: 1px solid var(--line, #DCD8CB);
+    background: var(--paper-2, #FBFAF6);
+    color: var(--slate, #6B7280);
+    border-radius: 7px;
+
+    cursor: pointer;
+    transition: all .15s ease;
+}
+
+
+.logout-btn:hover {
+
+    background: var(--red, #C24D3B);
+    border-color: var(--red, #C24D3B);
+    color: white;
 }
 
 .avatar-ring {
