@@ -94,11 +94,19 @@ const navManage = [
         icon: '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
     },
     {
+        key: 'attendanceManagement',
+        label: 'Attendance',
+        icon: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                <circle cx="8.5" cy="7" r="4"/>
+                <polyline points="17 11 19 13 23 9"/>
+                </svg>`,
+    },
+    {
         key: 'payrollManagement',
         label: 'Salary',
         icon: '<path d="M6 2h9l4 4v16H6z"/><path d="M15 2v5h5"/><path d="M9 11h6"/><path d="M9 15h6"/><path d="M9 19h4"/><circle cx="17" cy="15" r="2"/><path d="M17 13v4"/>',
     },
-
     {
         key: 'cashAdvanceManagement',
         label: 'Cash Advance',
@@ -110,7 +118,7 @@ const navManage = [
         icon: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M16 13H8"/><path d="M16 17H8"/>',
     },
     {
-        key: 'settingsManagement',
+        key: 'setting',
         label: 'Settings',
         icon: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>',
     },
@@ -135,6 +143,8 @@ function select(key) {
         employeeManagement: 'admin.employeeManagement',
         payrollManagement: 'admin.payrollManagement',
         cashAdvanceManagement: 'admin.cashAdvanceManagement',
+        attendanceManagement: 'admin.attendanceManagement',
+        setting: 'admin.setting',
     }
 
     if (routes[key]) {
@@ -155,6 +165,8 @@ function isActive(key) {
         employeeManagement: 'admin.employeeManagement',
         payrollManagement: 'admin.payrollManagement',
         cashAdvanceManagement: 'admin.cashAdvanceManagement',
+        attendanceManagement: 'admin.attendanceManagement',
+        setting: 'admin.setting',
     }
 
     return route.name === routes[key]

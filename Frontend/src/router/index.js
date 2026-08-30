@@ -5,9 +5,13 @@ import AdminLayout from '@/layout/AdminLayout.vue'
 import Dashboard from '@/pages/DashboardView.vue'
 import Attendance from '@/pages/AttendanceView.vue'
 import Payroll from '@/pages/PayrollView.vue'
+import CashAdvanceView from '@/pages/CashAdvanceView.vue'
+import setting from '@/pages/Setting.vue'
+
 import EmployeeManagement from '@/pages/Managements/EmployeeManagement.vue'
 import PayrollManagement from '@/pages/Managements/PayrollManagement.vue'
 import CashAdvanceManagement from '@/pages/Managements/CashAdvanceManagement.vue'
+import AttendanceManagement from '@/pages/Managements/AttendanceManagement.vue'
 
 const router = createRouter({
     history: createWebHistory(import.meta.env.BASE_URL),
@@ -17,6 +21,11 @@ const router = createRouter({
             path: '/login',
             name: 'login',
             component: Login,
+        },
+        {
+            path: '/ca',
+            name: 'cashAdvance',
+            component: CashAdvanceView,
         },
 
         {
@@ -43,19 +52,29 @@ const router = createRouter({
                     component: Payroll,
                 },
                 {
-                    path: 'employeeManagement',
+                    path: 'management/employee',
                     name: 'admin.employeeManagement',
                     component: EmployeeManagement,
                 },
                 {
-                    path: 'payrollManagement',
+                    path: 'management/payroll',
                     name: 'admin.payrollManagement',
                     component: PayrollManagement,
                 },
                 {
-                    path: 'cashAdvanceManagement',
+                    path: 'management/cashAdvance',
                     name: 'admin.cashAdvanceManagement',
                     component: CashAdvanceManagement,
+                },
+                {
+                    path: 'management/attendance',
+                    name: 'admin.attendanceManagement',
+                    component: AttendanceManagement,
+                },
+                {
+                    path: 'setting',
+                    name: 'admin.setting',
+                    component: setting,
                 },
             ],
         },

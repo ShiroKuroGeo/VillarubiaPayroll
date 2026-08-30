@@ -22,7 +22,7 @@
                     </div>
 
                     <h1>
-                        Salary Management
+                        Attendance Management
                     </h1>
 
                 </div>
@@ -43,6 +43,9 @@
                 </div>
 
 
+                <input v-model="selectedDate" type="date" class="date-chip" />
+
+
                 <button class="btn btn-outline-ledger btn-sm" @click="exportCsv">
                     Export
                 </button>
@@ -60,23 +63,23 @@
                     <div class="punch-card">
 
                         <div class="stamp green">
-                            STAFF
+                            IN
                         </div>
 
                         <div class="stat-label">
-                            Active Employees
+                            Present Today
                         </div>
 
                         <div class="stat-period">
-                            Current salary records
+                            {{ formattedSelectedDate }}
                         </div>
 
                         <div class="stat-value">
-                            {{ activeEmployeeCount }}
+                            {{ presentCount }}
                         </div>
 
                         <div class="stat-delta stat-delta--slate">
-                            Employees with active salary
+                            Out of {{ totalEmployeeCount }} employees
                         </div>
 
                     </div>
@@ -88,23 +91,23 @@
                     <div class="punch-card">
 
                         <div class="stamp gold">
-                            BASE
+                            LATE
                         </div>
 
                         <div class="stat-label">
-                            Total Basic Salary
+                            Late Arrivals
                         </div>
 
                         <div class="stat-period">
-                            Monthly
+                            {{ formattedSelectedDate }}
                         </div>
 
-                        <div class="stat-value stat-value-money">
-                            {{ formatCurrency(totalBasicSalary) }}
+                        <div class="stat-value">
+                            {{ lateCount }}
                         </div>
 
                         <div class="stat-delta stat-delta--gold">
-                            Active employees
+                            Clocked in after 9:00 AM
                         </div>
 
                     </div>
@@ -116,23 +119,23 @@
                     <div class="punch-card">
 
                         <div class="stamp blue">
-                            PLUS
+                            HRS
                         </div>
 
                         <div class="stat-label">
-                            Total Attendance
+                            Total Hours Logged
                         </div>
 
                         <div class="stat-period">
-                            Monthly
+                            {{ formattedSelectedDate }}
                         </div>
 
                         <div class="stat-value stat-value-money">
-                            {{ formatCurrency(totalAttendance) }}
+                            {{ totalHoursLogged }}
                         </div>
 
                         <div class="stat-delta stat-delta--blue">
-                            Employee Total Attendance
+                            Across all employees
                         </div>
 
                     </div>
@@ -140,30 +143,28 @@
                 </div>
 
 
-                <!-- Estimated Payroll -->
-
                 <div class="col-6 col-lg-3">
 
                     <div class="punch-card">
 
-                        <div class="stamp green">
-                            NET
+                        <div class="stamp red">
+                            OUT
                         </div>
 
                         <div class="stat-label">
-                            Estimated Net Payroll
+                            Absent / On Leave
                         </div>
 
                         <div class="stat-period">
-                            Monthly
+                            {{ formattedSelectedDate }}
                         </div>
 
-                        <div class="stat-value stat-value-money">
-                            {{ formatCurrency(estimatedNetPayroll) }}
+                        <div class="stat-value">
+                            {{ absentCount + leaveCount }}
                         </div>
 
-                        <div class="stat-delta text-success">
-                            Before payroll processing
+                        <div class="stat-delta" style="color: var(--red, #C24D3B);">
+                            {{ absentCount }} absent · {{ leaveCount }} on leave
                         </div>
 
                     </div>
@@ -183,18 +184,18 @@
                             <div>
 
                                 <div class="panel-title">
-                                    Salary overview
+                                    Attendance overview
                                 </div>
 
                                 <div class="panel-sub">
-                                    Current compensation configuration
+                                    Daily check-in / check-out summary
                                 </div>
 
                             </div>
 
 
                             <span class="chip">
-                                Monthly salary
+                                {{ formattedSelectedDate }}
                             </span>
 
                         </div>
@@ -206,15 +207,15 @@
                             <div class="salary-overview-main">
 
                                 <div class="overview-label">
-                                    TOTAL BASIC SALARY
+                                    ATTENDANCE RATE
                                 </div>
 
                                 <div class="overview-value">
-                                    {{ formatCurrency(totalBasicSalary) }}
+                                    {{ attendanceRate }}%
                                 </div>
 
                                 <div class="overview-sub">
-                                    {{ activeEmployeeCount }} active employees
+                                    {{ presentCount + lateCount }} of {{ totalEmployeeCount }} employees checked in
                                 </div>
 
                             </div>
@@ -224,16 +225,35 @@
 
                                 <div class="breakdown-item">
 
+                                    <span class="breakdown-dot green"></span>
+
+                                    <div>
+
+                                        <div class="breakdown-label">
+                                            On Time
+                                        </div>
+
+                                        <div class="breakdown-value">
+                                            {{ onTimeCount }} employees
+                                        </div>
+
+                                    </div>
+
+                                </div>
+
+
+                                <div class="breakdown-item">
+
                                     <span class="breakdown-dot gold"></span>
 
                                     <div>
 
                                         <div class="breakdown-label">
-                                            Total Attendance
+                                            Late
                                         </div>
 
                                         <div class="breakdown-value">
-                                            {{ formatCurrency(totalAttendance) }}
+                                            {{ lateCount }} employees
                                         </div>
 
                                     </div>
@@ -248,30 +268,11 @@
                                     <div>
 
                                         <div class="breakdown-label">
-                                            Deductions
+                                            Absent / Leave
                                         </div>
 
                                         <div class="breakdown-value">
-                                            {{ formatCurrency(totalDeductions) }}
-                                        </div>
-
-                                    </div>
-
-                                </div>
-
-
-                                <div class="breakdown-item">
-
-                                    <span class="breakdown-dot green"></span>
-
-                                    <div>
-
-                                        <div class="breakdown-label">
-                                            Estimated Net
-                                        </div>
-
-                                        <div class="breakdown-value">
-                                            {{ formatCurrency(estimatedNetPayroll) }}
+                                            {{ absentCount + leaveCount }} employees
                                         </div>
 
                                     </div>
@@ -291,11 +292,11 @@
                     <div class="panel salary-type-panel">
 
                         <div class="panel-title">
-                            Salary configuration
+                            Today's status
                         </div>
 
                         <div class="panel-sub mb-3">
-                            Active employee salary types
+                            Breakdown by attendance status
                         </div>
 
 
@@ -308,12 +309,12 @@
 
                                     <span class="summary-dot green"></span>
 
-                                    Monthly
+                                    Present
 
                                 </div>
 
                                 <div class="summary-value">
-                                    {{ monthlyCount }}
+                                    {{ presentCount }}
                                 </div>
 
                             </div>
@@ -325,12 +326,12 @@
 
                                     <span class="summary-dot gold"></span>
 
-                                    Daily
+                                    Late
 
                                 </div>
 
                                 <div class="summary-value">
-                                    {{ dailyCount }}
+                                    {{ lateCount }}
                                 </div>
 
                             </div>
@@ -342,12 +343,12 @@
 
                                     <span class="summary-dot blue"></span>
 
-                                    Hourly
+                                    On Leave
 
                                 </div>
 
                                 <div class="summary-value">
-                                    {{ hourlyCount }}
+                                    {{ leaveCount }}
                                 </div>
 
                             </div>
@@ -359,12 +360,12 @@
 
                                     <span class="summary-dot red"></span>
 
-                                    Inactive
+                                    Absent
 
                                 </div>
 
                                 <div class="summary-value">
-                                    {{ inactiveCount }}
+                                    {{ absentCount }}
                                 </div>
 
                             </div>
@@ -384,11 +385,11 @@
                     <div>
 
                         <div class="section-title mb-0">
-                            Employee salaries
+                            Daily attendance log
                         </div>
 
                         <div class="panel-sub">
-                            Manage employee compensation and salary settings
+                            Track employee check-ins, check-outs, and hours worked
                         </div>
 
                     </div>
@@ -410,7 +411,7 @@
 
 
                         <button class="add-btn" @click="openAddModal">
-                            + Add Salary
+                            + Add Record
                         </button>
 
                     </div>
@@ -436,7 +437,7 @@
                 <div class="table-responsive">
 
 
-                    <table class="table-ledger salary-table" v-if="filteredSalaryData.length">
+                    <table class="table-ledger salary-table" v-if="paginatedAttendanceData.length">
 
                         <thead>
 
@@ -451,27 +452,23 @@
                                 </th>
 
                                 <th>
-                                    Salary Type
+                                    Date
                                 </th>
 
                                 <th>
-                                    Basic Salary
+                                    Time In
+                                </th>
+
+                                <th>
+                                    Time Out
+                                </th>
+
+                                <th>
+                                    Hours Worked
                                 </th>
 
                                 <th>
                                     Overtime
-                                </th>
-
-                                <th>
-                                    Total Attendance
-                                </th>
-
-                                <th>
-                                    Deductions
-                                </th>
-
-                                <th>
-                                    Net Salary
                                 </th>
 
                                 <th>
@@ -490,7 +487,7 @@
                         <tbody>
 
 
-                            <tr v-for="employee in filteredSalaryData" :key="employee.id">
+                            <tr v-for="record in paginatedAttendanceData" :key="record.id">
 
                                 <td>
 
@@ -499,11 +496,10 @@
 
                                         <div class="avatar-sm">
 
-                                            <img v-if="employee.image" :src="employee.image"
-                                                :alt="employee.employeeName" />
+                                            <img v-if="record.image" :src="record.image" :alt="record.employeeName" />
 
                                             <span v-else>
-                                                {{ employee.initials }}
+                                                {{ record.initials }}
                                             </span>
 
                                         </div>
@@ -512,12 +508,12 @@
                                         <div>
 
                                             <div class="emp-name">
-                                                {{ employee.employeeName }}
+                                                {{ record.employeeName }}
                                             </div>
 
                                             <div class="emp-role">
                                                 Employee #{{
-                                                    employee.employeeId
+                                                    record.employeeId
                                                         .toString()
                                                         .padStart(4, '0')
                                                 }}
@@ -535,64 +531,44 @@
                                 <td>
 
                                     <span class="department">
-                                        {{ employee.department }}
+                                        {{ record.department }}
                                     </span>
 
                                 </td>
 
 
-                                <!-- Salary Type -->
-
-                                <td>
-
-                                    <span class="salary-type">
-                                        {{ formatSalaryType(employee.salaryType) }}
-                                    </span>
-
-                                </td>
-
-
-                                <!-- Basic -->
+                                <!-- Date -->
 
                                 <td class="money">
-
-                                    {{ formatCurrency(employee.basicSalary) }}
-
+                                    {{ record.date }}
                                 </td>
 
 
-                                <!-- OT -->
+                                <!-- Time In -->
+
+                                <td class="money" :class="{ deduction: record.status === 'late' }">
+                                    {{ record.timeIn || '—' }}
+                                </td>
+
+
+                                <!-- Time Out -->
 
                                 <td class="money">
-                                    {{ formatCurrency(employee.overtimeRate) }}
+                                    {{ record.timeOut || '—' }}
                                 </td>
 
 
+                                <!-- Hours -->
 
                                 <td class="money allowance">
-
-                                    {{ employee.totalAttendance }}
-                                    <span class="money-sub">
-                                        / 6 (Monday to Friday)
-                                    </span>
+                                    {{ hoursWorked(record) }} hrs
                                 </td>
 
 
-                                <!-- Deductions -->
+                                <!-- Overtime -->
 
-                                <td class="money deduction">
-
-                                    -{{ formatCurrency(employee.deductions) }}
-
-                                </td>
-
-
-                                <!-- Net -->
-
-                                <td class="money net-pay">
-
-                                    {{ formatCurrency(calculateNet(employee)) }}
-
+                                <td class="money">
+                                    {{ record.overtimeHours || 0 }} hrs
                                 </td>
 
 
@@ -600,8 +576,8 @@
 
                                 <td>
 
-                                    <span class="badge-status" :class="badgeClass(employee.status)">
-                                        {{ formatStatus(employee.status) }}
+                                    <span class="badge-status" :class="badgeClass(record.status)">
+                                        {{ formatStatus(record.status) }}
                                     </span>
 
                                 </td>
@@ -613,12 +589,12 @@
 
                                     <div class="action-group">
 
-                                        <button class="action-btn edit-btn" @click="openEditModal(employee)">
+                                        <button class="action-btn edit-btn" @click="openEditModal(record)">
                                             Edit
                                         </button>
 
 
-                                        <button class="action-btn delete-btn" @click="deleteSalary(employee)">
+                                        <button class="action-btn delete-btn" @click="deleteAttendance(record)">
                                             Delete
                                         </button>
 
@@ -635,7 +611,46 @@
 
 
                     <div v-else class="empty-state">
-                        No salary records match your search or filter.
+                        No attendance records match your search or filter.
+                    </div>
+
+                </div>
+
+
+                <!-- PAGINATION -->
+
+                <div class="pagination-bar" v-if="filteredAttendanceData.length">
+
+                    <div class="pagination-info">
+                        Showing {{ paginationStart }}–{{ paginationEnd }} of {{ filteredAttendanceData.length }}
+                    </div>
+
+
+                    <div class="pagination-controls">
+
+                        <button class="page-btn" :disabled="currentPage === 1" @click="currentPage--">
+                            Prev
+                        </button>
+
+
+                        <button v-for="page in pageNumbers" :key="page" class="page-btn"
+                            :class="{ active: page === currentPage }" @click="currentPage = page">
+                            {{ page }}
+                        </button>
+
+
+                        <button class="page-btn" :disabled="currentPage === totalPages" @click="currentPage++">
+                            Next
+                        </button>
+
+
+                        <select v-model.number="pageSize" class="page-size-select">
+                            <option :value="5">5 / page</option>
+                            <option :value="10">10 / page</option>
+                            <option :value="25">25 / page</option>
+                            <option :value="50">50 / page</option>
+                        </select>
+
                     </div>
 
                 </div>
@@ -653,15 +668,15 @@
                     <div>
 
                         <div class="modal-eyebrow">
-                            {{ editingSalary ? 'EDIT RECORD' : 'NEW RECORD' }}
+                            {{ editingAttendance ? 'EDIT RECORD' : 'NEW RECORD' }}
                         </div>
 
                         <div class="modal-title">
-                            {{ editingSalary ? 'Edit Salary' : 'Add Salary' }}
+                            {{ editingAttendance ? 'Edit Attendance' : 'Add Attendance' }}
                         </div>
 
                         <div class="modal-sub">
-                            Configure employee compensation
+                            Log employee check-in and check-out
                         </div>
 
                     </div>
@@ -686,7 +701,7 @@
                             Employee
                         </label>
 
-                        <select v-model="salaryForm.employeeId" class="form-control" :disabled="editingSalary">
+                        <select v-model="attendanceForm.employeeId" class="form-control">
 
                             <option value="" disabled>
                                 Select employee
@@ -701,7 +716,7 @@
                     </div>
 
 
-                    <!-- Salary Type -->
+                    <!-- Date / Status -->
 
                     <div class="form-row">
 
@@ -709,28 +724,10 @@
                         <div class="form-group">
 
                             <label>
-                                Salary Type
+                                Date
                             </label>
 
-                            <select v-model="salaryForm.salaryType" class="form-control">
-
-                                <option value="monthly">
-                                    Monthly
-                                </option>
-
-                                <option value="weekly">
-                                    Weekly
-                                </option>
-
-                                <option value="daily">
-                                    Daily
-                                </option>
-
-                                <option value="hourly">
-                                    Hourly
-                                </option>
-
-                            </select>
+                            <input v-model="attendanceForm.date" type="date" class="form-control" />
 
                         </div>
 
@@ -741,14 +738,22 @@
                                 Status
                             </label>
 
-                            <select v-model="salaryForm.status" class="form-control">
+                            <select v-model="attendanceForm.status" class="form-control">
 
-                                <option value="active">
-                                    Active
+                                <option value="present">
+                                    Present
                                 </option>
 
-                                <option value="inactive">
-                                    Inactive
+                                <option value="late">
+                                    Late
+                                </option>
+
+                                <option value="absent">
+                                    Absent
+                                </option>
+
+                                <option value="leave">
+                                    On Leave
                                 </option>
 
                             </select>
@@ -758,7 +763,7 @@
                     </div>
 
 
-                    <!-- Basic Salary -->
+                    <!-- Time In / Out -->
 
                     <div class="form-row">
 
@@ -766,19 +771,11 @@
                         <div class="form-group">
 
                             <label>
-                                Basic Salary
+                                Time In
                             </label>
 
-                            <div class="input-money">
-
-                                <span>
-                                    ₱
-                                </span>
-
-                                <input v-model.number="salaryForm.basicSalary" type="number" min="0" step="0.01"
-                                    class="form-control" placeholder="0.00" />
-
-                            </div>
+                            <input v-model="attendanceForm.timeIn" type="time" class="form-control"
+                                :disabled="attendanceForm.status === 'absent' || attendanceForm.status === 'leave'" />
 
                         </div>
 
@@ -786,19 +783,11 @@
                         <div class="form-group">
 
                             <label>
-                                Overtime Rate / Hour
+                                Time Out
                             </label>
 
-                            <div class="input-money">
-
-                                <span>
-                                    ₱
-                                </span>
-
-                                <input v-model.number="salaryForm.overtimeRate" type="number" min="0" step="0.01"
-                                    class="form-control" placeholder="0.00" />
-
-                            </div>
+                            <input v-model="attendanceForm.timeOut" type="time" class="form-control"
+                                :disabled="attendanceForm.status === 'absent' || attendanceForm.status === 'leave'" />
 
                         </div>
 
@@ -806,38 +795,23 @@
 
 
                     <div class="form-row">
+
                         <div class="form-group">
                             <label>
-                                Total Attendance
+                                Overtime (hours)
                             </label>
-                            <input v-model.number="salaryForm.totalAttendance" type="number" min="0" step="0.01"
-                                class="form-control" placeholder="0.00" />
+                            <input v-model.number="attendanceForm.overtimeHours" type="number" min="0" step="0.25"
+                                class="form-control" placeholder="0" />
                         </div>
 
                         <div class="form-group">
                             <label>
-                                Deductions
-                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"
-                                    style="width: 16px; height: 16px; cursor: pointer;">
-                                    <path
-                                        d="M320 576C461.4 576 576 461.4 576 320C576 178.6 461.4 64 320 64C178.6 64 64 178.6 64 320C64 461.4 178.6 576 320 576zM288 224C288 206.3 302.3 192 320 192C337.7 192 352 206.3 352 224C352 241.7 337.7 256 320 256C302.3 256 288 241.7 288 224zM280 288L328 288C341.3 288 352 298.7 352 312L352 400L360 400C373.3 400 384 410.7 384 424C384 437.3 373.3 448 360 448L280 448C266.7 448 256 437.3 256 424C256 410.7 266.7 400 280 400L304 400L304 336L280 336C266.7 336 256 325.3 256 312C256 298.7 266.7 288 280 288z" />
-                                </svg>
+                                Notes
                             </label>
-                            <div class="input-money">
-                                <span>
-                                    ₱
-                                </span>
-                                <input v-model.number="salaryForm.deductions" disabled type="number" min="0" step="0.01"
-                                    class="form-control" placeholder="0.00" />
-                            </div>
+                            <input v-model="attendanceForm.notes" type="text" class="form-control"
+                                placeholder="Optional remarks" />
                         </div>
-                    </div>
 
-                    <div class="form-group">
-                        <label>
-                            Effective Date
-                        </label>
-                        <input v-model="salaryForm.effectiveDate" type="date" class="form-control" />
                     </div>
 
 
@@ -849,11 +823,11 @@
                         <div>
 
                             <div class="preview-label">
-                                ESTIMATED NET SALARY
+                                HOURS WORKED
                             </div>
 
                             <div class="preview-value">
-                                {{ formatCurrency(formNetSalary) }}
+                                {{ formHoursWorked }} hrs
                             </div>
 
                         </div>
@@ -861,15 +835,13 @@
 
                         <div class="preview-equation">
 
-                            ( {{ formatCurrency(Number(salaryForm.basicSalary) || 0) }}
+                            {{ attendanceForm.timeIn || '--:--' }}
 
-                            *
+                            →
 
-                            {{ salaryForm.totalAttendance || 0 }} )
+                            {{ attendanceForm.timeOut || '--:--' }}
 
-                            −
-
-                            {{ formatCurrency(Number(salaryForm.deductions) || 0) }}
+                            (+{{ attendanceForm.overtimeHours || 0 }} OT)
 
                         </div>
 
@@ -884,8 +856,8 @@
                     </button>
 
 
-                    <button class="save-btn" @click="saveSalary">
-                        {{ editingSalary ? 'Save Changes' : 'Add Salary' }}
+                    <button class="save-btn" @click="saveAttendance">
+                        {{ editingAttendance ? 'Save Changes' : 'Add Record' }}
                     </button>
 
                 </div>
@@ -904,12 +876,13 @@ import {
     computed,
     onMounted,
     onBeforeUnmount,
-    ref
+    ref,
+    watch
 } from 'vue'
 
 
 defineOptions({
-    name: 'SalaryManagementPage'
+    name: 'AttendanceManagementPage'
 })
 
 
@@ -941,6 +914,33 @@ function tickClock() {
 
 
 // =====================================================
+// SELECTED DATE (drives the stat cards)
+// =====================================================
+
+const selectedDate = ref('2026-08-29')
+
+
+const formattedSelectedDate = computed(() => {
+
+    if (!selectedDate.value) {
+        return ''
+    }
+
+    const date = new Date(`${selectedDate.value}T00:00:00`)
+
+    return date.toLocaleDateString(
+        'en-US',
+        {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric'
+        }
+    )
+
+})
+
+
+// =====================================================
 // EMPLOYEE DATA
 // =====================================================
 
@@ -948,42 +948,48 @@ const employeeOptions = ref([
 
     {
         id: 1,
-        name: 'Jonas Diaz'
+        name: 'Jonas Diaz',
+        department: 'Warehouse'
     },
 
     {
         id: 2,
-        name: 'Carla Santos'
+        name: 'Carla Santos',
+        department: 'Accounting'
     },
 
     {
         id: 3,
-        name: 'Ramon Tan'
+        name: 'Ramon Tan',
+        department: 'Logistics'
     },
 
     {
         id: 4,
-        name: 'Paulo Lim'
+        name: 'Paulo Lim',
+        department: 'Customer Care'
     },
 
     {
         id: 5,
-        name: 'Nadia Ang'
+        name: 'Nadia Ang',
+        department: 'Marketing'
     },
 
     {
         id: 6,
-        name: 'Erik Villar'
+        name: 'Erik Villar',
+        department: 'Warehouse'
     }
 
 ])
 
 
 // =====================================================
-// SALARY DATA
+// ATTENDANCE DATA
 // =====================================================
 
-const salaryData = ref([
+const attendanceData = ref([
 
     {
         id: 1,
@@ -993,20 +999,17 @@ const salaryData = ref([
         initials: 'JD',
 
         department: 'Warehouse',
-        position: 'Warehouse Staff',
 
-        basicSalary: 760,
-        salaryType: 'weekly',
+        date: '2026-08-29',
 
-        overtimeRate: 156.25,
+        timeIn: '08:02',
+        timeOut: '17:05',
 
-        totalAttendance: 7,
+        overtimeHours: 0.5,
 
-        deductions: 1500,
+        status: 'present',
 
-        effectiveDate: '2026-01-01',
-
-        status: 'active',
+        notes: '',
 
         image: null
     },
@@ -1020,19 +1023,17 @@ const salaryData = ref([
         initials: 'CS',
 
         department: 'Accounting',
-        position: 'Accountant',
 
-        basicSalary: 760,
-        salaryType: 'weekly',
+        date: '2026-08-29',
 
-        overtimeRate: 175,
+        timeIn: '09:24',
+        timeOut: '18:10',
 
-        totalAttendance: 6,
-        deductions: 1800,
+        overtimeHours: 0,
 
-        effectiveDate: '2026-01-01',
+        status: 'late',
 
-        status: 'active',
+        notes: 'Traffic delay',
 
         image: null
     },
@@ -1046,19 +1047,17 @@ const salaryData = ref([
         initials: 'RT',
 
         department: 'Logistics',
-        position: 'Logistics Staff',
 
-        basicSalary: 760,
-        salaryType: 'weekly',
+        date: '2026-08-29',
 
-        overtimeRate: 150,
+        timeIn: '07:55',
+        timeOut: '17:00',
 
-        totalAttendance: 7,
-        deductions: 1200,
+        overtimeHours: 1,
 
-        effectiveDate: '2026-01-01',
+        status: 'present',
 
-        status: 'active',
+        notes: '',
 
         image: null
     },
@@ -1072,19 +1071,17 @@ const salaryData = ref([
         initials: 'PL',
 
         department: 'Customer Care',
-        position: 'Customer Care Staff',
 
-        basicSalary: 760,
-        salaryType: 'monthly',
+        date: '2026-08-29',
 
-        overtimeRate: 162.50,
+        timeIn: '',
+        timeOut: '',
 
-        totalAttendance: 7,
-        deductions: 1400,
+        overtimeHours: 0,
 
-        effectiveDate: '2026-01-01',
+        status: 'absent',
 
-        status: 'active',
+        notes: 'No call, no show',
 
         image: null
     },
@@ -1098,19 +1095,17 @@ const salaryData = ref([
         initials: 'NA',
 
         department: 'Marketing',
-        position: 'Marketing Staff',
 
-        basicSalary: 760,
-        salaryType: 'monthly',
+        date: '2026-08-29',
 
-        overtimeRate: 168.75,
+        timeIn: '',
+        timeOut: '',
 
-        totalAttendance: 7,
-        deductions: 1600,
+        overtimeHours: 0,
 
-        effectiveDate: '2026-01-01',
+        status: 'leave',
 
-        status: 'active',
+        notes: 'Approved vacation leave',
 
         image: null
     },
@@ -1124,19 +1119,17 @@ const salaryData = ref([
         initials: 'EV',
 
         department: 'Warehouse',
-        position: 'Warehouse Staff',
 
-        basicSalary: 760,
-        salaryType: 'monthly',
+        date: '2026-08-29',
 
-        overtimeRate: 156.25,
+        timeIn: '08:10',
+        timeOut: '17:15',
 
-        totalAttendance: 7,
-        deductions: 1300,
+        overtimeHours: 0,
 
-        effectiveDate: '2026-01-01',
+        status: 'present',
 
-        status: 'active',
+        notes: '',
 
         image: null
     }
@@ -1161,19 +1154,39 @@ const statusFilters = [
     },
 
     {
-        key: 'active',
-        label: 'Active'
+        key: 'present',
+        label: 'Present'
     },
 
     {
-        key: 'inactive',
-        label: 'Inactive'
+        key: 'late',
+        label: 'Late'
+    },
+
+    {
+        key: 'leave',
+        label: 'On Leave'
+    },
+
+    {
+        key: 'absent',
+        label: 'Absent'
     }
 
 ]
 
 
-const filteredSalaryData = computed(() => {
+const recordsForSelectedDate = computed(() => {
+
+    return attendanceData.value.filter(
+        record =>
+            record.date === selectedDate.value
+    )
+
+})
+
+
+const filteredAttendanceData = computed(() => {
 
     const search =
         searchQuery.value
@@ -1181,21 +1194,21 @@ const filteredSalaryData = computed(() => {
             .toLowerCase()
 
 
-    return salaryData.value.filter(employee => {
+    return recordsForSelectedDate.value.filter(record => {
 
         const matchesSearch =
             !search ||
-            employee.employeeName
+            record.employeeName
                 .toLowerCase()
                 .includes(search) ||
-            employee.department
+            record.department
                 .toLowerCase()
                 .includes(search)
 
 
         const matchesStatus =
             statusFilter.value === 'all' ||
-            employee.status === statusFilter.value
+            record.status === statusFilter.value
 
 
         return matchesSearch && matchesStatus
@@ -1206,123 +1219,213 @@ const filteredSalaryData = computed(() => {
 
 
 // =====================================================
-// STATISTICS
+// PAGINATION
 // =====================================================
 
-const activeEmployeeCount = computed(() => {
+const currentPage = ref(1)
 
-    return salaryData.value.filter(
-        employee =>
-            employee.status === 'active'
-    ).length
-
-})
+const pageSize = ref(10)
 
 
-const inactiveCount = computed(() => {
+const totalPages = computed(() => {
 
-    return salaryData.value.filter(
-        employee =>
-            employee.status === 'inactive'
-    ).length
-
-})
-
-
-const totalBasicSalary = computed(() => {
-
-    return salaryData.value
-
-        .filter(
-            employee =>
-                employee.status === 'active'
-        )
-
-        .reduce(
-            (total, employee) =>
-                total + Number(employee.basicSalary || 0),
-            0
-        )
-
-})
-
-
-const totalAttendance = computed(() => {
-
-    return salaryData.value
-
-        .filter(
-            employee =>
-                employee.status === 'active'
-        )
-
-        .reduce(
-            (total, employee) =>
-                total * Number(employee.totalAttendance || 0),
-            0
-        )
-
-})
-
-
-const totalDeductions = computed(() => {
-
-    return salaryData.value
-
-        .filter(
-            employee =>
-                employee.status === 'active'
-        )
-
-        .reduce(
-            (total, employee) =>
-                total + Number(employee.deductions || 0),
-            0
-        )
-
-})
-
-
-const estimatedNetPayroll = computed(() => {
-
-    return (
-        (totalBasicSalary.value *
-            totalAttendance.value) -
-        totalDeductions.value
+    return Math.max(
+        1,
+        Math.ceil(filteredAttendanceData.value.length / pageSize.value)
     )
 
 })
 
 
-const monthlyCount = computed(() => {
+const paginatedAttendanceData = computed(() => {
 
-    return salaryData.value.filter(
-        employee =>
-            employee.status === 'active' &&
-            employee.salaryType === 'monthly'
+    const start =
+        (currentPage.value - 1) * pageSize.value
+
+    return filteredAttendanceData.value.slice(
+        start,
+        start + pageSize.value
+    )
+
+})
+
+
+const paginationStart = computed(() => {
+
+    if (!filteredAttendanceData.value.length) {
+        return 0
+    }
+
+    return (currentPage.value - 1) * pageSize.value + 1
+
+})
+
+
+const paginationEnd = computed(() => {
+
+    return Math.min(
+        currentPage.value * pageSize.value,
+        filteredAttendanceData.value.length
+    )
+
+})
+
+
+const pageNumbers = computed(() => {
+
+    const pages = []
+
+    for (let page = 1; page <= totalPages.value; page++) {
+        pages.push(page)
+    }
+
+    return pages
+
+})
+
+
+// Reset to page 1 whenever the visible record set changes shape
+// (date, search, or status filter), so pagination never points
+// at an empty page after a filter change.
+
+watch(
+    [selectedDate, searchQuery, statusFilter, pageSize],
+    () => {
+        currentPage.value = 1
+    }
+)
+
+
+watch(
+    totalPages,
+    (newTotal) => {
+        if (currentPage.value > newTotal) {
+            currentPage.value = newTotal
+        }
+    }
+)
+
+
+// =====================================================
+// STATISTICS (based on selected date)
+// =====================================================
+
+const totalEmployeeCount = computed(() => {
+
+    return employeeOptions.value.length
+
+})
+
+
+const presentCount = computed(() => {
+
+    return recordsForSelectedDate.value.filter(
+        record =>
+            record.status === 'present'
     ).length
 
 })
 
 
-const dailyCount = computed(() => {
+const onTimeCount = computed(() => presentCount.value)
 
-    return salaryData.value.filter(
-        employee =>
-            employee.status === 'active' &&
-            employee.salaryType === 'daily'
+
+const lateCount = computed(() => {
+
+    return recordsForSelectedDate.value.filter(
+        record =>
+            record.status === 'late'
     ).length
 
 })
 
 
-const hourlyCount = computed(() => {
+const absentCount = computed(() => {
 
-    return salaryData.value.filter(
-        employee =>
-            employee.status === 'active' &&
-            employee.salaryType === 'hourly'
+    return recordsForSelectedDate.value.filter(
+        record =>
+            record.status === 'absent'
     ).length
+
+})
+
+
+const leaveCount = computed(() => {
+
+    return recordsForSelectedDate.value.filter(
+        record =>
+            record.status === 'leave'
+    ).length
+
+})
+
+
+const attendanceRate = computed(() => {
+
+    if (!totalEmployeeCount.value) {
+        return 0
+    }
+
+    const checkedIn =
+        presentCount.value + lateCount.value
+
+    return Math.round(
+        (checkedIn / totalEmployeeCount.value) * 100
+    )
+
+})
+
+
+function timeStringToHours(timeStr) {
+
+    if (!timeStr) {
+        return null
+    }
+
+    const [hours, minutes] = timeStr.split(':').map(Number)
+
+    return hours + (minutes / 60)
+
+}
+
+
+function hoursWorked(record) {
+
+    const start = timeStringToHours(record.timeIn)
+
+    const end = timeStringToHours(record.timeOut)
+
+
+    if (start === null || end === null) {
+        return '0.0'
+    }
+
+
+    let diff = end - start
+
+    if (diff < 0) {
+        diff += 24
+    }
+
+
+    return diff.toFixed(1)
+
+}
+
+
+const totalHoursLogged = computed(() => {
+
+    const total =
+        recordsForSelectedDate.value.reduce(
+            (sum, record) =>
+                sum +
+                Number(hoursWorked(record)) +
+                Number(record.overtimeHours || 0),
+            0
+        )
+
+
+    return total.toFixed(1)
 
 })
 
@@ -1333,10 +1436,10 @@ const hourlyCount = computed(() => {
 
 const showModal = ref(false)
 
-const editingSalary = ref(false)
+const editingAttendance = ref(false)
 
 
-const salaryForm = ref(
+const attendanceForm = ref(
     createEmptyForm()
 )
 
@@ -1349,32 +1452,43 @@ function createEmptyForm() {
 
         employeeId: '',
 
-        salaryType: 'monthly',
+        date: selectedDate.value,
 
-        basicSalary: 0,
+        timeIn: '',
 
-        overtimeRate: 0,
+        timeOut: '',
 
-        totalAttendance: 0,
+        overtimeHours: 0,
 
-        deductions: 0,
+        status: 'present',
 
-        effectiveDate: '2026-01-01',
-
-        status: 'active'
+        notes: ''
 
     }
 
 }
 
 
-const formNetSalary = computed(() => {
+const formHoursWorked = computed(() => {
 
-    return (
-        (Number(salaryForm.value.basicSalary || 0) *
-            Number(salaryForm.value.totalAttendance || 0)) -
-        Number(salaryForm.value.deductions || 0)
-    )
+    const start = timeStringToHours(attendanceForm.value.timeIn)
+
+    const end = timeStringToHours(attendanceForm.value.timeOut)
+
+
+    if (start === null || end === null) {
+        return '0.0'
+    }
+
+
+    let diff = end - start
+
+    if (diff < 0) {
+        diff += 24
+    }
+
+
+    return (diff + Number(attendanceForm.value.overtimeHours || 0)).toFixed(1)
 
 })
 
@@ -1385,9 +1499,9 @@ const formNetSalary = computed(() => {
 
 function openAddModal() {
 
-    editingSalary.value = false
+    editingAttendance.value = false
 
-    salaryForm.value =
+    attendanceForm.value =
         createEmptyForm()
 
     showModal.value = true
@@ -1399,29 +1513,27 @@ function openAddModal() {
 // EDIT
 // =====================================================
 
-function openEditModal(employee) {
+function openEditModal(record) {
 
-    editingSalary.value = true
+    editingAttendance.value = true
 
-    salaryForm.value = {
+    attendanceForm.value = {
 
-        id: employee.id,
+        id: record.id,
 
-        employeeId: employee.employeeId,
+        employeeId: record.employeeId,
 
-        salaryType: employee.salaryType,
+        date: record.date,
 
-        basicSalary: employee.basicSalary,
+        timeIn: record.timeIn,
 
-        overtimeRate: employee.overtimeRate,
+        timeOut: record.timeOut,
 
-        totalAttendance: employee.totalAttendance,
+        overtimeHours: record.overtimeHours,
 
-        deductions: employee.deductions,
+        status: record.status,
 
-        effectiveDate: employee.effectiveDate,
-
-        status: employee.status
+        notes: record.notes
 
     }
 
@@ -1445,9 +1557,9 @@ function closeModal() {
 // SAVE
 // =====================================================
 
-function saveSalary() {
+function saveAttendance() {
 
-    if (!salaryForm.value.employeeId) {
+    if (!attendanceForm.value.employeeId) {
 
         alert('Please select an employee.')
 
@@ -1456,11 +1568,9 @@ function saveSalary() {
     }
 
 
-    if (
-        Number(salaryForm.value.basicSalary) <= 0
-    ) {
+    if (!attendanceForm.value.date) {
 
-        alert('Please enter a valid basic salary.')
+        alert('Please select a date.')
 
         return
 
@@ -1471,7 +1581,7 @@ function saveSalary() {
         employeeOptions.value.find(
             item =>
                 Number(item.id) ===
-                Number(salaryForm.value.employeeId)
+                Number(attendanceForm.value.employeeId)
         )
 
 
@@ -1484,47 +1594,52 @@ function saveSalary() {
     }
 
 
-    if (editingSalary.value) {
+    const isAbsentOrLeave =
+        attendanceForm.value.status === 'absent' ||
+        attendanceForm.value.status === 'leave'
+
+
+    if (editingAttendance.value) {
 
         const index =
-            salaryData.value.findIndex(
+            attendanceData.value.findIndex(
                 item =>
                     item.id ===
-                    salaryForm.value.id
+                    attendanceForm.value.id
             )
 
 
         if (index !== -1) {
 
-            salaryData.value[index] = {
+            attendanceData.value[index] = {
 
-                ...salaryData.value[index],
+                ...attendanceData.value[index],
 
                 employeeName: employee.name,
 
                 employeeId:
-                    Number(salaryForm.value.employeeId),
+                    Number(attendanceForm.value.employeeId),
 
-                salaryType:
-                    salaryForm.value.salaryType,
+                department:
+                    employee.department,
 
-                basicSalary:
-                    Number(salaryForm.value.basicSalary),
+                date:
+                    attendanceForm.value.date,
 
-                overtimeRate:
-                    Number(salaryForm.value.overtimeRate),
+                timeIn:
+                    isAbsentOrLeave ? '' : attendanceForm.value.timeIn,
 
-                totalAttendance:
-                    Number(salaryForm.value.totalAttendance),
+                timeOut:
+                    isAbsentOrLeave ? '' : attendanceForm.value.timeOut,
 
-                deductions:
-                    Number(salaryForm.value.deductions),
-
-                effectiveDate:
-                    salaryForm.value.effectiveDate,
+                overtimeHours:
+                    Number(attendanceForm.value.overtimeHours) || 0,
 
                 status:
-                    salaryForm.value.status
+                    attendanceForm.value.status,
+
+                notes:
+                    attendanceForm.value.notes
 
             }
 
@@ -1533,17 +1648,19 @@ function saveSalary() {
     } else {
 
         const exists =
-            salaryData.value.some(
+            attendanceData.value.some(
                 item =>
                     item.employeeId ===
-                    Number(salaryForm.value.employeeId)
+                    Number(attendanceForm.value.employeeId) &&
+                    item.date ===
+                    attendanceForm.value.date
             )
 
 
         if (exists) {
 
             alert(
-                'This employee already has a salary record. Please edit the existing record instead.'
+                'This employee already has an attendance record for this date. Please edit the existing record instead.'
             )
 
             return
@@ -1560,13 +1677,13 @@ function saveSalary() {
                 .toUpperCase()
 
 
-        salaryData.value.push({
+        attendanceData.value.push({
 
             id:
                 Date.now(),
 
             employeeId:
-                Number(salaryForm.value.employeeId),
+                Number(attendanceForm.value.employeeId),
 
             employeeName:
                 employee.name,
@@ -1574,31 +1691,25 @@ function saveSalary() {
             initials,
 
             department:
-                'Unassigned',
+                employee.department,
 
-            position:
-                'Employee',
+            date:
+                attendanceForm.value.date,
 
-            basicSalary:
-                Number(salaryForm.value.basicSalary),
+            timeIn:
+                isAbsentOrLeave ? '' : attendanceForm.value.timeIn,
 
-            salaryType:
-                salaryForm.value.salaryType,
+            timeOut:
+                isAbsentOrLeave ? '' : attendanceForm.value.timeOut,
 
-            overtimeRate:
-                Number(salaryForm.value.overtimeRate),
-
-            totalAttendance:
-                Number(salaryForm.value.totalAttendance),
-
-            deductions:
-                Number(salaryForm.value.deductions),
-
-            effectiveDate:
-                salaryForm.value.effectiveDate,
+            overtimeHours:
+                Number(attendanceForm.value.overtimeHours) || 0,
 
             status:
-                salaryForm.value.status,
+                attendanceForm.value.status,
+
+            notes:
+                attendanceForm.value.notes,
 
             image:
                 null
@@ -1617,11 +1728,11 @@ function saveSalary() {
 // DELETE
 // =====================================================
 
-function deleteSalary(employee) {
+function deleteAttendance(record) {
 
     const confirmed =
         window.confirm(
-            `Delete salary record for ${employee.employeeName}?`
+            `Delete attendance record for ${record.employeeName} on ${record.date}?`
         )
 
 
@@ -1630,26 +1741,11 @@ function deleteSalary(employee) {
     }
 
 
-    salaryData.value =
-        salaryData.value.filter(
+    attendanceData.value =
+        attendanceData.value.filter(
             item =>
-                item.id !== employee.id
+                item.id !== record.id
         )
-
-}
-
-
-// =====================================================
-// CALCULATIONS
-// =====================================================
-
-function calculateNet(employee) {
-
-    return (
-        (Number(employee.basicSalary || 0) *
-            Number(employee.totalAttendance || 0)) -
-        Number(employee.deductions || 0)
-    )
 
 }
 
@@ -1658,50 +1754,17 @@ function calculateNet(employee) {
 // FORMATTING
 // =====================================================
 
-function formatCurrency(amount) {
-
-    return new Intl.NumberFormat(
-        'en-PH',
-        {
-            style: 'currency',
-            currency: 'PHP',
-            minimumFractionDigits: 2
-        }
-    ).format(
-        Number(amount || 0)
-    )
-
-}
-
-
-function formatSalaryType(type) {
-
-    const labels = {
-
-        monthly: 'MONTHLY',
-
-        daily: 'DAILY',
-
-        hourly: 'HOURLY'
-
-    }
-
-
-    return (
-        labels[type] ||
-        type.toUpperCase()
-    )
-
-}
-
-
 function formatStatus(status) {
 
     const labels = {
 
-        active: 'ACTIVE',
+        present: 'PRESENT',
 
-        inactive: 'INACTIVE'
+        late: 'LATE',
+
+        absent: 'ABSENT',
+
+        leave: 'ON LEAVE'
 
     }
 
@@ -1718,9 +1781,13 @@ function badgeClass(status) {
 
     return {
 
-        active: 'badge-active',
+        present: 'badge-active',
 
-        inactive: 'badge-inactive'
+        late: 'badge-late',
+
+        absent: 'badge-inactive',
+
+        leave: 'badge-leave'
 
     }[status]
 
@@ -1738,44 +1805,39 @@ function exportCsv() {
         [
             'Employee',
             'Department',
-            'Salary Type',
-            'Basic Salary',
-            'Overtime Rate',
-            'totalAttendance',
-            'Deductions',
-            'Net Salary',
-            'Effective Date',
-            'Status'
+            'Date',
+            'Time In',
+            'Time Out',
+            'Hours Worked',
+            'Overtime',
+            'Status',
+            'Notes'
         ]
 
     ]
 
 
-    filteredSalaryData.value.forEach(employee => {
+    filteredAttendanceData.value.forEach(record => {
 
         rows.push([
 
-            employee.employeeName,
+            record.employeeName,
 
-            employee.department,
+            record.department,
 
-            formatSalaryType(
-                employee.salaryType
-            ),
+            record.date,
 
-            employee.basicSalary,
+            record.timeIn,
 
-            employee.overtimeRate,
+            record.timeOut,
 
-            employee.totalAttendance,
+            hoursWorked(record),
 
-            employee.deductions,
+            record.overtimeHours,
 
-            calculateNet(employee),
+            formatStatus(record.status),
 
-            employee.effectiveDate,
-
-            employee.status
+            record.notes
 
         ])
 
@@ -1814,7 +1876,7 @@ function exportCsv() {
     a.href = url
 
     a.download =
-        'salary-management.csv'
+        `attendance-${selectedDate.value}.csv`
 
 
     document.body.appendChild(a)
@@ -2040,6 +2102,46 @@ onBeforeUnmount(() => {
 
     box-shadow:
         0 0 0 3px rgba(47, 143, 91, .25);
+}
+
+
+/* =====================================================
+   DATE PICKER CHIP
+===================================================== */
+
+.date-chip {
+
+    font-family:
+        'IBM Plex Mono',
+        monospace;
+
+    border:
+        1px solid var(--line, #DCD8CB);
+
+    background:
+        var(--paper-2, #FBFAF6);
+
+    color:
+        var(--ink, #1C2B4A);
+
+    border-radius:
+        8px;
+
+    padding:
+        .45rem .7rem;
+
+    font-size:
+        .8rem;
+
+    outline:
+        none;
+}
+
+
+.date-chip:focus {
+
+    border-color:
+        var(--gold, #C79A3D);
 }
 
 
@@ -2352,8 +2454,18 @@ onBeforeUnmount(() => {
 }
 
 
+.stamp.red {
+
+    color:
+        var(--red, #C24D3B);
+
+    border-color:
+        #E5B7AE;
+}
+
+
 /* =====================================================
-   SALARY OVERVIEW
+   SALARY / ATTENDANCE OVERVIEW
 ===================================================== */
 
 .salary-overview {
@@ -3021,7 +3133,7 @@ onBeforeUnmount(() => {
 
 
 /* =====================================================
-   MONEY
+   MONEY / DATA CELLS
 ===================================================== */
 
 .money {
@@ -3076,27 +3188,6 @@ onBeforeUnmount(() => {
 
 
 /* =====================================================
-   SALARY TYPE
-===================================================== */
-
-.salary-type {
-
-    font-family:
-        'IBM Plex Mono',
-        monospace;
-
-    font-size:
-        .63rem;
-
-    color:
-        var(--slate, #6B7280);
-
-    letter-spacing:
-        .03em;
-}
-
-
-/* =====================================================
    STATUS
 ===================================================== */
 
@@ -3146,6 +3237,26 @@ onBeforeUnmount(() => {
 
     color:
         var(--red, #C24D3B);
+}
+
+
+.badge-late {
+
+    background:
+        var(--amber-bg, #F6EEDB);
+
+    color:
+        var(--gold-dark, #9C7726);
+}
+
+
+.badge-leave {
+
+    background:
+        #E8EEF3;
+
+    color:
+        #426B8F;
 }
 
 
@@ -3255,6 +3366,179 @@ onBeforeUnmount(() => {
 
     font-size:
         .85rem;
+}
+
+
+/* =====================================================
+   PAGINATION
+===================================================== */
+
+.pagination-bar {
+
+    display:
+        flex;
+
+    align-items:
+        center;
+
+    justify-content:
+        space-between;
+
+    flex-wrap:
+        wrap;
+
+    gap:
+        .75rem;
+
+    margin-top:
+        1.1rem;
+
+    padding-top:
+        1rem;
+
+    border-top:
+        1px solid var(--line, #DCD8CB);
+}
+
+
+.pagination-info {
+
+    font-family:
+        'IBM Plex Mono',
+        monospace;
+
+    font-size:
+        .7rem;
+
+    color:
+        var(--slate, #6B7280);
+}
+
+
+.pagination-controls {
+
+    display:
+        flex;
+
+    align-items:
+        center;
+
+    gap:
+        .35rem;
+
+    flex-wrap:
+        wrap;
+}
+
+
+.page-btn {
+
+    font-family:
+        'IBM Plex Mono',
+        monospace;
+
+    font-size:
+        .7rem;
+
+    font-weight:
+        600;
+
+    min-width:
+        30px;
+
+    padding:
+        .35rem .5rem;
+
+    border-radius:
+        6px;
+
+    border:
+        1px solid var(--line, #DCD8CB);
+
+    background:
+        var(--paper-2, #FBFAF6);
+
+    color:
+        var(--ink-2, #28395E);
+
+    cursor:
+        pointer;
+}
+
+
+.page-btn:hover:not(:disabled):not(.active) {
+
+    background:
+        var(--paper, #F2F1EA);
+}
+
+
+.page-btn.active {
+
+    background:
+        var(--ink, #1C2B4A);
+
+    color:
+        #F3DFA6;
+
+    border-color:
+        var(--ink, #1C2B4A);
+}
+
+
+.page-btn:disabled {
+
+    opacity:
+        .45;
+
+    cursor:
+        not-allowed;
+}
+
+
+.page-size-select {
+
+    font-family:
+        'IBM Plex Mono',
+        monospace;
+
+    font-size:
+        .7rem;
+
+    border:
+        1px solid var(--line, #DCD8CB);
+
+    background:
+        var(--paper-2, #FBFAF6);
+
+    color:
+        var(--ink-2, #28395E);
+
+    border-radius:
+        6px;
+
+    padding:
+        .35rem .5rem;
+
+    margin-left:
+        .3rem;
+
+    outline:
+        none;
+}
+
+
+@media (max-width: 576px) {
+
+    .pagination-bar {
+
+        flex-direction:
+            column;
+
+        align-items:
+            flex-start;
+    }
+
 }
 
 
@@ -3550,54 +3834,7 @@ onBeforeUnmount(() => {
 
 
 /* =====================================================
-   MONEY INPUT
-===================================================== */
-
-.input-money {
-
-    position:
-        relative;
-}
-
-
-.input-money>span {
-
-    position:
-        absolute;
-
-    left:
-        .7rem;
-
-    top:
-        50%;
-
-    transform:
-        translateY(-50%);
-
-    font-family:
-        'IBM Plex Mono',
-        monospace;
-
-    color:
-        var(--slate, #6B7280);
-
-    font-size:
-        .8rem;
-
-    pointer-events:
-        none;
-}
-
-
-.input-money .form-control {
-
-    padding-left:
-        1.55rem;
-}
-
-
-/* =====================================================
-   SALARY PREVIEW
+   SALARY / HOURS PREVIEW
 ===================================================== */
 
 .salary-preview {

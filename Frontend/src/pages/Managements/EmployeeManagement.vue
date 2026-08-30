@@ -39,11 +39,6 @@
 
                 </div>
 
-
-                <button class="btn btn-primary-ledger" @click="openAddModal">
-                    + Add Employee
-                </button>
-
             </div>
 
         </div>
@@ -95,89 +90,59 @@
                         <div class="stat-value">
                             {{ activeCount }}
                         </div>
-
                         <div class="stat-delta text-success">
                             Currently employed
                         </div>
-
                     </div>
-
                 </div>
-
-
                 <div class="col-6 col-lg-3">
-
                     <div class="punch-card">
-
                         <div class="stamp gold">
                             OFF
                         </div>
-
                         <div class="stat-label">
                             Inactive
                         </div>
-
                         <div class="stat-value">
                             {{ inactiveCount }}
                         </div>
-
                         <div class="stat-delta stat-delta--gold">
                             Not currently active
                         </div>
-
                     </div>
-
                 </div>
-
-
                 <div class="col-6 col-lg-3">
-
                     <div class="punch-card">
-
                         <div class="stamp blue">
                             DEPT
                         </div>
-
                         <div class="stat-label">
                             Departments
                         </div>
-
                         <div class="stat-value">
                             {{ departmentCount }}
                         </div>
-
                         <div class="stat-delta stat-delta--blue">
                             Active departments
                         </div>
-
                     </div>
-
                 </div>
-
             </div>
 
-
-            <!-- EMPLOYEE LIST -->
             <div class="panel">
-
                 <div class="section-header">
-
                     <div>
-
                         <div class="section-title">
                             Employee directory
                         </div>
-
                         <div class="panel-sub">
                             Manage employee records and employment status
                         </div>
-
                     </div>
-
+                    <button class="btn btn-primary-ledger" @click="openAddModal">
+                    + Add Employee
+                </button>
                 </div>
-
-
-                <!-- SEARCH / FILTER -->
                 <div class="toolbar">
 
                     <div class="search-box">
@@ -189,7 +154,7 @@
                         </svg>
 
                         <input v-model="searchQuery" type="text" placeholder="Search employee..." />
-
+                        
                     </div>
 
 
@@ -219,6 +184,7 @@
                         </option>
 
                     </select>
+                    
 
                 </div>
 
