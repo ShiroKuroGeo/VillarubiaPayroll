@@ -9,9 +9,10 @@ import CashAdvanceView from '@/pages/CashAdvanceView.vue'
 import setting from '@/pages/Setting.vue'
 
 import EmployeeManagement from '@/pages/Managements/EmployeeManagement.vue'
-import PayrollManagement from '@/pages/Managements/PayrollManagement.vue'
+import SalaryManagement from '@/pages/Managements/SalaryManagement.vue'
 import CashAdvanceManagement from '@/pages/Managements/CashAdvanceManagement.vue'
 import AttendanceManagement from '@/pages/Managements/AttendanceManagement.vue'
+import PayrollManagement from '@/pages/Managements/PayrollManagement.vue'
 
 const router = createRouter({
     history: createWebHistory(import.meta.env.BASE_URL),
@@ -34,7 +35,6 @@ const router = createRouter({
             // meta: {
             //     requiresAuth: true,
             // },
-
             children: [
                 {
                     path: '',
@@ -55,6 +55,11 @@ const router = createRouter({
                     path: 'management/employee',
                     name: 'admin.employeeManagement',
                     component: EmployeeManagement,
+                },
+                {
+                    path: 'management/salary',
+                    name: 'admin.salaryManagement',
+                    component: SalaryManagement,
                 },
                 {
                     path: 'management/payroll',

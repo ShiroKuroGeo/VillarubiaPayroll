@@ -131,8 +131,13 @@ const navManage = [
                 </svg>`,
     },
     {
-        key: 'payrollManagement',
+        key: 'salaryManagement',
         label: 'Salary',
+        icon: '<path d="M6 2h9l4 4v16H6z"/><path d="M15 2v5h5"/><path d="M9 11h6"/><path d="M9 15h6"/><path d="M9 19h4"/><circle cx="17" cy="15" r="2"/><path d="M17 13v4"/>',
+    },
+    {
+        key: 'payrollManagement',
+        label: 'Payroll',
         icon: '<path d="M6 2h9l4 4v16H6z"/><path d="M15 2v5h5"/><path d="M9 11h6"/><path d="M9 15h6"/><path d="M9 19h4"/><circle cx="17" cy="15" r="2"/><path d="M17 13v4"/>',
     },
     {
@@ -169,8 +174,9 @@ function select(key) {
         attendance: 'admin.attendance',
         payroll: 'admin.payroll',
         employeeManagement: 'admin.employeeManagement',
-        payrollManagement: 'admin.payrollManagement',
+        salaryManagement: 'admin.salaryManagement',
         cashAdvanceManagement: 'admin.cashAdvanceManagement',
+        payrollManagement: 'admin.payrollManagement',
         attendanceManagement: 'admin.attendanceManagement',
         setting: 'admin.setting',
     }
@@ -195,6 +201,7 @@ function isActive(key) {
         attendance: 'admin.attendance',
         payroll: 'admin.payroll',
         employeeManagement: 'admin.employeeManagement',
+        salaryManagement: 'admin.salaryManagement',
         payrollManagement: 'admin.payrollManagement',
         cashAdvanceManagement: 'admin.cashAdvanceManagement',
         attendanceManagement: 'admin.attendanceManagement',

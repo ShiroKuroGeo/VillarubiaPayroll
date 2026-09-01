@@ -181,8 +181,7 @@
 
                     <div class="search-box">
 
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <circle cx="11" cy="11" r="7" />
                             <path d="m20 20-4-4" />
                         </svg>
@@ -194,8 +193,7 @@
 
                     <div class="filter-row">
 
-                        <button v-for="filter in statusFilters" :key="filter.value" class="filter-pill"
-                            :class="{ active: activeFilter === filter.value }" @click="activeFilter = filter.value">
+                        <button v-for="filter in statusFilters" :key="filter.value" class="filter-pill" :class="{ active: activeFilter === filter.value }" @click="activeFilter = filter.value">
                             {{ filter.label }}
                         </button>
 
@@ -318,133 +316,74 @@
                                     </div>
 
                                 </td>
-
-
-                                <!-- STATUS -->
                                 <td>
-
                                     <span class="badge-status" :class="badgeClass(request.status)">
                                         {{ formatStatus(request.status) }}
                                     </span>
-
                                 </td>
-
-
-                                <!-- ACTION -->
                                 <td>
-
                                     <div class="action-group">
-
-                                        <button v-if="request.status === 'pending'" class="btn-mini btn-mini-review"
-                                            @click="openReviewModal(request)">
+                                        <button v-if="request.status === 'pending'" class="btn-mini btn-mini-review" @click="openReviewModal(request)">
                                             Review
                                         </button>
-
-
-                                        <button v-if="request.status === 'approved'" class="btn-mini btn-mini-pay"
-                                            @click="openPaymentModal(request)">
+                                        <button v-if="request.status === 'approved'" class="btn-mini btn-mini-pay" @click="openPaymentModal(request)">
                                             Mark as Paid
                                         </button>
-
-
-                                        <button v-if="
-                                            request.status === 'paid' ||
-                                            request.status === 'rejected'
-                                        " class="btn-mini btn-mini-view" @click="openViewModal(request)">
+                                        <button v-if="request.status === 'paid' || request.status === 'rejected'" class="btn-mini btn-mini-view" @click="openViewModal(request)">
                                             View
                                         </button>
-
                                     </div>
-
                                 </td>
-
                             </tr>
-
                         </tbody>
-
                     </table>
-
-
                     <div v-else class="empty-state">
-
                         <div class="empty-icon">
                             🧾
                         </div>
-
                         <div class="empty-title">
                             No cash advance requests found
                         </div>
-
                         <div class="empty-sub">
                             Try changing your search or filters.
                         </div>
-
                     </div>
-
                 </div>
-
             </div>
-
         </div>
-
-
-        <!-- =====================================================
-             REVIEW MODAL
-        ====================================================== -->
         <div v-if="showReviewModal" class="modal-backdrop" @click.self="closeModals">
-
             <div class="employee-modal">
-
                 <div class="modal-header">
-
                     <div>
-
                         <div class="modal-title">
                             Cash Advance Request
                         </div>
-
                         <div class="panel-sub">
                             Review employee request
                         </div>
-
                     </div>
-
                     <button class="modal-close" @click="closeModals">
                         ×
                     </button>
-
                 </div>
-
-
                 <div class="modal-body">
-
-                    <!-- Employee -->
                     <div class="employee-profile">
-
                         <div class="avatar-lg">
                             {{ selectedRequest?.initials }}
                         </div>
-
                         <div>
-
                             <div class="profile-name">
                                 {{ selectedRequest?.employeeName }}
                             </div>
-
                             <div class="profile-position">
                                 {{ selectedRequest?.position }}
                             </div>
-
                             <div class="profile-department">
                                 {{ selectedRequest?.department }}
                             </div>
-
                         </div>
-
                     </div>
 
-
-                    <!-- Request Info -->
                     <div class="request-grid">
 
                         <div class="request-info">
@@ -638,8 +577,7 @@
                                 Payment Notes
                             </label>
 
-                            <textarea v-model="paymentNotes" rows="3"
-                                placeholder="Optional payment notes..."></textarea>
+                            <textarea v-model="paymentNotes" rows="3" placeholder="Optional payment notes..."></textarea>
 
                         </div>
 
