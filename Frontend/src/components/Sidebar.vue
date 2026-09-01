@@ -145,6 +145,11 @@ const navManage = [
         label: 'Cash Advance',
         icon: '<path d="M3 7h18v14H3z"/><path d="M3 7l2-4h14l2 4"/><circle cx="12" cy="14" r="3"/><path d="M6 11h.01M18 17h.01"/>',
     },
+    {
+        key: 'deductionManagement',
+        label: 'Deductions',
+        icon: '<path d="M3 7h18v14H3z"/><path d="M3 7l2-4h14l2 4"/><circle cx="12" cy="14" r="3"/><path d="M6 11h.01M18 17h.01"/>',
+    },
     // {
     //     key: 'reportsManagement',
     //     label: 'Reports',
@@ -178,6 +183,7 @@ function select(key) {
         cashAdvanceManagement: 'admin.cashAdvanceManagement',
         payrollManagement: 'admin.payrollManagement',
         attendanceManagement: 'admin.attendanceManagement',
+        deductionManagement: 'admin.deductionManagement',
         setting: 'admin.setting',
     }
 
@@ -205,6 +211,7 @@ function isActive(key) {
         payrollManagement: 'admin.payrollManagement',
         cashAdvanceManagement: 'admin.cashAdvanceManagement',
         attendanceManagement: 'admin.attendanceManagement',
+        deductionManagement: 'admin.deductionManagement',
         setting: 'admin.setting',
     }
 
