@@ -140,11 +140,11 @@ const navManage = [
         label: 'Cash Advance',
         icon: '<path d="M3 7h18v14H3z"/><path d="M3 7l2-4h14l2 4"/><circle cx="12" cy="14" r="3"/><path d="M6 11h.01M18 17h.01"/>',
     },
-    {
-        key: 'reportsManagement',
-        label: 'Reports',
-        icon: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M16 13H8"/><path d="M16 17H8"/>',
-    },
+    // {
+    //     key: 'reportsManagement',
+    //     label: 'Reports',
+    //     icon: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M16 13H8"/><path d="M16 17H8"/>',
+    // },
     {
         key: 'setting',
         label: 'Settings',
