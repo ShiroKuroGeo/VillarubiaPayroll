@@ -14,11 +14,9 @@ return new class extends Migration
         Schema::create('payrolls', function (Blueprint $table) {
             $table->id();
             $table->foreignId('employee_id')->constrained()->cascadeOnDelete();
-
             $table->date('cutoff_start')->nullable();
             $table->date('cutoff_end')->nullable();
             $table->date('payout_date')->nullable();
-
             $table->decimal('gross_pay', 10, 2)->default(0.00);
             $table->decimal('total_deductions', 10, 2)->default(0.00);
             $table->decimal('net_pay', 10, 2)->default(0.00);

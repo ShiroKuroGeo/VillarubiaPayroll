@@ -17,8 +17,8 @@ return new class extends Migration
             $table->string('image')->nullable();
             $table->string('first_name');
             $table->string('last_name');
-            $table->string('phone_number');
-            $table->text('location');
+            $table->string('phone_number')->nullable();
+            $table->text('location')->nullable();
             $table->string('email')->unique();
             $table->enum('status', ['Full Time', 'Part Time', 'Suspended', 'Separated/Terminated', 'Probationary'])->default('Probationary');
             $table->date('date_hired');
