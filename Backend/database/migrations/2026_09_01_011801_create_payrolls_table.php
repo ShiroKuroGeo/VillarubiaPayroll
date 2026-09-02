@@ -15,8 +15,8 @@ return new class extends Migration
             $table->id();
             $table->foreignId('employee_id')->constrained()->cascadeOnDelete();
 
-            $table->date('cutoff_start');
-            $table->date('cutoff_end');
+            $table->date('cutoff_start')->nullable();
+            $table->date('cutoff_end')->nullable();
             $table->date('payout_date')->nullable();
 
             $table->decimal('gross_pay', 10, 2)->default(0.00);
