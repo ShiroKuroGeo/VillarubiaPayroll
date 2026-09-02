@@ -17,7 +17,7 @@ return new class extends Migration
             $table->foreignId('payroll_id')->constrained()->cascadeOnDelete();
             $table->integer('sss_deduction');
             $table->integer('ca_deduction');
-            $table->integer('other_deduction');
+            $table->json('other_deduction')->nullable();
             $table->string('remarks');
             $table->timestamps();
         });

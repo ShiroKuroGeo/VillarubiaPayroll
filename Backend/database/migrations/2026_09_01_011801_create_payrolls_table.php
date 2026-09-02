@@ -17,11 +17,11 @@ return new class extends Migration
 
             $table->date('cutoff_start');
             $table->date('cutoff_end');
-            $table->date('payout_date');
+            $table->date('payout_date')->nullable();
 
-            $table->decimal('gross_pay', 10, 2);
+            $table->decimal('gross_pay', 10, 2)->default(0.00);
             $table->decimal('total_deductions', 10, 2)->default(0.00);
-            $table->decimal('net_pay', 10, 2);
+            $table->decimal('net_pay', 10, 2)->default(0.00);
             $table->enum('status', ['Draft', 'Pending', 'Paid', 'On Hold'])->default('Draft');
             $table->date('payment_date')->nullable();
             $table->timestamps();
