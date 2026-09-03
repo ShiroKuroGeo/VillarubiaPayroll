@@ -137,7 +137,7 @@ class CashAdvanceServices
             return response_return('Error occurred in retrieving cash advances.', [], 500);
         }
     }
-
+    
     public function getCashAdvance(Request $request)
     {
         try {

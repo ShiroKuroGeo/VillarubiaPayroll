@@ -57,7 +57,7 @@ class MaintenanceServices
             return response_return('Error occurred in updating the maintenance', [], 500);
         }
     }
-
+    
     public function removeMaintenance(Request $request)
     {
         try {
