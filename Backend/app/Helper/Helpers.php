@@ -9,4 +9,3 @@ if(!function_exists('response_return')){
     }
 }
 
-?>
