@@ -121,9 +121,6 @@
                         <option :value="value.value" v-for="value in statusOption" :key="value">
                             {{ value.label }}
                         </option>
-                        <!-- <option value="inactive">
-                            Inactive
-                        </option> -->
                     </select>
                 </div>
                 <div class="table-responsive">
@@ -481,7 +478,7 @@ const activeCount = computed(() => {
 
     return employees.value.filter(
         employee =>
-            employee.status === 'active'
+            employee.status !== 'Separated/Terminated'
     ).length
 
 })
@@ -491,7 +488,7 @@ const inactiveCount = computed(() => {
 
     return employees.value.filter(
         employee =>
-            employee.status === 'inactive'
+            employee.status === 'Separated/Terminated'
     ).length
 
 })
