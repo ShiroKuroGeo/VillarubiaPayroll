@@ -12,6 +12,8 @@ use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/login', [UserController::class, 'login']);
+Route::post('/create', [UserController::class, 'createUser']);
+            // Route::post('create', 'createUser');
 Route::post('/request/cash_advance', [CashAdvanceController::class, 'requestCashAdvance']);
 
 Route::middleware('auth:sanctum')->group(function () {
@@ -58,6 +60,7 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::post('restore', 'restoreEmployee');
             Route::post('list', 'getEmployees');
             Route::post('review_employee', 'getEmployee');
+            Route::get('list_job_types', 'getJobTypes');
         });
 
     Route::controller(MaintenanceController::class)

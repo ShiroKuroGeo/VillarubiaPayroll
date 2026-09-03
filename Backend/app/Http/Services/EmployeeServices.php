@@ -5,6 +5,7 @@ namespace App\Http\Services;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use App\Models\Employee;
+use App\Models\JobType;
 
 class EmployeeServices
 {
@@ -16,14 +17,14 @@ class EmployeeServices
                 'image' => ['nullable', 'image', 'max:2048'],
                 'first_name' => ['required', 'string', 'max:255'],
                 'last_name' => ['required', 'string', 'max:255'],
-                'phone_number' => ['nullable', 'string', 'max:20'],
+                'phone_number' => ['nullable', 'string', 'min:10', 'max:15'],
                 'location' => ['nullable', 'string'],
                 'email' => ['required', 'email', 'unique:employees,email'],
                 'status' => ['nullable', Rule::in(['Full Time', 'Part Time', 'Suspended', 'Separated/Terminated', 'Probationary'])],
                 'date_hired' => ['required', 'date'],
             ]);
         } catch (\Throwable $th) {
-            return response_return('Error occurred in validating employee information.', [], 422);
+            return response_return($th->getMessage(), [], 422);
         }
 
         try {
@@ -42,7 +43,7 @@ class EmployeeServices
                 'employee_id' => $createEmployee->id
             ], 201);
         } catch (\Throwable $th) {
-            return response_return('Error occurred in creating an employee.', [], 500);
+            return response_return($th->getMessage(), [], 500);
         }
     }
 
@@ -245,5 +246,16 @@ class EmployeeServices
         } catch (\Throwable $th) {
             return response_return('Error occurred in retrieving employee.', [], 500);
         }
-    }   
+    }
+
+    public function getJobTypes(){
+        try {
+            $jobTypes = JobType::where('status', 'Active')->orderByDesc('id')->get(['label', 'id']);
+
+            return response_return('Successfully retrieved job types', $jobTypes->toArray(), 200);
+        } catch (\Throwable $th) {
+            return response_return('Error occurred in retrieving job types.', [], 500);
+        }
+    }
+
 }

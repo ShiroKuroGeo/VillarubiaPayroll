@@ -1,92 +1,56 @@
 <template>
     <div class="main">
-
-        <!-- TOPBAR -->
         <div class="topbar">
-
             <div class="d-flex align-items-center gap-2">
-
                 <button class="btn-menu d-lg-none" @click="$emit('toggle-sidebar')" aria-label="Toggle menu">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M3 12h18M3 6h18M3 18h18" />
                     </svg>
                 </button>
-
                 <div>
-
                     <div class="eyebrow">
                         Employee administration
                     </div>
-
                     <h1>
                         Employee Management
                     </h1>
-
                 </div>
-
             </div>
-
-
             <div class="d-flex align-items-center gap-3">
-
                 <div class="clock-chip">
-
                     <span class="dot"></span>
-
                     <span>
                         {{ liveClock }}
                     </span>
-
                 </div>
-
             </div>
-
         </div>
-
-
-        <!-- CONTENT -->
         <div class="content">
-
-            <!-- SUMMARY -->
             <div class="row g-3 mb-3">
-
                 <div class="col-6 col-lg-3">
-
                     <div class="punch-card">
-
                         <div class="stamp green">
                             ALL
                         </div>
-
                         <div class="stat-label">
                             Total Employees
                         </div>
-
                         <div class="stat-value">
                             {{ employees.length }}
                         </div>
-
                         <div class="stat-delta stat-delta--slate">
                             Registered employees
                         </div>
-
                     </div>
-
                 </div>
-
-
                 <div class="col-6 col-lg-3">
-
                     <div class="punch-card">
-
                         <div class="stamp green">
                             ON
                         </div>
-
                         <div class="stat-label">
                             Active
                         </div>
-
                         <div class="stat-value">
                             {{ activeCount }}
                         </div>
@@ -128,7 +92,6 @@
                     </div>
                 </div>
             </div>
-
             <div class="panel">
                 <div class="section-header">
                     <div>
@@ -140,244 +103,138 @@
                         </div>
                     </div>
                     <button class="btn btn-primary-ledger" @click="openAddModal">
-                    + Add Employee
-                </button>
+                        + Add Employee
+                    </button>
                 </div>
                 <div class="toolbar">
-
                     <div class="search-box">
-
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <circle cx="11" cy="11" r="7" />
                             <path d="m20 20-4-4" />
                         </svg>
-
                         <input v-model="searchQuery" type="text" placeholder="Search employee..." />
-                        
                     </div>
-
-
-                    <select v-model="departmentFilter" class="filter-select">
-                        <option value="all">
-                            All Departments
-                        </option>
-
-                        <option v-for="department in departments" :key="department" :value="department">
-                            {{ department }}
-                        </option>
-
-                    </select>
-
-
                     <select v-model="statusFilter" class="filter-select">
                         <option value="all">
                             All Status
                         </option>
-
-                        <option value="active">
-                            Active
+                        <option :value="value.value" v-for="value in statusOption" :key="value">
+                            {{ value.label }}
                         </option>
-
-                        <option value="inactive">
+                        <!-- <option value="inactive">
                             Inactive
-                        </option>
-
+                        </option> -->
                     </select>
-                    
-
                 </div>
-
-
-                <!-- TABLE -->
                 <div class="table-responsive">
-
                     <table v-if="filteredEmployees.length" class="table-ledger">
-
                         <thead>
-
                             <tr>
-
                                 <th>
                                     Employee
                                 </th>
-
                                 <th>
-                                    Employee ID
+                                    Phone Number
                                 </th>
-
                                 <th>
-                                    Department
+                                    Location
                                 </th>
-
                                 <th>
                                     Position
                                 </th>
-
                                 <th>
                                     Date Hired
                                 </th>
-
                                 <th>
                                     Status
                                 </th>
-
                                 <th>
                                     Actions
                                 </th>
-
                             </tr>
-
                         </thead>
-
-
                         <tbody>
-
                             <tr v-for="employee in filteredEmployees" :key="employee.id">
-
-                                <!-- EMPLOYEE -->
                                 <td>
-
                                     <div class="employee-cell">
-
                                         <div class="avatar-sm">
-                                            {{ employee.initials }}
+                                            <img :src="storageImage(employee.image)" style="object-fit: cover; border-radius: 50%; border: 1px dashed gray;" width="45" height="45" alt="">
                                         </div>
-
                                         <div>
-
                                             <div class="emp-name">
-                                                {{ employee.name }}
+                                                {{ employee.last_name }}, {{ employee.first_name }}
                                             </div>
-
                                             <div class="emp-email">
                                                 {{ employee.email }}
                                             </div>
-
                                         </div>
-
                                     </div>
-
                                 </td>
-
-
-                                <!-- ID -->
                                 <td>
-
                                     <span class="employee-id">
-                                        {{ employee.employeeId }}
+                                        {{ employee.phone_number }}
                                     </span>
-
                                 </td>
-
-
-                                <!-- DEPARTMENT -->
                                 <td>
-
                                     <span class="department">
-                                        {{ employee.department }}
+                                        {{ employee.location }}
                                     </span>
-
                                 </td>
-
-
-                                <!-- POSITION -->
                                 <td>
-
                                     <span class="position">
-                                        {{ employee.position }}
+                                        {{ employee.job.label }}
                                     </span>
-
                                 </td>
-
-
-                                <!-- DATE -->
                                 <td>
-
                                     <span class="date-text">
-                                        {{ formatDisplayDate(employee.dateHired) }}
+                                        {{ formatDisplayDate(employee.date_hired) }}
                                     </span>
-
                                 </td>
-
-
-                                <!-- STATUS -->
                                 <td>
-
                                     <span class="badge-status" :class="statusClass(employee.status)">
                                         {{ employee.status.toUpperCase() }}
                                     </span>
-
                                 </td>
-
-
-                                <!-- ACTIONS -->
                                 <td>
-
                                     <div class="action-group">
-
-                                        <button class="icon-btn edit-btn" title="Edit employee"
-                                            @click="openEditModal(employee)">
-                                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
-                                                stroke="currentColor" stroke-width="2">
+                                        <button class="icon-btn edit-btn" title="Edit employee" @click="openEditModal(employee)">
+                                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                                 <path d="M12 20h9" />
                                                 <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L8 18l-4 1 1-4Z" />
                                             </svg>
                                         </button>
-
-
-                                        <button class="icon-btn delete-btn" title="Delete employee"
-                                            @click="deleteEmployee(employee)">
-                                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
-                                                stroke="currentColor" stroke-width="2">
+                                        <button class="icon-btn delete-btn" title="Delete employee" @click="deleteEmployee(employee)">
+                                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                                 <path d="M3 6h18" />
                                                 <path d="M8 6V4h8v2" />
                                                 <path d="M19 6l-1 15H6L5 6" />
                                                 <path d="M10 11v6M14 11v6" />
                                             </svg>
                                         </button>
-
                                     </div>
-
                                 </td>
-
                             </tr>
-
                         </tbody>
-
                     </table>
-
-
                     <div v-else class="empty-state">
                         <div class="empty-icon">
                             👤
                         </div>
-
                         <div class="empty-title">
                             No employees found
                         </div>
-
                         <div class="empty-sub">
                             Try changing your search or filters.
                         </div>
                     </div>
-
                 </div>
-
             </div>
-
         </div>
 
-
-        <!-- ADD / EDIT MODAL -->
         <div v-if="showModal" class="modal-backdrop" @click.self="closeModal">
-
             <div class="employee-modal">
-
                 <div class="modal-header">
-
                     <div>
-
                         <div class="modal-title">
                             {{ editingEmployee ? 'Edit Employee' : 'Add Employee' }}
                         </div>
@@ -389,209 +246,127 @@
                                     : 'Create a new employee record'
                             }}
                         </div>
-
                     </div>
-
-
                     <button class="modal-close" @click="closeModal">
                         ×
                     </button>
-
                 </div>
-
-
                 <form @submit.prevent="saveEmployee">
-
                     <div class="form-grid">
-
                         <div class="form-group full">
                             <div class="photo-upload">
-
                                 <div class="photo-preview">
-                                    <img v-if="employeeForm.image" :src="employeeForm.image" alt="Employee photo" />
-
+                                    <img v-if="imagePreview" :src="imagePreview" alt="Employee photo">
                                     <span v-else>
                                         {{ employeeInitials }}
                                     </span>
                                 </div>
-
                                 <div class="photo-upload-content">
-
                                     <label class="upload-btn">
                                         Upload Photo
-
                                         <input type="file" accept="image/*" @change="handleImageUpload" hidden />
                                     </label>
-
-                                    <button v-if="employeeForm.image" type="button" class="remove-photo-btn"
-                                        @click="removeEmployeeImage">
+                                    <button v-if="form.image" type="button" class="remove-photo-btn" @click="removeEmployeeImage">
                                         Remove
                                     </button>
-
                                     <div class="upload-help">
                                         JPG, PNG or WEBP · Max 2MB
                                     </div>
-
                                 </div>
-
                             </div>
                         </div>
-
                         <div class="form-group">
-
                             <label>
                                 First Name
                             </label>
-
-                            <input v-model="form.firstName" type="text" required placeholder="e.g. Jonas" />
-
+                            <input v-model="form.first_name" type="text" required placeholder="e.g. Jonas" />
                         </div>
-
                         <div class="form-group">
-
                             <label>
                                 Last Name
                             </label>
-
-                            <input v-model="form.lastName" type="text" required placeholder="e.g. Diaz" />
-
+                            <input v-model="form.last_name" type="text" required placeholder="e.g. Diaz" />
                         </div>
-
-
-                        <!-- EMAIL -->
-                        <div class="form-group full">
-
+                        <div class="form-group">
                             <label>
                                 Email
                             </label>
-
                             <input v-model="form.email" type="email" required placeholder="employee@example.com" />
-
                         </div>
-
-
-                        <!-- DEPARTMENT -->
                         <div class="form-group">
-
                             <label>
-                                Department
+                                Job Type
                             </label>
-
-                            <select v-model="form.department" required>
-
-                                <option value="" disabled>
-                                    Select department
+                            <select v-model="form.job_id" required>
+                                <option value="0" disabled>
+                                    Select Job Type
                                 </option>
-
-                                <option v-for="department in departments" :key="department" :value="department">
-                                    {{ department }}
+                                <option v-for="job in jobTypesOption" :key="job" :value="job.id">
+                                    {{ job.label }}
                                 </option>
-
                             </select>
-
                         </div>
-
-
-                        <!-- POSITION -->
                         <div class="form-group">
-
                             <label>
-                                Position
+                                Phone Number
                             </label>
-
-                            <input v-model="form.position" type="text" required placeholder="e.g. Warehouse Staff" />
-
+                            <input v-model="form.phone_number" type="text" required placeholder="0912345678" />
                         </div>
-
-
-                        <!-- DATE HIRED -->
                         <div class="form-group">
-
+                            <label>
+                                Location
+                            </label>
+                            <input v-model="form.location" type="text" required placeholder="Poblacion Cordova Cebu" />
+                        </div>
+                        <div class="form-group">
                             <label>
                                 Date Hired
                             </label>
-
-                            <input v-model="form.dateHired" type="date" required />
-
+                            <input v-model="form.date_hired" type="date" required />
                         </div>
-
-
-                        <!-- STATUS -->
                         <div class="form-group">
-
                             <label>
                                 Status
                             </label>
-
                             <select v-model="form.status" required>
-
-                                <option value="active">
-                                    Active
+                                <option v-for="s in statusOption" :value="s.value">
+                                    {{ s.label }}
                                 </option>
-
-                                <option value="inactive">
-                                    Inactive
-                                </option>
-
                             </select>
-
                         </div>
-
                     </div>
-
-
                     <div class="modal-footer">
-
                         <button type="button" class="btn btn-secondary-ledger" @click="closeModal">
                             Cancel
                         </button>
-
-
                         <button type="submit" class="btn btn-primary-ledger">
                             {{ editingEmployee ? 'Save Changes' : 'Create Employee' }}
                         </button>
-
                     </div>
-
                 </form>
-
             </div>
-
         </div>
-
     </div>
 </template>
 
-
 <script setup>
+import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
+import { useEmployeeStore } from '@/stores/useEmployee';
+import { storageImage } from '@/utils/image';
 
-import {
-    computed,
-    onBeforeUnmount,
-    onMounted,
-    reactive,
-    ref
-} from 'vue'
-
-
+const employeeStore = useEmployeeStore();
 defineOptions({
     name: 'EmployeeManagementView'
 })
-
 
 defineEmits([
     'toggle-sidebar'
 ])
 
-
-// ─────────────────────────────────────────────
-// Clock
-// ─────────────────────────────────────────────
-
+const imagePreview = ref(null)
 const liveClock = ref('--:--:--')
 
 let clockTimer = null
-
 
 function tickClock() {
 
@@ -605,69 +380,21 @@ function tickClock() {
 
 }
 
+const jobTypesOption = ref([]);
 
-// ─────────────────────────────────────────────
-// Departments
-// ─────────────────────────────────────────────
-
-const departments = [
-    'Warehouse',
-    'Accounting',
-    'Logistics',
-    'Customer Care',
-    'Marketing',
-    'Human Resources',
-    'IT'
+const statusOption = [
+    { value: 'Full Time', label: 'Full Time' },
+    { value: 'Part Time', label: 'Part Time' },
+    { value: 'Suspended', label: 'Suspended' },
+    { value: 'Separated/Terminated', label: 'Separated/Terminated' },
+    { value: 'Probationary', label: 'Probationary' }
 ]
 
-
-// ─────────────────────────────────────────────
-// Employees
-// ─────────────────────────────────────────────
-
-const employees = ref([
-    {
-        id: 1,
-        firstName: 'Jonas',
-        lastName: 'Diaz',
-        name: 'Jonas Diaz',
-        initials: 'JD',
-        email: 'jonas@example.com',
-        phone: '09171234567',
-        role: 'Warehouse Staff',
-        department: 'Warehouse',
-        salary: 25000,
-        image: null,
-        status: 'active'
-    },
-
-    {
-        id: 2,
-        firstName: 'Carla',
-        lastName: 'Santos',
-        name: 'Carla Santos',
-        initials: 'CS',
-        email: 'carla@example.com',
-        phone: '09181234567',
-        role: 'Accountant',
-        department: 'Accounting',
-        salary: 28000,
-        image: null,
-        status: 'active'
-    }
-])
-
-
-// ─────────────────────────────────────────────
-// Search / Filters
-// ─────────────────────────────────────────────
+const employees = ref([])
 
 const searchQuery = ref('')
 
-const departmentFilter = ref('all')
-
 const statusFilter = ref('all')
-
 
 const filteredEmployees = computed(() => {
 
@@ -681,24 +408,18 @@ const filteredEmployees = computed(() => {
 
         const matchesSearch =
             !search ||
-            employee.name
+            employee.first_name
                 .toLowerCase()
                 .includes(search) ||
-            employee.employeeId
+            employee.last_name
                 .toLowerCase()
                 .includes(search) ||
             employee.email
                 .toLowerCase()
                 .includes(search) ||
-            employee.department
+            employee.phone_number
                 .toLowerCase()
                 .includes(search)
-
-
-        const matchesDepartment =
-            departmentFilter.value === 'all' ||
-            employee.department === departmentFilter.value
-
 
         const matchesStatus =
             statusFilter.value === 'all' ||
@@ -707,7 +428,6 @@ const filteredEmployees = computed(() => {
 
         return (
             matchesSearch &&
-            matchesDepartment &&
             matchesStatus
         )
 
@@ -715,27 +435,23 @@ const filteredEmployees = computed(() => {
 
 })
 
-// _____________________________________________
-// Form
-// _____________________________________________
 const employeeForm = ref({
     id: null,
-    firstName: '',
-    lastName: '',
+    job_id: null,
+    first_name: '',
+    last_name: '',
     email: '',
-    phone: '',
-    role: '',
-    department: '',
-    salary: '',
+    phone_number: '',
+    location: '',
+    date_hired: '',
     image: null,
-    status: 'active'
+    status: 'Full Time'
 })
-
 
 const employeeInitials = computed(() => {
 
-    const first = employeeForm.value.firstName?.trim()
-    const last = employeeForm.value.lastName?.trim()
+    const first = employeeForm.value.first_name?.trim()
+    const last = employeeForm.value.last_name?.trim()
 
     return (
         (first?.charAt(0) || '') +
@@ -746,35 +462,12 @@ const employeeInitials = computed(() => {
 
 
 function handleImageUpload(event) {
-
     const file = event.target.files?.[0]
 
-    if (!file) {
-        return
-    }
+    if (!file) return
 
-    // 2MB limit
-    if (file.size > 2 * 1024 * 1024) {
-
-        alert('Image must be smaller than 2MB.')
-
-        event.target.value = ''
-
-        return
-    }
-
-    if (!file.type.startsWith('image/')) {
-
-        alert('Please select a valid image.')
-
-        event.target.value = ''
-
-        return
-    }
-
-    employeeForm.value.image =
-        URL.createObjectURL(file)
-
+    form.image = file
+    imagePreview.value = URL.createObjectURL(file)
 }
 
 
@@ -783,12 +476,6 @@ function removeEmployeeImage() {
     employeeForm.value.image = null
 
 }
-
-
-
-// ─────────────────────────────────────────────
-// Statistics
-// ─────────────────────────────────────────────
 
 const activeCount = computed(() => {
 
@@ -824,65 +511,57 @@ const departmentCount = computed(() => {
 
 })
 
-
-// ─────────────────────────────────────────────
-// Modal
-// ─────────────────────────────────────────────
+const jobTypes = async () => {
+    jobTypesOption.value = await employeeStore.jobTypes();
+}
 
 const showModal = ref(false)
 
 const editingEmployee = ref(null)
 
-
 const form = reactive({
-    firstName: '',
-    lastName: '',
+    job_id: 0,
+    image: null,
+    first_name: '',
+    last_name: '',
+    phone_number: '',
+    location: '',
     email: '',
-    department: '',
-    position: '',
-    dateHired: '',
-    status: 'active'
+    status: 'Full Time',
+    date_hired: ''
 })
-
-
-// ─────────────────────────────────────────────
-// Add
-// ─────────────────────────────────────────────
 
 function openAddModal() {
 
     editingEmployee.value = null
 
     Object.assign(form, {
-        firstName: '',
-        lastName: '',
+        job_id: 0,
+        image: null,
+        first_name: '',
+        last_name: '',
+        phone_number: '',
+        location: '',
         email: '',
-        department: '',
-        position: '',
-        dateHired: '',
-        status: 'active'
+        status: 'Full Time',
+        date_hired: ''
     })
 
     showModal.value = true
 
 }
 
-
-// ─────────────────────────────────────────────
-// Edit
-// ─────────────────────────────────────────────
-
 function openEditModal(employee) {
 
     editingEmployee.value = employee
 
     Object.assign(form, {
-        firstName: employee.firstName,
-        lastName: employee.lastName,
+        first_name: employee.first_name,
+        last_name: employee.last_name,
         email: employee.email,
-        department: employee.department,
-        position: employee.position,
-        dateHired: employee.dateHired,
+        location: employee.location,
+        phone_number: employee.phone_number,
+        date_hired: employee.date_hired,
         status: employee.status
     })
 
@@ -890,85 +569,28 @@ function openEditModal(employee) {
 
 }
 
-
-// ─────────────────────────────────────────────
-// Save
-// ─────────────────────────────────────────────
-
-function saveEmployee() {
-
-    const firstName =
-        form.firstName.trim()
-
-    const lastName =
-        form.lastName.trim()
-
-    const name =
-        `${firstName} ${lastName}`
-
-    const initials =
-        `${firstName.charAt(0)}${lastName.charAt(0)}`
-            .toUpperCase()
-
-
+const saveEmployee = async () => {
     if (editingEmployee.value) {
 
         Object.assign(
             editingEmployee.value,
             {
-                firstName,
-                lastName,
-                name,
-                initials,
-                email: form.email.trim(),
-                department: form.department,
-                position: form.position.trim(),
-                dateHired: form.dateHired,
-                status: form.status
+                job_id,
+                image,
+                first_name,
+                last_name,
+                phone_number,
+                location,
+                email,
+                status,
+                date_hired
             }
         )
 
     } else {
+        const createEmployee = await employeeStore.createEmployee({...form});
 
-        const nextId =
-            employees.value.length
-                ? Math.max(
-                    ...employees.value.map(
-                        employee => employee.id
-                    )
-                ) + 1
-                : 1
-
-
-        employees.value.push({
-
-            id: nextId,
-
-            employeeId:
-                `EMP-${String(nextId).padStart(4, '0')}`,
-
-            firstName,
-            lastName,
-            name,
-            initials,
-
-            email:
-                form.email.trim(),
-
-            department:
-                form.department,
-
-            position:
-                form.position.trim(),
-
-            dateHired:
-                form.dateHired,
-
-            status:
-                form.status
-
-        })
-
+        console.log(createEmployee);
     }
 
 
@@ -976,10 +598,11 @@ function saveEmployee() {
 
 }
 
+const listEmployee = async (data) => {
+    const listEmployees = await employeeStore.listEmployee(data);
 
-// ─────────────────────────────────────────────
-// Delete
-// ─────────────────────────────────────────────
+    employees.value = listEmployees.data.data;
+} 
 
 function deleteEmployee(employee) {
 
@@ -1002,11 +625,6 @@ function deleteEmployee(employee) {
 
 }
 
-
-// ─────────────────────────────────────────────
-// Close Modal
-// ─────────────────────────────────────────────
-
 function closeModal() {
 
     showModal.value = false
@@ -1014,11 +632,6 @@ function closeModal() {
     editingEmployee.value = null
 
 }
-
-
-// ─────────────────────────────────────────────
-// Formatting
-// ─────────────────────────────────────────────
 
 function formatDisplayDate(date) {
 
@@ -1050,11 +663,6 @@ function statusClass(status) {
 
 }
 
-
-// ─────────────────────────────────────────────
-// Lifecycle
-// ─────────────────────────────────────────────
-
 onMounted(() => {
 
     tickClock()
@@ -1064,6 +672,13 @@ onMounted(() => {
             tickClock,
             1000
         )
+
+    jobTypes();
+    listEmployee({
+        "status": null,
+        "search": null,
+        "per_page": 1
+    });
 
 })
 
