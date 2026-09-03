@@ -30,21 +30,28 @@
 import Logo from '@/components/Logo.vue'
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { useUserStore } from '@/stores/useUser'
+import { showStatusAlert, showSuccess } from '@/utils/Swals'
 
 const router = useRouter()
+const userStore = useUserStore();
 
 const email = ref('')
 const password = ref('')
 const error = ref('')
 
-const login = () => {
-    error.value = ''
-    if (email.value === 'admin@example.com' && password.value === 'admin123') {
-        localStorage.setItem('admin_authenticated', 'true')
-        router.push({ name: 'admin.dashboard' })
-        return
+const login = async () => {
+    const login_user = await userStore.login({
+        'email': email.value,
+        'password': password.value,
+    });
+
+    if(login_user.data.role === 'admin') {
+       router.push({ name: 'admin.dashboard' });
+       return;
+    } else {
+        showStatusAlert(409, 'You have no access in administration dashboard.');
     }
-    error.value = 'Invalid email or password.'
 }
 
 </script>

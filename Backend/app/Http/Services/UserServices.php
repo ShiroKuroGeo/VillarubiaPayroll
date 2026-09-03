@@ -42,7 +42,7 @@ class UserServices
             ], 201);
         } catch (\Throwable $th) {
             return response()->json([
-                'message' => 'Error occurred during the execution of creating a user.',
+                'message' => $th->getMessage(),
                 'data' => []
             ], 500);
         }
@@ -102,6 +102,19 @@ class UserServices
 
     public function isAuthenticated()
     {
-        return auth()->check();
+        // return auth()->user()->id;
+
+        $user = User::where('id', auth()->user()->id)->first();
+
+        return response_return('Succesfully created user.', [
+            'isAdmin' => $user->role === 'admin' ? true : false
+        ], 201);
+    }
+
+    public function logout(Request $request)
+    {
+        $request->user()->currentAccessToken()->delete();
+
+        return response_return('Logged out successfully', [], 200);
     }
 }

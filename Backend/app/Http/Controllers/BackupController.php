@@ -18,8 +18,8 @@ class BackupController extends Controller
         return $this->backupServices->logBackup($request);
     }
 
-    public function getBackupStatus(Request $request){
-        return $this->backupServices->getBackupStatus($request);
+    public function getBackupStatus(){
+        return $this->backupServices->getBackupStatus();
     }
 
     public function getBackupLogs(Request $request){

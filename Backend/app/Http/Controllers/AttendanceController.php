@@ -22,7 +22,11 @@ class AttendanceController extends Controller
         return $this->attendanceServices->updateAttendance($request);
     }
 
-    public function getAttendances(Request $request){
-        return $this->attendanceServices->getAttendances($request);
+    public function getAttendance(Request $request){
+        return $this->attendanceServices->getAttendance($request);
+    }
+
+    public function getAttendances(){
+        return $this->attendanceServices->getAttendances();
     }
 }

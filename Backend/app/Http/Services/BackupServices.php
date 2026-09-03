@@ -54,7 +54,7 @@ class BackupServices
      * Drives the informational (non-blocking) dashboard banner.
      * This never restricts anything in the app — it only reports status.
      */
-    public function getBackupStatus(Request $request)
+    public function getBackupStatus()
     {
         try {
             $latest = BackupLog::orderByDesc('ran_at')->first();

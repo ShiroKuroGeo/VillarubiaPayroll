@@ -11,6 +11,6 @@ use Illuminate\Notifications\Notifiable;
 #[Fillable(['label', 'value', 'status'])]
 class Maintenance extends Model
 {
-    protected $table = 'maintenances';
+    protected $table = 'system_maintenances';
     use HasFactory, Notifiable;
 }

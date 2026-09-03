@@ -139,7 +139,7 @@ class AttendanceServices
         }
     }
 
-    public function getAttendances(Request $request)
+    public function getAttendance(Request $request)
     {
         try {
             $validation = $request->validate([
@@ -160,4 +160,14 @@ class AttendanceServices
         }
     }
 
+    public function getAttendances()
+    {
+        try {
+            $attedance = Attendance::orderByDesc('date')->get();
+
+            return response_return('Successfully retrieved salary history.', $attedance->toArray(), 200);
+        } catch (\Throwable $th) {
+            return response_return('Error occurred in retrieving salary history.', [], 500);
+        }
+    }
 }

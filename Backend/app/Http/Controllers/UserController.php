@@ -30,4 +30,8 @@ class UserController extends Controller
         return $this->userServices->isAuthenticated();
     }
 
+    public function logout(Request $request){
+        return $this->userServices->logout($request);
+    }
+
 }
