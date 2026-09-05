@@ -13,7 +13,6 @@ use Illuminate\Support\Facades\Route;
 
 Route::post('/login', [UserController::class, 'login']);
 Route::post('/create', [UserController::class, 'createUser']);
-            // Route::post('create', 'createUser');
 Route::post('/request/cash_advance', [CashAdvanceController::class, 'requestCashAdvance']);
 
 Route::middleware('auth:sanctum')->group(function () {
@@ -37,7 +36,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::controller(CashAdvanceController::class)
         ->prefix('cash_advance')
         ->group(function () {
-            Route::post('create', 'logBackup');
+            Route::post('create', 'requestCashAdvance');
             Route::post('review', 'reviewCashAdvance');
             Route::post('list', 'getCashAdvances');
         });
@@ -61,6 +60,7 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::post('list', 'getEmployees');
             Route::post('review_employee', 'getEmployee');
             Route::get('list_job_types', 'getJobTypes');
+            Route::get('all', 'getAllEmployees');
         });
 
     Route::controller(MaintenanceController::class)
@@ -85,7 +85,7 @@ Route::middleware('auth:sanctum')->group(function () {
         ->group(function () {
             Route::post('create', 'createSalary');
             Route::post('update', 'updateSalary');
-            Route::post('list', 'getSalaries');
+            Route::get('list', 'getSalaries');
             Route::post('review', 'getActiveSalary');
         });
 

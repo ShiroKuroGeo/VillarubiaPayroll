@@ -2,214 +2,154 @@
     <div class="main d-flex justify-content-center align-items-center vh-100">
         <div class="content">
             <div class="form-wrap">
-
                 <div v-if="!submitted" class="panel">
-
                     <div class="section-header">
-
                         <div>
-
                             <div class="section-title">
                                 New cash advance request
                             </div>
-
                             <div class="panel-sub">
                                 Fill out the form below to request a cash advance
                             </div>
                         </div>
                     </div>
-
                     <form @submit.prevent="submitRequest">
-
                         <div class="form-grid">
-
                             <div class="form-group full">
                                 <label>Select your name</label>
-                                <select name="employeeid" id="employeeid" class="form-select"
-                                    v-model="form.employeeUID">
+                                <select name="employeeid" id="employeeid" class="form-select" v-model="form.employee_id">
                                     <option value="0">Select</option>
                                     <option v-for="value in employees" :value="value.id">{{ value.name }}</option>
                                 </select>
                             </div>
-
                             <div class="form-group full">
                                 <label> Amount </label>
-                                <input v-model="form.amount" type="number" min="1" max="3000" step="1" required
-                                    placeholder="e.g. 3000" />
+                                <input v-model="form.amount" type="number" min="1" max="3000" step="1" required placeholder="e.g. 3000" />
                                 <div v-if="form.amount > 3000" class="field-hint field-hint--error">
                                     Amount exceeds the limit of cash advance {{ cashAdvanceLimit }}.
                                 </div>
                             </div>
-
                             <div class="form-group full">
                                 <label>Reason</label>
-                                <textarea v-model="form.reason" rows="4" required
-                                    placeholder="Briefly describe what this advance is for..."></textarea>
+                                <textarea v-model="form.reason" rows="4" required placeholder="Briefly describe what this advance is for..."></textarea>
                             </div>
                         </div>
                         <div class="form-footer">
                             <button type="button" class="btn btn-secondary-ledger" @click="resetForm">
                                 Clear
                             </button>
-                            <button type="submit" class="btn btn-primary-ledger"
-                                :disabled="form.amount === 0 || form.amount > 3000 || form.employeeUID === 0">
+                            <button type="submit" class="btn btn-primary-ledger" :disabled="form.amount === 0 || form.amount > 3000 || form.employee_id === 0">
                                 Submit Request
                             </button>
-
                         </div>
-
                     </form>
-
                 </div>
-
                 <div v-else class="panel confirm-panel">
-
                     <div class="confirm-stamp">
                         SUBMITTED
                     </div>
-
                     <div class="confirm-icon">
                         ✓
                     </div>
-
                     <div class="confirm-title">
                         Request submitted
                     </div>
-
                     <div class="confirm-sub">
                         Your cash advance request has been sent for review.
                     </div>
 
-
                     <div class="details-list">
-
                         <div class="detail-row">
                             <span>Amount</span>
-                            <strong>{{ formatCurrency(lastSubmitted?.amount || 0) }}</strong>
+                            <strong>₱ {{ form.amount || 0 }}</strong>
                         </div>
-
-                        <div class="detail-row">
-                            <span>Payment Method</span>
-                            <strong>{{ lastSubmitted?.paymentMethod }}</strong>
-                        </div>
-
                         <div class="detail-row">
                             <span>Submitted</span>
-                            <strong>{{ formatDate(lastSubmitted?.requestDate) }} · {{ lastSubmitted?.requestTime
-                                }}</strong>
+                            <strong>
+                                {{ viewEmployee(form) }} · {{ lastSubmitted?.requestTime }}
+                            </strong>
                         </div>
-
                         <div class="detail-row">
                             <span>Status</span>
                             <span class="badge-status badge-pending">
                                 PENDING
                             </span>
                         </div>
-
                     </div>
-
-
                     <div class="reason-box mt-3">
                         <div class="info-label">Reason</div>
-                        <div class="reason-content">{{ lastSubmitted?.reason }}</div>
+                        <div class="reason-content">{{ form.reason }}</div>
                     </div>
-
-
                     <div class="confirm-actions">
-
                         <button type="button" class="btn btn-primary-ledger" @click="startNewRequest">
                             Submit Another Request
                         </button>
-
                     </div>
-
                 </div>
-
             </div>
         </div>
     </div>
 </template>
 
-
 <script setup>
 
+import { useCashAdvanceStore } from '@/stores/useCashAdvance';
+import { useEmployeeStore } from '@/stores/useEmployee';
 import {
+    onMounted,
     ref
 } from 'vue'
 
-const employees = ref([
-    {
-        id: 1,
-        name: 'Shiro 1',
-    },
-    {
-        id: 2,
-        name: 'Shiro 2',
-    },
-    {
-        id: 3,
-        name: 'Shiro 3',
-    },
-])
+const employees = ref([]);
+const employeeStore = useEmployeeStore();
+const cashAdvanceStore = useCashAdvanceStore();
+const today = new Date();
 
 const form = ref({
-    employeeUID: 0,
+    employee_id: 0,
     amount: 0,
+    requested_date: today.toISOString(),
     reason: '',
 });
 
 const cashAdvanceLimit = ref(3000);
 
-
 function resetForm() {
     Object.assign(form.value, {
-        employeeUID: 0,
+        employee_id: 0,
         amount: null,
+        requested_date: today.toISOString(),
         reason: '',
     })
-
 }
 
 const submitted = ref(false)
-
 const lastSubmitted = ref(null)
+const submitRequest = async () => {
 
-
-function submitRequest() {
-
-    if (!form.value.amount || form.value.amount > availableLimit.value) {
+    if (!form.value.amount) {
         return
     }
 
+    const createCashAdvance = await cashAdvanceStore.createCashAdvance({ ...form.value });
 
-    lastSubmitted.value = {
-
-        amount: form.value.amount,
-
-        reason: form.value.reason.trim(),
-
-        paymentMethod: form.value.paymentMethod,
-
-        requestDate: getTodayDate(),
-
-        requestTime:
-            new Date().toLocaleTimeString('en-US', { hour12: true })
-
+    if(createCashAdvance === 409){
+        submitted.value = false
+    } else {
+        submitted.value = true
     }
-
-    submitted.value = true
-
 }
 
+const viewEmployee = (emp) => {
+    const result = employees?.value.find(ar => ar.id === emp.employee_id);
+
+    return result.name
+}
 
 function startNewRequest() {
-
     resetForm()
-
     submitted.value = false
-
     lastSubmitted.value = null
-
 }
 
 function formatCurrency(value) {
@@ -225,6 +165,10 @@ function formatCurrency(value) {
 
 }
 
+const listEmployee = async () => {
+    const listEmployees = await employeeStore.allEmployees();
+    employees.value = listEmployees.data.data;
+}
 
 function formatDate(date) {
 
@@ -241,21 +185,9 @@ function formatDate(date) {
 
 }
 
-
-function getTodayDate() {
-
-    const date = new Date()
-
-    const year = date.getFullYear()
-
-    const month = String(date.getMonth() + 1).padStart(2, '0')
-
-    const day = String(date.getDate()).padStart(2, '0')
-
-    return `${year}-${month}-${day}`
-
-}
-
+onMounted(() => {
+    listEmployee();
+});
 </script>
 
 

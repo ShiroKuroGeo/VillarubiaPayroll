@@ -4,10 +4,14 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 #[Fillable(['job_id', 'image', 'first_name', 'last_name', 'phone_number', 'location', 'email', 'status', 'date_hired',])]
 class Employee extends Model
 {
+
+    use SoftDeletes;
+    
     protected $table = 'employees';
 
     public function job()
@@ -19,8 +23,8 @@ class Employee extends Model
         return $this->hasMany(Attendance::class);
     }
 
-    public function salaries(){
-        return $this->hasMany(Salary::class);
+    public function activeSalary(){
+        return $this->hasOne(Salary::class)->where('is_active', true);
     }
 
     public function payrolls(){

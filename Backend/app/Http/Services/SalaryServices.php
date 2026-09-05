@@ -2,6 +2,7 @@
 
 namespace App\Http\Services;
 
+use App\Models\Employee;
 use App\Models\Salary;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -18,7 +19,7 @@ class SalaryServices
                 'effective_date' => ['required', 'date'],
             ]);
         } catch (\Throwable $th) {
-            return response_return('Error occurred in validating salary information.', [], 422);
+            return response_return($th->getMessage(), [], 422);
         }
 
         try {
@@ -82,24 +83,63 @@ class SalaryServices
         }
     }
 
+    // public function getSalaries(Request $request)
+    // {
+    //     try {
+    //         $employeeSalary = Employee::with('activeSalary', 'job')
+    //             ->orderByDesc('date_hired')
+    //             ->get();
+
+    //         $data = $employeeSalary->map(function($employeeSalary){
+    //             return [
+    //                 'id' => $employeeSalary->activeSalary->id,
+    //                 'employeeId' => $employeeSalary->id,
+    //                 'employeeName' => $employeeSalary->last_name . ', '. $employeeSalary->first_name,
+    //                 'location' => $employeeSalary->location,
+    //                 'phoneNumber' => $employeeSalary->job->label,
+    //                 'basicSalary' => $employeeSalary->activeSalary->basic_salary,
+    //                 'salaryType' => $employeeSalary->activeSalary->salary_type,
+    //                 'effectiveDate' => $employeeSalary->activeSalary->effective_date,
+    //                 'status' => $employeeSalary->activeSalary->is_active,
+    //                 'image' => $employeeSalary->image,
+    //             ];
+    //         });
+
+    //         return response_return('Successfully retrieved salary history.', $data->toArray(), 200);
+    //     } catch (\Throwable $th) {
+    //         return response_return($th->getMessage(), [], 500);
+    //     }
+    // }
+
     public function getSalaries(Request $request)
     {
         try {
-            $validation = $request->validate([
-                'employee_id' => ['required', 'integer', 'exists:employees,id'],
-            ]);
-        } catch (\Throwable $th) {
-            return response_return('Error occurred in validating the request.', [], 422);
-        }
-
-        try {
-            $salaries = Salary::where('employee_id', $validation['employee_id'])
-                ->orderByDesc('effective_date')
+            $employees = Employee::with('activeSalary', 'job')
+                ->whereHas('activeSalary')
+                ->orderByDesc('date_hired')
                 ->get();
 
-            return response_return('Successfully retrieved salary history.', $salaries->toArray(), 200);
+            $data = $employees->map(function ($employee) {
+                $salary = $employee->activeSalary;
+
+                return [
+                    'id'            => $salary?->id,
+                    'employeeId'    => $employee->id,
+                    'employeeName'  => $employee->last_name . ', ' . $employee->first_name,
+                    'location'      => $employee->location,
+                    'phoneNumber'   => $employee->job->label ?? null,
+                    'basicSalary'   => $salary?->basic_salary,
+                    'salaryType'    => $salary?->salary_type,
+                    'effectiveDate' => $salary?->effective_date,
+                    'status'        => $salary?->is_active,
+                    'image'         => $employee->image,
+                    'hasSalary'     => $salary !== null,
+                ];
+            });
+
+            return response_return('Successfully retrieved salary history.', $data->toArray(), 200);
         } catch (\Throwable $th) {
-            return response_return('Error occurred in retrieving salary history.', [], 500);
+            return response_return($th->getMessage(), [], 500);
         }
     }
 

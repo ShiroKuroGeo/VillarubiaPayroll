@@ -11,14 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('deductions', function (Blueprint $table) {
+        Schema::create('sss_contributions', function (Blueprint $table) {
             $table->id();
             $table->foreignId('employee_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('payroll_id')->nullable()->constrained()->cascadeOnDelete();
-            $table->integer('sss_deduction');
-            $table->integer('ca_deduction');
-            $table->json('other_deduction')->nullable();
-            $table->string('remarks');
+            $table->foreignId('payroll_id')->nullable()->constrained()->nullOnDelete();
+            $table->decimal('amount', 10, 2);
+            $table->date('date')->nullable();
+            $table->enum('status', ['Pending', 'Posted'])->default('Pending');
             $table->timestamps();
         });
     }
@@ -28,6 +27,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('deductions');
+        Schema::dropIfExists('sss_contributions');
     }
 };

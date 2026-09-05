@@ -46,4 +46,7 @@ class EmployeeController extends Controller
         return $this->employeeServices->getJobTypes();
     }
 
+    public function getAllEmployees(){
+        return $this->employeeServices->getAllEmployees();
+    }
 }

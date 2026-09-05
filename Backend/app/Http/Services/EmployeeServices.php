@@ -92,7 +92,7 @@ class EmployeeServices
                 'date_hired' => ['sometimes', 'date'],
             ]);
         } catch (\Throwable $th) {
-            return response_return('Error occurred in validating employee information.', [], 422);
+            return response_return($th->getMessage(), [], 422);
         }
 
         try {
@@ -193,7 +193,7 @@ class EmployeeServices
                 'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
             ]);
         } catch (\Throwable $th) {
-            return response_return('Error occurred in validating the request.', [], 422);
+            return response_return($th->getMessage(), [], 422);
         }
 
         try {
@@ -248,7 +248,8 @@ class EmployeeServices
         }
     }
 
-    public function getJobTypes(){
+    public function getJobTypes()
+    {
         try {
             $jobTypes = JobType::where('status', 'Active')->orderByDesc('id')->get(['label', 'id']);
 
@@ -258,4 +259,17 @@ class EmployeeServices
         }
     }
 
+    public function getAllEmployees()
+    {
+        $employees = Employee::select(['id', 'first_name', 'last_name'])->get();
+
+        $data = $employees->map(function ($employee) {
+            return [
+                'id'   => $employee->id,
+                'name' => $employee->last_name . ', ' . $employee->first_name,
+            ];
+        });
+
+        return response_return('Successfully retrieved employees.', $data->toArray(), 200);
+    }
 }

@@ -200,121 +200,61 @@
                     </div>
 
                 </div>
-
-
-                <!-- TABLE -->
                 <div class="table-responsive">
-
                     <table v-if="filteredRequests.length" class="table-ledger">
-
                         <thead>
-
                             <tr>
-
-                                <th>
-                                    Employee
-                                </th>
-
-                                <th>
-                                    Department
-                                </th>
-
-                                <th>
-                                    Amount
-                                </th>
-
-                                <th>
-                                    Request Date
-                                </th>
-
-                                <th>
-                                    Reason
-                                </th>
-
-                                <th>
-                                    Status
-                                </th>
-
-                                <th>
-                                    Action
-                                </th>
-
+                                <th>Employee</th>
+                                <th>Department</th>
+                                <th>Amount</th>
+                                <th>Request Date</th>
+                                <th>Reason</th>
+                                <th>Status</th>
+                                <th>Action</th>
                             </tr>
-
                         </thead>
-
-
                         <tbody>
-
                             <tr v-for="request in filteredRequests" :key="request.id">
-
-                                <!-- EMPLOYEE -->
                                 <td>
-
                                     <div class="employee-cell">
-
                                         <div class="avatar-sm">
-                                            {{ request.initials }}
+                                            <img :src="storageImage(request.employee.image)" style="object-fit: cover; border-radius: 50%; border: 1px dashed gray;" width="45" height="45" alt="">
                                         </div>
-
                                         <div>
-
                                             <div class="emp-name">
-                                                {{ request.employeeName }}
+                                                {{ request.employee.last_name }}, {{ request.employee.first_name }}
                                             </div>
-
                                             <div class="emp-position">
-                                                {{ request.position }}
+                                                {{ request.employee.email }}
                                             </div>
-
                                         </div>
-
                                     </div>
-
                                 </td>
-
-
-                                <!-- DEPARTMENT -->
                                 <td>
-
-                                    <span class="department">
-                                        {{ request.department }}
-                                    </span>
-
+                                    <div class="date-text">
+                                        {{ request.employee.phone_number }}
+                                    </div>
+                                    <div class="date-sub">
+                                        {{ request.employee.location }}
+                                    </div>
                                 </td>
-
-
-                                <!-- AMOUNT -->
                                 <td>
-
                                     <span class="money">
                                         {{ formatCurrency(request.amount) }}
                                     </span>
-
                                 </td>
-
-
-                                <!-- DATE -->
                                 <td>
-
                                     <div class="date-text">
-                                        {{ formatDate(request.requestDate) }}
+                                        {{ formatDate(request.requested_date) }}
                                     </div>
-
                                     <div class="date-sub">
-                                        {{ request.requestTime }}
+                                        {{ formatDateTime(request.created_at) }}
                                     </div>
-
                                 </td>
-
-
-                                <!-- REASON -->
                                 <td>
-
                                     <div class="reason-text" :title="request.reason">
                                         {{ request.reason }}
                                     </div>
-
                                 </td>
                                 <td>
                                     <span class="badge-status" :class="badgeClass(request.status)">
@@ -323,13 +263,13 @@
                                 </td>
                                 <td>
                                     <div class="action-group">
-                                        <button v-if="request.status === 'pending'" class="btn-mini btn-mini-review" @click="openReviewModal(request)">
+                                        <button v-if="request.status === 'Pending'" class="btn-mini btn-mini-review" @click="openReviewModal(request)">
                                             Review
                                         </button>
-                                        <button v-if="request.status === 'approved'" class="btn-mini btn-mini-pay" @click="openPaymentModal(request)">
+                                        <button v-if="request.status === 'Approved'" class="btn-mini btn-mini-pay" @click="openPaymentModal(request)">
                                             Mark as Paid
                                         </button>
-                                        <button v-if="request.status === 'paid' || request.status === 'rejected'" class="btn-mini btn-mini-view" @click="openViewModal(request)">
+                                        <button v-if="request.status === 'Deducted/Paid' || request.status === 'Rejected'" class="btn-mini btn-mini-view" @click="openViewModal(request)">
                                             View
                                         </button>
                                     </div>
@@ -369,137 +309,73 @@
                 <div class="modal-body">
                     <div class="employee-profile">
                         <div class="avatar-lg">
-                            {{ selectedRequest?.initials }}
+                            <img :src="storageImage(selectedRequest.employee.image)" style="object-fit: cover; border-radius: 50%; border: 1px dashed gray;" width="45" height="45" alt="">
                         </div>
                         <div>
                             <div class="profile-name">
-                                {{ selectedRequest?.employeeName }}
+                                {{ selectedRequest.employee.last_name }}, {{ selectedRequest.employee.first_name }}
                             </div>
                             <div class="profile-position">
-                                {{ selectedRequest?.position }}
+                                {{ selectedRequest.employee.phone_number }}
                             </div>
                             <div class="profile-department">
-                                {{ selectedRequest?.department }}
+                                {{ selectedRequest.employee.location }}
                             </div>
                         </div>
                     </div>
-
                     <div class="request-grid">
-
                         <div class="request-info">
-
                             <div class="info-label">
                                 Requested Amount
                             </div>
-
                             <div class="info-value money">
                                 {{ formatCurrency(selectedRequest?.amount || 0) }}
                             </div>
-
                         </div>
-
-
                         <div class="request-info">
-
                             <div class="info-label">
                                 Request Date
                             </div>
-
                             <div class="info-value">
-                                {{ formatDate(selectedRequest?.requestDate) }}
+                                {{ formatDate(selectedRequest?.requested_date) }} - {{ formatDateTime(selectedRequest?.created_at) }}
                             </div>
-
                         </div>
-
-
                         <div class="request-info">
-
-                            <div class="info-label">
-                                Payment Method
-                            </div>
-
-                            <div class="info-value">
-                                {{ selectedRequest?.paymentMethod }}
-                            </div>
-
-                        </div>
-
-
-                        <div class="request-info">
-
                             <div class="info-label">
                                 Status
                             </div>
-
                             <div>
-
                                 <span class="badge-status" :class="badgeClass(selectedRequest?.status)">
                                     {{ formatStatus(selectedRequest?.status) }}
                                 </span>
-
                             </div>
-
                         </div>
-
                     </div>
-
-
-                    <!-- Reason -->
                     <div class="reason-box">
-
                         <div class="info-label">
                             Reason for Request
                         </div>
-
                         <div class="reason-content">
                             {{ selectedRequest?.reason }}
                         </div>
-
                     </div>
-
-
-                    <!-- Notes -->
-                    <div class="form-group full">
-
-                        <label>
-                            Admin Notes
-                        </label>
-
-                        <textarea v-model="adminNotes" rows="3" placeholder="Optional notes..."></textarea>
-
-                    </div>
-
                 </div>
-
-
                 <div class="modal-footer modal-footer--split">
-
                     <button type="button" class="btn btn-secondary-ledger" @click="closeModals">
                         Cancel
                     </button>
-
                     <div class="d-flex gap-2">
-
-                        <button type="button" class="btn btn-danger-ledger" @click="rejectRequest">
+                        <button type="button" class="btn btn-danger-ledger" @click="rejectRequest(selectedRequest)">
                             Reject
                         </button>
-
-                        <button type="button" class="btn btn-primary-ledger" @click="approveRequest">
+                        <button type="button" class="btn btn-primary-ledger" @click="approveRequest(selectedRequest)">
                             Approve
                         </button>
-
                     </div>
-
                 </div>
-
             </div>
-
         </div>
 
-
-        <!-- =====================================================
-             PAYMENT MODAL
-        ====================================================== -->
         <div v-if="showPaymentModal" class="modal-backdrop" @click.self="closeModals">
 
             <div class="employee-modal payment-modal">
@@ -511,222 +387,126 @@
                         <div class="modal-title">
                             Process Cash Advance
                         </div>
-
                         <div class="panel-sub">
                             Confirm payment to employee
                         </div>
-
                     </div>
-
                     <button class="modal-close" @click="closeModals">
                         ×
                     </button>
-
                 </div>
-
-
                 <div class="modal-body">
-
                     <div class="payment-summary">
-
                         <div class="info-label">
                             Employee
                         </div>
-
                         <div class="payment-employee">
-                            {{ selectedRequest?.employeeName }}
+                            {{ selectedRequest.employee.last_name }}, {{ selectedRequest.employee.first_name }}
                         </div>
-
-
                         <div class="info-label mt-3">
                             Approved Amount
                         </div>
-
                         <div class="payment-amount">
                             {{ formatCurrency(selectedRequest?.amount || 0) }}
                         </div>
-
-
-                        <div class="payment-method-box">
-
-                            <div class="info-label">
-                                Payment Method
-                            </div>
-
-                            <div class="info-value">
-                                {{ selectedRequest?.paymentMethod }}
-                            </div>
-
-                        </div>
-
-
                         <div class="form-group full mt-3">
-
                             <label>
                                 Payment Reference
                             </label>
-
                             <input v-model="paymentReference" type="text" placeholder="e.g. CA-2026-001" />
-
                         </div>
-
-
-                        <div class="form-group full mt-3">
-
-                            <label>
-                                Payment Notes
-                            </label>
-
-                            <textarea v-model="paymentNotes" rows="3" placeholder="Optional payment notes..."></textarea>
-
-                        </div>
-
                     </div>
-
                 </div>
-
-
                 <div class="modal-footer">
-
                     <button type="button" class="btn btn-secondary-ledger" @click="closeModals">
                         Cancel
                     </button>
-
                     <button type="button" class="btn btn-success-ledger" @click="markAsPaid">
                         Confirm Payment
                     </button>
-
                 </div>
-
             </div>
-
         </div>
-
-
-        <!-- =====================================================
-             VIEW MODAL
-        ====================================================== -->
         <div v-if="showViewModal" class="modal-backdrop" @click.self="closeModals">
-
             <div class="employee-modal">
-
                 <div class="modal-header">
-
                     <div>
-
                         <div class="modal-title">
                             Cash Advance Details
                         </div>
-
                         <div class="panel-sub">
                             Request information
                         </div>
-
                     </div>
-
                     <button class="modal-close" @click="closeModals">
                         ×
                     </button>
-
                 </div>
-
-
                 <div class="modal-body">
-
                     <div class="employee-profile">
-
                         <div class="avatar-lg">
-                            {{ selectedRequest?.initials }}
+                            <img :src="storageImage(selectedRequest.employee.image)" style="object-fit: cover; border-radius: 50%; border: 1px dashed gray;" width="45" height="45" alt="">
                         </div>
-
                         <div>
-
                             <div class="profile-name">
-                                {{ selectedRequest?.employeeName }}
+                                {{ selectedRequest.employee.last_name }}, {{ selectedRequest.employee.first_name }}
                             </div>
-
                             <div class="profile-position">
-                                {{ selectedRequest?.position }}
+                                {{ selectedRequest?.employee.phone_number }}
                             </div>
-
                             <div class="profile-department">
-                                {{ selectedRequest?.department }}
+                                {{ selectedRequest?.employee.location }}
                             </div>
-
                         </div>
-
                     </div>
-
-
                     <div class="details-list">
-
                         <div class="detail-row">
                             <span>Amount</span>
                             <strong>{{ formatCurrency(selectedRequest?.amount || 0) }}</strong>
                         </div>
-
                         <div class="detail-row">
                             <span>Request Date</span>
-                            <strong>{{ formatDate(selectedRequest?.requestDate) }}</strong>
+                            <strong>{{ formatDate(selectedRequest?.requested_date) }}</strong>
                         </div>
-
                         <div class="detail-row">
                             <span>Status</span>
                             <span class="badge-status" :class="badgeClass(selectedRequest?.status)">
                                 {{ formatStatus(selectedRequest?.status) }}
                             </span>
                         </div>
-
-                        <div class="detail-row">
-                            <span>Payment Method</span>
-                            <strong>{{ selectedRequest?.paymentMethod }}</strong>
-                        </div>
-
                         <div v-if="selectedRequest?.paidDate" class="detail-row">
                             <span>Paid Date</span>
                             <strong>{{ formatDate(selectedRequest.paidDate) }}</strong>
                         </div>
-
                         <div v-if="selectedRequest?.paymentReference" class="detail-row">
                             <span>Payment Reference</span>
                             <strong>{{ selectedRequest.paymentReference }}</strong>
                         </div>
-
                     </div>
-
-
                     <div class="reason-box mt-3">
                         <div class="info-label">Reason</div>
                         <div class="reason-content">{{ selectedRequest?.reason }}</div>
                     </div>
-
-
                     <div v-if="selectedRequest?.adminNotes" class="reason-box mt-3">
                         <div class="info-label">Admin Notes</div>
                         <div class="reason-content">{{ selectedRequest.adminNotes }}</div>
                     </div>
-
                 </div>
-
-
                 <div class="modal-footer">
-
                     <button type="button" class="btn btn-secondary-ledger" @click="closeModals">
                         Close
                     </button>
-
                 </div>
-
             </div>
-
         </div>
-
     </div>
 </template>
 
 
 <script setup>
 
+import { useCashAdvanceStore } from '@/stores/useCashAdvance'
+import { storageImage } from '@/utils/image';
 import {
     computed,
     onBeforeUnmount,
@@ -734,25 +514,19 @@ import {
     ref
 } from 'vue'
 
-
 defineOptions({
     name: 'CashAdvanceManagementPage'
 })
-
 
 defineEmits([
     'toggle-sidebar'
 ])
 
-
-// =====================================================
-// CLOCK
-// =====================================================
+const cashAdvanceStore = useCashAdvanceStore();
 
 const liveClock = ref('--:--:--')
 
 let clockTimer = null
-
 
 function tickClock() {
 
@@ -766,141 +540,19 @@ function tickClock() {
 
 }
 
-
-// =====================================================
-// CASH ADVANCE DATA
-// =====================================================
-
-const cashAdvanceData = ref([
-
-    {
-        id: 1,
-        employeeId: 1,
-        employeeName: 'Jonas Diaz',
-        initials: 'JD',
-        department: 'Warehouse',
-        position: 'Warehouse Staff',
-        amount: 5000,
-        requestDate: '2026-08-29',
-        requestTime: '09:15 AM',
-        reason: 'Emergency personal expense',
-        paymentMethod: 'Cash',
-        status: 'pending',
-        adminNotes: null,
-        paidDate: null,
-        paymentReference: null
-    },
-
-    {
-        id: 2,
-        employeeId: 2,
-        employeeName: 'Carla Santos',
-        initials: 'CS',
-        department: 'Accounting',
-        position: 'Accountant',
-        amount: 3000,
-        requestDate: '2026-08-28',
-        requestTime: '10:30 AM',
-        reason: 'Medical and transportation expenses',
-        paymentMethod: 'GCash',
-        status: 'approved',
-        adminNotes: 'Approved by HR.',
-        paidDate: null,
-        paymentReference: null
-    },
-
-    {
-        id: 3,
-        employeeId: 3,
-        employeeName: 'Ramon Tan',
-        initials: 'RT',
-        department: 'Logistics',
-        position: 'Logistics Staff',
-        amount: 2000,
-        requestDate: '2026-08-25',
-        requestTime: '02:20 PM',
-        reason: 'Family emergency',
-        paymentMethod: 'Cash',
-        status: 'paid',
-        adminNotes: 'Approved and released.',
-        paidDate: '2026-08-26',
-        paymentReference: 'CA-2026-001'
-    },
-
-    {
-        id: 4,
-        employeeId: 4,
-        employeeName: 'Paulo Lim',
-        initials: 'PL',
-        department: 'IT',
-        position: 'IT Staff',
-        amount: 7500,
-        requestDate: '2026-08-24',
-        requestTime: '08:45 AM',
-        reason: 'Urgent household expenses',
-        paymentMethod: 'Bank Transfer',
-        status: 'rejected',
-        adminNotes: 'Amount exceeds the current cash advance limit.',
-        paidDate: null,
-        paymentReference: null
-    },
-
-    {
-        id: 5,
-        employeeId: 5,
-        employeeName: 'Nadia Ang',
-        initials: 'NA',
-        department: 'Human Resources',
-        position: 'HR Assistant',
-        amount: 4000,
-        requestDate: '2026-08-23',
-        requestTime: '11:10 AM',
-        reason: 'Educational expenses',
-        paymentMethod: 'GCash',
-        status: 'paid',
-        adminNotes: 'Payment completed.',
-        paidDate: '2026-08-24',
-        paymentReference: 'CA-2026-002'
-    },
-
-    {
-        id: 6,
-        employeeId: 6,
-        employeeName: 'Erik Villar',
-        initials: 'EV',
-        department: 'Sales',
-        position: 'Sales Representative',
-        amount: 2500,
-        requestDate: '2026-08-22',
-        requestTime: '03:45 PM',
-        reason: 'Transportation expenses',
-        paymentMethod: 'Cash',
-        status: 'pending',
-        adminNotes: null,
-        paidDate: null,
-        paymentReference: null
-    }
-
-])
-
-
-// =====================================================
-// SEARCH / FILTER
-// =====================================================
+const cashAdvanceData = ref([]);
 
 const searchQuery = ref('')
 
 const activeFilter = ref('all')
 
-
 const statusFilters = [
     { label: 'All', value: 'all' },
-    { label: 'Pending', value: 'pending' },
-    { label: 'Approved', value: 'approved' },
-    { label: 'Paid', value: 'paid' },
-    { label: 'Rejected', value: 'rejected' }
+    { label: 'Pending', value: 'Pending' },
+    { label: 'Approved', value: 'Approved' },
+    { label: 'Paid', value: 'Deducted/Paid' },
+    { label: 'Rejected', value: 'Rejected' }
 ]
-
 
 const filteredRequests = computed(() => {
 
@@ -908,7 +560,6 @@ const filteredRequests = computed(() => {
         searchQuery.value
             .toLowerCase()
             .trim()
-
 
     return cashAdvanceData.value.filter(request => {
 
@@ -930,30 +581,23 @@ const filteredRequests = computed(() => {
 
 })
 
-
-// =====================================================
-// SUMMARY
-// =====================================================
-
 const pendingRequests = computed(() =>
-    cashAdvanceData.value.filter(request => request.status === 'pending')
+    cashAdvanceData.value.filter(request => request.status === 'Pending')
 )
 
 const approvedRequests = computed(() =>
-    cashAdvanceData.value.filter(request => request.status === 'approved')
+    cashAdvanceData.value.filter(request => request.status === 'Approved')
 )
 
 const paidRequests = computed(() =>
-    cashAdvanceData.value.filter(request => request.status === 'paid')
+    cashAdvanceData.value.filter(request => request.status === 'paidDeducted/Paid')
 )
-
 
 const pendingCount = computed(() => pendingRequests.value.length)
 
 const approvedCount = computed(() => approvedRequests.value.length)
 
 const paidCount = computed(() => paidRequests.value.length)
-
 
 const pendingAmount = computed(() =>
     pendingRequests.value.reduce((total, request) => total + Number(request.amount || 0), 0)
@@ -967,17 +611,11 @@ const paidAmount = computed(() =>
     paidRequests.value.reduce((total, request) => total + Number(request.amount || 0), 0)
 )
 
-
 const totalAdvanced = computed(() =>
     cashAdvanceData.value
         .filter(request => request.status === 'paid')
         .reduce((total, request) => total + Number(request.amount || 0), 0)
 )
-
-
-// =====================================================
-// MODALS
-// =====================================================
 
 const showReviewModal = ref(false)
 
@@ -985,16 +623,13 @@ const showPaymentModal = ref(false)
 
 const showViewModal = ref(false)
 
-
 const selectedRequest = ref(null)
-
 
 const adminNotes = ref('')
 
 const paymentReference = ref('')
 
 const paymentNotes = ref('')
-
 
 function openReviewModal(request) {
 
@@ -1006,80 +641,69 @@ function openReviewModal(request) {
 
 }
 
-
-function approveRequest() {
-
-    if (!selectedRequest.value) return
-
-    selectedRequest.value.status = 'approved'
-
-    selectedRequest.value.adminNotes =
-        adminNotes.value || 'Approved by admin.'
-
+const approveRequest = async (selectedRequest) => {
+    if (!selectedRequest) return
+    await cashAdvanceStore.reviewCashAdvance({
+        "cash_advance_id": selectedRequest.id,
+        "status": "Approved",
+    });
+    getCashAdvances({
+        "employee_id": null,
+        "status": null,
+        "per_page": 1,
+    });
     showReviewModal.value = false
-
-    selectedRequest.value = null
-
-    adminNotes.value = ''
-
 }
 
-
-function rejectRequest() {
-
-    if (!selectedRequest.value) return
-
-    selectedRequest.value.status = 'rejected'
-
-    selectedRequest.value.adminNotes =
-        adminNotes.value || 'Request rejected by admin.'
-
+const rejectRequest = async (selectedRequest) => {
+    if (!selectedRequest) return
+    await cashAdvanceStore.reviewCashAdvance({
+        "cash_advance_id": selectedRequest.id,
+        "status": "Rejected",
+    });
+    getCashAdvances({
+        "employee_id": null,
+        "status": null,
+        "per_page": 1,
+    });
     showReviewModal.value = false
-
-    selectedRequest.value = null
-
-    adminNotes.value = ''
-
 }
-
 
 function openPaymentModal(request) {
-
     selectedRequest.value = request
-
     paymentReference.value = generatePaymentReference()
-
     paymentNotes.value = ''
-
     showPaymentModal.value = true
-
 }
 
-
-function markAsPaid() {
+const markAsPaid = async () => {
 
     if (!selectedRequest.value) return
 
-    selectedRequest.value.status = 'paid'
+    // selectedRequest.value.status = 'Deducted/Paid'
 
-    selectedRequest.value.paidDate = getTodayDate()
+    selectedRequest.value.paidDate = getTodayDate();
 
-    selectedRequest.value.paymentReference =
-        paymentReference.value || generatePaymentReference()
+    await cashAdvanceStore.reviewCashAdvance({
+        "cash_advance_id": selectedRequest.value.id,
+        "status": "Deducted/Paid",
+    });
+    getCashAdvances({
+        "employee_id": null,
+        "status": null,
+        "per_page": 1,
+    });
 
-    selectedRequest.value.adminNotes =
-        paymentNotes.value || 'Payment completed by admin.'
+    // selectedRequest.value.paymentReference =
+    //     paymentReference.value || generatePaymentReference()
+
+    // selectedRequest.value.adminNotes =
+    //     paymentNotes.value || 'Payment completed by admin.'
 
     showPaymentModal.value = false
 
     selectedRequest.value = null
-
-    paymentReference.value = ''
-
-    paymentNotes.value = ''
-
 }
-
 
 function openViewModal(request) {
 
@@ -1088,7 +712,6 @@ function openViewModal(request) {
     showViewModal.value = true
 
 }
-
 
 function closeModals() {
 
@@ -1102,18 +725,13 @@ function closeModals() {
 
 }
 
-
-// =====================================================
-// STATUS
-// =====================================================
-
 function formatStatus(status) {
 
     const labels = {
-        pending: 'PENDING',
-        approved: 'APPROVED',
-        paid: 'PAID',
-        rejected: 'REJECTED'
+        "Pending": 'PENDING',
+        "Approved": 'APPROVED',
+        "Deducted/Paid": 'PAID',
+        "Rejected": 'REJECTED'
     }
 
     return labels[status] || status
@@ -1132,11 +750,6 @@ function badgeClass(status) {
 
 }
 
-
-// =====================================================
-// FORMATTING
-// =====================================================
-
 function formatCurrency(value) {
 
     return new Intl.NumberFormat(
@@ -1150,7 +763,6 @@ function formatCurrency(value) {
 
 }
 
-
 function formatDate(date) {
 
     if (!date) return '—'
@@ -1163,9 +775,17 @@ function formatDate(date) {
             year: 'numeric'
         }
     )
-
 }
 
+function formatDateTime(date) {
+    if (!date) return '—';
+
+    return new Date(date).toLocaleString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+    });
+}
 
 function getTodayDate() {
 
@@ -1178,9 +798,7 @@ function getTodayDate() {
     const day = String(date.getDate()).padStart(2, '0')
 
     return `${year}-${month}-${day}`
-
 }
-
 
 function generatePaymentReference() {
 
@@ -1190,10 +808,10 @@ function generatePaymentReference() {
 
 }
 
-
-// =====================================================
-// LIFECYCLE
-// =====================================================
+const getCashAdvances = async (data) => {
+    const caLists = await cashAdvanceStore.getCashAdvances(data);
+    cashAdvanceData.value = caLists.data;
+}
 
 onMounted(() => {
 
@@ -1201,8 +819,13 @@ onMounted(() => {
 
     clockTimer = setInterval(tickClock, 1000)
 
-})
+    getCashAdvances({
+        "employee_id": null,
+        "status": null,
+        "per_page": 1,
+    });
 
+})
 
 onBeforeUnmount(() => {
 

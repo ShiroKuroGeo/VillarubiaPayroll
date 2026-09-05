@@ -65,29 +65,29 @@
                             OFF
                         </div>
                         <div class="stat-label">
-                            Inactive
+                            Separated / Terminated
                         </div>
                         <div class="stat-value">
-                            {{ inactiveCount }}
+                            {{ separatedTerminated }}
                         </div>
                         <div class="stat-delta stat-delta--gold">
-                            Not currently active
+                            Not currently employeed
                         </div>
                     </div>
                 </div>
                 <div class="col-6 col-lg-3">
                     <div class="punch-card">
                         <div class="stamp blue">
-                            DEPT
+                            Status
                         </div>
                         <div class="stat-label">
-                            Departments
+                            Full Time
                         </div>
                         <div class="stat-value">
-                            {{ departmentCount }}
+                            {{ statusFulltime }}
                         </div>
                         <div class="stat-delta stat-delta--blue">
-                            Active departments
+                            Full Time Status
                         </div>
                     </div>
                 </div>
@@ -250,7 +250,7 @@
                 </div>
                 <form @submit.prevent="saveEmployee">
                     <div class="form-grid">
-                        <div class="form-group full">
+                        <div class="form-group full" v-if="!editingEmployee">
                             <div class="photo-upload">
                                 <div class="photo-preview">
                                     <img v-if="imagePreview" :src="imagePreview" alt="Employee photo">
@@ -484,7 +484,7 @@ const activeCount = computed(() => {
 })
 
 
-const inactiveCount = computed(() => {
+const separatedTerminated = computed(() => {
 
     return employees.value.filter(
         employee =>
@@ -494,15 +494,15 @@ const inactiveCount = computed(() => {
 })
 
 
-const departmentCount = computed(() => {
+const statusFulltime = computed(() => {
 
     return new Set(
         employees.value
             .filter(employee =>
-                employee.status === 'active'
+                employee.status === 'Full Time'
             )
             .map(employee =>
-                employee.department
+                employee.status
             )
     ).size
 
@@ -513,7 +513,7 @@ const jobTypes = async () => {
 }
 
 const showModal = ref(false)
-
+const perPage = ref(10)
 const editingEmployee = ref(null)
 
 const form = reactive({
@@ -553,6 +553,8 @@ function openEditModal(employee) {
     editingEmployee.value = employee
 
     Object.assign(form, {
+        employee_id: employee.id,
+        job_id: employee.job_id,
         first_name: employee.first_name,
         last_name: employee.last_name,
         email: employee.email,
@@ -568,74 +570,60 @@ function openEditModal(employee) {
 
 const saveEmployee = async () => {
     if (editingEmployee.value) {
-
-        Object.assign(
-            editingEmployee.value,
-            {
-                job_id,
-                image,
-                first_name,
-                last_name,
-                phone_number,
-                location,
-                email,
-                status,
-                date_hired
-            }
-        )
-
+        await employeeStore.updateEmployee({ ...form });
+        listEmployee({
+            "status": null,
+            "search": null,
+            "per_page": perPage.value
+        });
     } else {
-        const createEmployee = await employeeStore.createEmployee({...form});
-
-        console.log(createEmployee);
+        await employeeStore.createEmployee({ ...form });
+        listEmployee({
+            "status": null,
+            "search": null,
+            "per_page": perPage.value
+        });
     }
-
-
     closeModal()
-
 }
 
 const listEmployee = async (data) => {
     const listEmployees = await employeeStore.listEmployee(data);
 
     employees.value = listEmployees.data.data;
-} 
+}
 
-function deleteEmployee(employee) {
-
+const deleteEmployee = async (employee) => {
     const confirmed =
         window.confirm(
-            `Delete ${employee.name} (${employee.employeeId})? This action cannot be undone.`
+            `Delete ${employee.last_name} ${employee.first_name} ? This action cannot be undone.`
         )
-
 
     if (!confirmed) {
         return
     }
 
+    await employeeStore.removeEmployee({
+        'employee_id': employee.id
+    });
 
-    employees.value =
-        employees.value.filter(
-            item =>
-                item.id !== employee.id
-        )
+    listEmployee({
+        status: null,
+        search: null,
+        per_page: perPage.value
+    });
 
 }
 
 function closeModal() {
-
     showModal.value = false
-
     editingEmployee.value = null
-
 }
 
 function formatDisplayDate(date) {
-
     if (!date) {
         return '—'
     }
-
 
     return new Date(
         `${date}T00:00:00`
@@ -652,29 +640,24 @@ function formatDisplayDate(date) {
 
 
 function statusClass(status) {
-
     return {
         active: 'badge-active',
         inactive: 'badge-inactive'
     }[status]
-
 }
 
-onMounted(() => {
-
+onMounted(async () => {
     tickClock()
-
     clockTimer =
         setInterval(
             tickClock,
             1000
         )
-
     jobTypes();
-    listEmployee({
+    await listEmployee({
         "status": null,
         "search": null,
-        "per_page": 1
+        "per_page": perPage.value
     });
 
 })

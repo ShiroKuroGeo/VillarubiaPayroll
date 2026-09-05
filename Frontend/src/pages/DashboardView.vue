@@ -25,7 +25,7 @@
                 </button>
 
                 <button class="btn btn-ink btn-sm" :disabled="payrollRunning" @click="runPayroll">
-                    {{ payrollRunning ? 'Running…' : (payrollJustRan ? 'Payroll run ✓' : 'Run Payroll') }}
+                    {{ payrollRunning ? 'Running…' : (payrollJustRan ? 'Payroll run ✓' : 'Generate Payroll') }}
                 </button>
             </div>
         </div>
@@ -625,8 +625,10 @@ function peso(n) {
     )
 }
 
-function runPayroll() {
+const runPayroll = async () => {
     if (payrollRunning.value) return
+
+
 
     payrollRunning.value = true
     payrollJustRan.value = false

@@ -64,7 +64,7 @@ export const useEmployeeStore = defineStore('employeeStore', () => {
 
     const listEmployee = async (data) => {
         try {
-            const listEmployee = await api.post('employee/list', data);
+            const listEmployee = await api.post('employee/list', data); 
 
             return listEmployee.data;
         } catch (err) {
@@ -82,5 +82,63 @@ export const useEmployeeStore = defineStore('employeeStore', () => {
         }
     }
 
-    return { jobTypes, createEmployee, listEmployee }
+    const updateEmployee = async (data) => {
+        try {
+            const updateEmployee = await api.post('employee/update', data);
+            await showStatusAlert(updateEmployee.status, updateEmployee.data.message);
+            return updateEmployee.data;
+        } catch (err) {
+            const status = err.response?.status || 500;
+
+            const message =
+                err.response?.data?.message ||
+                err.response?.data?.error ||
+                err.message ||
+                'An unexpected error occurred.';
+
+            showStatusAlert(status, message);
+
+            return message;
+        }
+    }
+
+    const removeEmployee = async (data) => {
+        try {
+            const removeEmployee = await api.post('employee/remove', data);
+            await showStatusAlert(removeEmployee.status, removeEmployee.data.message);
+            return removeEmployee.data;
+        } catch (err) {
+            const status = err.response?.status || 500;
+
+            const message =
+                err.response?.data?.message ||
+                err.response?.data?.error ||
+                err.message ||
+                'An unexpected error occurred.';
+
+            showStatusAlert(status, message);
+
+            return message;
+        }
+    }
+
+    const allEmployees = async () => {
+        try {
+            return api.get('employee/all');
+        } catch (err) {
+            const status = err.response?.status || 500;
+
+            const message =
+                err.response?.data?.message ||
+                err.response?.data?.error ||
+                err.message ||
+                'An unexpected error occurred.';
+
+            showStatusAlert(status, message);
+
+            return message;
+        }
+    }
+
+    return { jobTypes, createEmployee, listEmployee, updateEmployee, removeEmployee, allEmployees }
 });

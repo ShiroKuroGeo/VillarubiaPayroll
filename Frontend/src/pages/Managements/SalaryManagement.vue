@@ -47,97 +47,47 @@
         </div>
 
         <div class="content">
-
             <div class="row g-3">
-
-                <div class="col-6 col-lg-3">
-
+                <div class="col-12 col-lg-4">
                     <div class="punch-card">
-
                         <div class="stamp green">
                             STAFF
                         </div>
-
                         <div class="stat-label">
                             Active Employees
                         </div>
-
                         <div class="stat-period">
                             Current salary records
                         </div>
-
                         <div class="stat-value">
                             {{ activeEmployeeCount }}
                         </div>
-
                         <div class="stat-delta stat-delta--slate">
                             Employees with active salary
                         </div>
-
                     </div>
-
                 </div>
-
-                <div class="col-6 col-lg-3">
-
+                <div class="col-12 col-lg-4">
                     <div class="punch-card">
-
                         <div class="stamp gold">
                             BASE
                         </div>
-
                         <div class="stat-label">
                             Total Basic Salary
                         </div>
-
                         <div class="stat-period">
-                            Monthly
+                            Weekly
                         </div>
-
                         <div class="stat-value stat-value-money">
                             {{ formatCurrency(totalBasicSalary) }}
                         </div>
-
                         <div class="stat-delta stat-delta--gold">
                             Active employees
                         </div>
-
                     </div>
-
                 </div>
 
-                <div class="col-6 col-lg-3">
-
-                    <div class="punch-card">
-
-                        <div class="stamp blue">
-                            PLUS
-                        </div>
-
-                        <div class="stat-label">
-                            Total Attendance
-                        </div>
-
-                        <div class="stat-period">
-                            Monthly
-                        </div>
-
-                        <div class="stat-value stat-value-money">
-                            {{ formatCurrency(totalAttendance) }}
-                        </div>
-
-                        <div class="stat-delta stat-delta--blue">
-                            Employee Total Attendance
-                        </div>
-
-                    </div>
-
-                </div>
-
-
-                <!-- Estimated Payroll -->
-
-                <div class="col-6 col-lg-3">
+                <div class="col-12 col-lg-4">
 
                     <div class="punch-card">
 
@@ -162,215 +112,9 @@
                         </div>
 
                     </div>
-
-                </div>
-
-            </div>
-
-            <div class="row g-3 mb-3">
-
-                <div class="col-lg-8">
-
-                    <div class="panel h-100">
-
-                        <div class="d-flex justify-content-between align-items-start">
-
-                            <div>
-
-                                <div class="panel-title">
-                                    Salary overview
-                                </div>
-
-                                <div class="panel-sub">
-                                    Current compensation configuration
-                                </div>
-
-                            </div>
-
-
-                            <span class="chip">
-                                Monthly salary
-                            </span>
-
-                        </div>
-
-
-                        <div class="salary-overview">
-
-
-                            <div class="salary-overview-main">
-
-                                <div class="overview-label">
-                                    TOTAL BASIC SALARY
-                                </div>
-
-                                <div class="overview-value">
-                                    {{ formatCurrency(totalBasicSalary) }}
-                                </div>
-
-                                <div class="overview-sub">
-                                    {{ activeEmployeeCount }} active employees
-                                </div>
-
-                            </div>
-
-
-                            <div class="salary-breakdown">
-
-                                <div class="breakdown-item">
-
-                                    <span class="breakdown-dot gold"></span>
-
-                                    <div>
-
-                                        <div class="breakdown-label">
-                                            Total Attendance
-                                        </div>
-
-                                        <div class="breakdown-value">
-                                            {{ formatCurrency(totalAttendance) }}
-                                        </div>
-
-                                    </div>
-
-                                </div>
-
-
-                                <div class="breakdown-item">
-
-                                    <span class="breakdown-dot red"></span>
-
-                                    <div>
-
-                                        <div class="breakdown-label">
-                                            Deductions
-                                        </div>
-
-                                        <div class="breakdown-value">
-                                            {{ formatCurrency(totalDeductions) }}
-                                        </div>
-
-                                    </div>
-
-                                </div>
-
-
-                                <div class="breakdown-item">
-
-                                    <span class="breakdown-dot green"></span>
-
-                                    <div>
-
-                                        <div class="breakdown-label">
-                                            Estimated Net
-                                        </div>
-
-                                        <div class="breakdown-value">
-                                            {{ formatCurrency(estimatedNetPayroll) }}
-                                        </div>
-
-                                    </div>
-
-                                </div>
-
-                            </div>
-
-                        </div>
-
-                    </div>
-
-                </div>
-
-                <div class="col-lg-4">
-
-                    <div class="panel salary-type-panel">
-
-                        <div class="panel-title">
-                            Salary configuration
-                        </div>
-
-                        <div class="panel-sub mb-3">
-                            Active employee salary types
-                        </div>
-
-
-                        <div class="summary-list">
-
-
-                            <div class="summary-row">
-
-                                <div class="summary-label">
-
-                                    <span class="summary-dot green"></span>
-
-                                    Monthly
-
-                                </div>
-
-                                <div class="summary-value">
-                                    {{ monthlyCount }}
-                                </div>
-
-                            </div>
-
-
-                            <div class="summary-row">
-
-                                <div class="summary-label">
-
-                                    <span class="summary-dot gold"></span>
-
-                                    Daily
-
-                                </div>
-
-                                <div class="summary-value">
-                                    {{ dailyCount }}
-                                </div>
-
-                            </div>
-
-
-                            <div class="summary-row">
-
-                                <div class="summary-label">
-
-                                    <span class="summary-dot blue"></span>
-
-                                    Hourly
-
-                                </div>
-
-                                <div class="summary-value">
-                                    {{ hourlyCount }}
-                                </div>
-
-                            </div>
-
-
-                            <div class="summary-row">
-
-                                <div class="summary-label">
-
-                                    <span class="summary-dot red"></span>
-
-                                    Inactive
-
-                                </div>
-
-                                <div class="summary-value">
-                                    {{ inactiveCount }}
-                                </div>
-
-                            </div>
-
-                        </div>
-
-                    </div>
-
                 </div>
             </div>
-            <div class="panel">
+            <div class="panel mt-3">
                 <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
                     <div>
                         <div class="section-title mb-0">
@@ -408,7 +152,7 @@
                                     Employee
                                 </th>
                                 <th>
-                                    Department
+                                    location
                                 </th>
                                 <th>
                                     Salary Type
@@ -429,7 +173,7 @@
                                 <td>
                                     <div class="d-flex align-items-center gap-2">
                                         <div class="avatar-sm">
-                                            <img v-if="employee.image" :src="employee.image" :alt="employee.employeeName" />
+                                            <img v-if="employee.image" :src="storageImage(employee.image)" :alt="employee.employeeName" />
                                             <span v-else>
                                                 {{ employee.initials }}
                                             </span>
@@ -449,8 +193,8 @@
                                     </div>
                                 </td>
                                 <td>
-                                    <span class="department">
-                                        {{ employee.department }}
+                                    <span class="location">
+                                        {{ employee.location }}
                                     </span>
 
                                 </td>
@@ -541,17 +285,8 @@
                                 Salary Type
                             </label>
                             <select v-model="salaryForm.salaryType" class="form-control">
-                                <option value="monthly">
-                                    Monthly
-                                </option>
-                                <option value="weekly">
-                                    Weekly
-                                </option>
-                                <option value="daily">
-                                    Daily
-                                </option>
-                                <option value="hourly">
-                                    Hourly
+                                <option :value="s.value" v-for="s in salaryType" :key="value">
+                                    {{ s.label }}
                                 </option>
                             </select>
                         </div>
@@ -560,10 +295,10 @@
                                 Status
                             </label>
                             <select v-model="salaryForm.status" class="form-control">
-                                <option value="active">
+                                <option value="true">
                                     Active
                                 </option>
-                                <option value="inactive">
+                                <option value="false">
                                     Inactive
                                 </option>
                             </select>
@@ -573,7 +308,6 @@
                         <div class="form-group">
                             <label>Basic Salary</label>
                             <div class="input-money">
-                                <span>₱</span>
                                 <input v-model.number="salaryForm.basicSalary" type="number" min="0" step="0.01" class="form-control" placeholder="0.00" />
                             </div>
                         </div>
@@ -599,6 +333,11 @@
 
 <script setup>
 
+import { useEmployeeStore } from '@/stores/useEmployee'
+import { useSalaryStore } from '@/stores/useSalary';
+import { storageImage } from '@/utils/image';
+import { showStatusAlert } from '@/utils/Swals';
+
 import {
     computed,
     onMounted,
@@ -606,6 +345,8 @@ import {
     ref
 } from 'vue'
 
+const employeeStore = useEmployeeStore();
+const salaryStore = useSalaryStore();
 
 defineOptions({
     name: 'SalaryManagementPage'
@@ -615,11 +356,6 @@ defineOptions({
 defineEmits([
     'toggle-sidebar'
 ])
-
-
-// =====================================================
-// CLOCK
-// =====================================================
 
 const liveClock = ref('--:--:--')
 
@@ -638,219 +374,40 @@ function tickClock() {
 
 }
 
+const employeeOptions = ref([]);
 
-// =====================================================
-// EMPLOYEE DATA
-// =====================================================
+const salaryData = ref([])
 
-const employeeOptions = ref([
-
+const salaryType = ref([
     {
-        id: 1,
-        name: 'Jonas Diaz'
+        value: 'Weekly',
+        label: 'Weekly',
     },
-
     {
-        id: 2,
-        name: 'Carla Santos'
+        value: 'Monthly',
+        label: 'Monthly',
     },
-
     {
-        id: 3,
-        name: 'Ramon Tan'
+        value: 'Semi-Monthly',
+        label: 'Semi-Monthly',
     },
-
     {
-        id: 4,
-        name: 'Paulo Lim'
+        value: 'Daily',
+        label: 'Daily',
     },
-
     {
-        id: 5,
-        name: 'Nadia Ang'
+        value: 'Hourly',
+        label: 'Hourly',
     },
-
     {
-        id: 6,
-        name: 'Erik Villar'
-    }
-
+        value: 'Piece-Rate',
+        label: 'Piece-Rate',
+    },
 ])
-
-
-// =====================================================
-// SALARY DATA
-// =====================================================
-
-const salaryData = ref([
-
-    {
-        id: 1,
-
-        employeeId: 1,
-        employeeName: 'Jonas Diaz',
-        initials: 'JD',
-
-        department: 'Warehouse',
-        position: 'Warehouse Staff',
-
-        basicSalary: 760,
-        salaryType: 'weekly',
-
-        overtimeRate: 156.25,
-
-        totalAttendance: 7,
-
-        deductions: 1500,
-
-        effectiveDate: '2026-01-01',
-
-        status: 'active',
-
-        image: null
-    },
-
-
-    {
-        id: 2,
-
-        employeeId: 2,
-        employeeName: 'Carla Santos',
-        initials: 'CS',
-
-        department: 'Accounting',
-        position: 'Accountant',
-
-        basicSalary: 760,
-        salaryType: 'weekly',
-
-        overtimeRate: 175,
-
-        totalAttendance: 6,
-        deductions: 1800,
-
-        effectiveDate: '2026-01-01',
-
-        status: 'active',
-
-        image: null
-    },
-
-
-    {
-        id: 3,
-
-        employeeId: 3,
-        employeeName: 'Ramon Tan',
-        initials: 'RT',
-
-        department: 'Logistics',
-        position: 'Logistics Staff',
-
-        basicSalary: 760,
-        salaryType: 'weekly',
-
-        overtimeRate: 150,
-
-        totalAttendance: 7,
-        deductions: 1200,
-
-        effectiveDate: '2026-01-01',
-
-        status: 'active',
-
-        image: null
-    },
-
-
-    {
-        id: 4,
-
-        employeeId: 4,
-        employeeName: 'Paulo Lim',
-        initials: 'PL',
-
-        department: 'Customer Care',
-        position: 'Customer Care Staff',
-
-        basicSalary: 760,
-        salaryType: 'monthly',
-
-        overtimeRate: 162.50,
-
-        totalAttendance: 7,
-        deductions: 1400,
-
-        effectiveDate: '2026-01-01',
-
-        status: 'active',
-
-        image: null
-    },
-
-
-    {
-        id: 5,
-
-        employeeId: 5,
-        employeeName: 'Nadia Ang',
-        initials: 'NA',
-
-        department: 'Marketing',
-        position: 'Marketing Staff',
-
-        basicSalary: 760,
-        salaryType: 'monthly',
-
-        overtimeRate: 168.75,
-
-        totalAttendance: 7,
-        deductions: 1600,
-
-        effectiveDate: '2026-01-01',
-
-        status: 'active',
-
-        image: null
-    },
-
-
-    {
-        id: 6,
-
-        employeeId: 6,
-        employeeName: 'Erik Villar',
-        initials: 'EV',
-
-        department: 'Warehouse',
-        position: 'Warehouse Staff',
-
-        basicSalary: 760,
-        salaryType: 'monthly',
-
-        overtimeRate: 156.25,
-
-        totalAttendance: 7,
-        deductions: 1300,
-
-        effectiveDate: '2026-01-01',
-
-        status: 'active',
-
-        image: null
-    }
-
-])
-
-
-// =====================================================
-// FILTERS
-// =====================================================
 
 const searchQuery = ref('')
 
 const statusFilter = ref('all')
-
 
 const statusFilters = [
 
@@ -860,17 +417,16 @@ const statusFilters = [
     },
 
     {
-        key: 'active',
+        key: true,
         label: 'Active'
     },
 
     {
-        key: 'inactive',
+        key: false,
         label: 'Inactive'
     }
 
 ]
-
 
 const filteredSalaryData = computed(() => {
 
@@ -887,7 +443,7 @@ const filteredSalaryData = computed(() => {
             employee.employeeName
                 .toLowerCase()
                 .includes(search) ||
-            employee.department
+            employee.location
                 .toLowerCase()
                 .includes(search)
 
@@ -896,27 +452,20 @@ const filteredSalaryData = computed(() => {
             statusFilter.value === 'all' ||
             employee.status === statusFilter.value
 
-
         return matchesSearch && matchesStatus
 
     })
 
 })
 
-
-// =====================================================
-// STATISTICS
-// =====================================================
-
 const activeEmployeeCount = computed(() => {
 
     return salaryData.value.filter(
         employee =>
-            employee.status === 'active'
+            employee.status === true
     ).length
 
 })
-
 
 const inactiveCount = computed(() => {
 
@@ -927,14 +476,13 @@ const inactiveCount = computed(() => {
 
 })
 
-
 const totalBasicSalary = computed(() => {
 
     return salaryData.value
 
         .filter(
             employee =>
-                employee.status === 'active'
+                employee.status === true
         )
 
         .reduce(
@@ -945,14 +493,13 @@ const totalBasicSalary = computed(() => {
 
 })
 
-
 const totalAttendance = computed(() => {
 
     return salaryData.value
 
         .filter(
             employee =>
-                employee.status === 'active'
+                employee.status === true
         )
 
         .reduce(
@@ -962,7 +509,6 @@ const totalAttendance = computed(() => {
         )
 
 })
-
 
 const totalDeductions = computed(() => {
 
@@ -981,7 +527,6 @@ const totalDeductions = computed(() => {
 
 })
 
-
 const estimatedNetPayroll = computed(() => {
 
     return (
@@ -991,7 +536,6 @@ const estimatedNetPayroll = computed(() => {
     )
 
 })
-
 
 const monthlyCount = computed(() => {
 
@@ -1003,7 +547,6 @@ const monthlyCount = computed(() => {
 
 })
 
-
 const dailyCount = computed(() => {
 
     return salaryData.value.filter(
@@ -1013,7 +556,6 @@ const dailyCount = computed(() => {
     ).length
 
 })
-
 
 const hourlyCount = computed(() => {
 
@@ -1025,62 +567,35 @@ const hourlyCount = computed(() => {
 
 })
 
-
-// =====================================================
-// MODAL
-// =====================================================
-
 const showModal = ref(false)
 
 const editingSalary = ref(false)
-
 
 const salaryForm = ref(
     createEmptyForm()
 )
 
-
 function createEmptyForm() {
-
     return {
-
         id: null,
-
         employeeId: '',
-
-        salaryType: 'monthly',
-
+        salaryType: 'Weekly',
         basicSalary: 0,
-
-        overtimeRate: 0,
-
-        totalAttendance: 0,
-
-        deductions: 0,
-
         effectiveDate: '2026-01-01',
-
         status: 'active'
-
     }
-
 }
 
+const formatStatus = (status) => {
+    const data = {
+        true: 'Active',
+        false: 'Inactive',
+    }
 
-const formNetSalary = computed(() => {
+    if (!status) return 'No status yet'
 
-    return (
-        (Number(salaryForm.value.basicSalary || 0) *
-            Number(salaryForm.value.totalAttendance || 0)) -
-        Number(salaryForm.value.deductions || 0)
-    )
-
-})
-
-
-// =====================================================
-// ADD
-// =====================================================
+    return data[status]
+}
 
 function openAddModal() {
 
@@ -1093,11 +608,6 @@ function openAddModal() {
 
 }
 
-
-// =====================================================
-// EDIT
-// =====================================================
-
 function openEditModal(employee) {
 
     editingSalary.value = true
@@ -1105,33 +615,14 @@ function openEditModal(employee) {
     salaryForm.value = {
 
         id: employee.id,
-
         employeeId: employee.employeeId,
-
         salaryType: employee.salaryType,
-
         basicSalary: employee.basicSalary,
-
-        overtimeRate: employee.overtimeRate,
-
-        totalAttendance: employee.totalAttendance,
-
-        deductions: employee.deductions,
-
         effectiveDate: employee.effectiveDate,
-
         status: employee.status
-
     }
-
     showModal.value = true
-
 }
-
-
-// =====================================================
-// CLOSE
-// =====================================================
 
 function closeModal() {
 
@@ -1139,182 +630,39 @@ function closeModal() {
 
 }
 
-
-// =====================================================
-// SAVE
-// =====================================================
-
-function saveSalary() {
-
+const saveSalary = async () => {
     if (!salaryForm.value.employeeId) {
-
-        alert('Please select an employee.')
-
+        showStatusAlert(409, 'Please select an employee.')
         return
-
     }
 
-
-    if (
-        Number(salaryForm.value.basicSalary) <= 0
-    ) {
-
-        alert('Please enter a valid basic salary.')
-
+    if (Number(salaryForm.value.basicSalary) <= 0) {
+        showStatusAlert(409, 'Please enter a valid basic salary.')
         return
-
     }
-
-
-    const employee =
-        employeeOptions.value.find(
-            item =>
-                Number(item.id) ===
-                Number(salaryForm.value.employeeId)
-        )
-
-
-    if (!employee) {
-
-        alert('Employee not found.')
-
-        return
-
-    }
-
-
     if (editingSalary.value) {
-
-        const index =
-            salaryData.value.findIndex(
-                item =>
-                    item.id ===
-                    salaryForm.value.id
-            )
-
-
-        if (index !== -1) {
-
-            salaryData.value[index] = {
-
-                ...salaryData.value[index],
-
-                employeeName: employee.name,
-
-                employeeId:
-                    Number(salaryForm.value.employeeId),
-
-                salaryType:
-                    salaryForm.value.salaryType,
-
-                basicSalary:
-                    Number(salaryForm.value.basicSalary),
-
-                overtimeRate:
-                    Number(salaryForm.value.overtimeRate),
-
-                totalAttendance:
-                    Number(salaryForm.value.totalAttendance),
-
-                deductions:
-                    Number(salaryForm.value.deductions),
-
-                effectiveDate:
-                    salaryForm.value.effectiveDate,
-
-                status:
-                    salaryForm.value.status
-
-            }
-
-        }
-
+        closeModal()
+        await salaryStore.updateSalary({
+            "salary_id": salaryForm.value.id,
+            "salary_type": salaryForm.value.salaryType,
+            "basic_salary": salaryForm.value.basicSalary,
+            "effective_date": salaryForm.value.effectiveDate
+        });
+        listEmployee();
+        salaries();
     } else {
-
-        const exists =
-            salaryData.value.some(
-                item =>
-                    item.employeeId ===
-                    Number(salaryForm.value.employeeId)
-            )
-
-
-        if (exists) {
-
-            alert(
-                'This employee already has a salary record. Please edit the existing record instead.'
-            )
-
-            return
-
-        }
-
-
-        const initials =
-            employee.name
-                .split(' ')
-                .map(name => name.charAt(0))
-                .join('')
-                .substring(0, 2)
-                .toUpperCase()
-
-
-        salaryData.value.push({
-
-            id:
-                Date.now(),
-
-            employeeId:
-                Number(salaryForm.value.employeeId),
-
-            employeeName:
-                employee.name,
-
-            initials,
-
-            department:
-                'Unassigned',
-
-            position:
-                'Employee',
-
-            basicSalary:
-                Number(salaryForm.value.basicSalary),
-
-            salaryType:
-                salaryForm.value.salaryType,
-
-            overtimeRate:
-                Number(salaryForm.value.overtimeRate),
-
-            totalAttendance:
-                Number(salaryForm.value.totalAttendance),
-
-            deductions:
-                Number(salaryForm.value.deductions),
-
-            effectiveDate:
-                salaryForm.value.effectiveDate,
-
-            status:
-                salaryForm.value.status,
-
-            image:
-                null
-
-        })
-
+        closeModal()
+        await salaryStore.createSalary({
+            "employee_id": salaryForm.value.employeeId,
+            "salary_type": salaryForm.value.salaryType,
+            "basic_salary": salaryForm.value.basicSalary,
+            "effective_date": salaryForm.value.effectiveDate
+        });
+        listEmployee();
+        salaries();
     }
-
-
-    closeModal()
 
 }
-
-
-// =====================================================
-// DELETE
-// =====================================================
 
 function deleteSalary(employee) {
 
@@ -1337,11 +685,6 @@ function deleteSalary(employee) {
 
 }
 
-
-// =====================================================
-// CALCULATIONS
-// =====================================================
-
 function calculateNet(employee) {
 
     return (
@@ -1351,11 +694,6 @@ function calculateNet(employee) {
     )
 
 }
-
-
-// =====================================================
-// FORMATTING
-// =====================================================
 
 function formatCurrency(amount) {
 
@@ -1372,46 +710,18 @@ function formatCurrency(amount) {
 
 }
 
-
 function formatSalaryType(type) {
-
     const labels = {
-
+        weekly: 'WEEKLY',
         monthly: 'MONTHLY',
-
         daily: 'DAILY',
-
-        hourly: 'HOURLY'
-
+        hourly: 'HOURLY',
     }
 
+    if (!type) return 'No Salary Yet'
 
-    return (
-        labels[type] ||
-        type.toUpperCase()
-    )
-
+    return labels[type] || type.toUpperCase()
 }
-
-
-function formatStatus(status) {
-
-    const labels = {
-
-        active: 'ACTIVE',
-
-        inactive: 'INACTIVE'
-
-    }
-
-
-    return (
-        labels[status] ||
-        status.toUpperCase()
-    )
-
-}
-
 
 function badgeClass(status) {
 
@@ -1425,18 +735,13 @@ function badgeClass(status) {
 
 }
 
-
-// =====================================================
-// EXPORT
-// =====================================================
-
 function exportCsv() {
 
     const rows = [
 
         [
             'Employee',
-            'Department',
+            'location',
             'Salary Type',
             'Basic Salary',
             'Overtime Rate',
@@ -1455,29 +760,15 @@ function exportCsv() {
         rows.push([
 
             employee.employeeName,
-
-            employee.department,
-
+            employee.location,
             formatSalaryType(
                 employee.salaryType
             ),
-
             employee.basicSalary,
-
-            employee.overtimeRate,
-
-            employee.totalAttendance,
-
-            employee.deductions,
-
             calculateNet(employee),
-
             employee.effectiveDate,
-
             employee.status
-
         ])
-
     })
 
 
@@ -1527,10 +818,15 @@ function exportCsv() {
 
 }
 
+const listEmployee = async () => {
+    const listEmployees = await employeeStore.allEmployees();
+    employeeOptions.value = listEmployees.data.data;
+}
 
-// =====================================================
-// LIFECYCLE
-// =====================================================
+const salaries = async () => {
+    const resultSalaries = await salaryStore.listSalaries();
+    salaryData.value = resultSalaries.data;
+}
 
 onMounted(() => {
 
@@ -1541,6 +837,9 @@ onMounted(() => {
             tickClock,
             1000
         )
+
+    listEmployee();
+    salaries();
 
 })
 
@@ -1813,7 +1112,7 @@ onBeforeUnmount(() => {
     border-radius:
         10px;
 
-    position:
+    phoneNumber:
         relative;
 
     padding:
@@ -1829,7 +1128,7 @@ onBeforeUnmount(() => {
     content:
         "";
 
-    position:
+    phoneNumber:
         absolute;
 
     top:
@@ -1852,7 +1151,7 @@ onBeforeUnmount(() => {
     background-size:
         16px 16px;
 
-    background-position:
+    background-phoneNumber:
         0 -8px;
 
     background-repeat:
@@ -1976,7 +1275,7 @@ onBeforeUnmount(() => {
 
 .stamp {
 
-    position:
+    phoneNumber:
         absolute;
 
     top:
@@ -2709,7 +2008,7 @@ onBeforeUnmount(() => {
 }
 
 
-.department {
+.location {
 
     color:
         var(--ink-2, #28395E);
@@ -2957,9 +2256,6 @@ onBeforeUnmount(() => {
 }
 
 
-/* =====================================================
-   MODAL
-===================================================== */
 
 .modal-backdrop {
 
@@ -3012,11 +2308,6 @@ onBeforeUnmount(() => {
     box-shadow:
         0 20px 50px rgba(28, 43, 74, .2);
 }
-
-
-/* =====================================================
-   MODAL HEADER
-===================================================== */
 
 .modal-header {
 
@@ -3254,14 +2545,14 @@ onBeforeUnmount(() => {
 
 .input-money {
 
-    position:
+    phoneNumber:
         relative;
 }
 
 
 .input-money>span {
 
-    position:
+    phoneNumber:
         absolute;
 
     left:

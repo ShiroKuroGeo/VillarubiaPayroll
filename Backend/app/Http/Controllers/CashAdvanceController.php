@@ -14,20 +14,43 @@ class CashAdvanceController extends Controller
         $this->cashAdvanceServices = $cashAdvanceServices;
     }
 
-    public function requestCashAdvance(Request $request){
+    public function requestCashAdvance(Request $request)
+    {
+        try {
+            $this->ensureActivePayrollThisMonth();
+        } catch (\Throwable $th) {
+            return response_return($th->getMessage(), [], 409);
+        }
         return $this->cashAdvanceServices->requestCashAdvance($request);
     }
 
-    public function reviewCashAdvance(Request $request){
+    public function reviewCashAdvance(Request $request)
+    {
+        try {
+            $this->ensureActivePayrollThisMonth();
+        } catch (\Throwable $th) {
+            return response_return($th->getMessage(), [], 409);
+        }
         return $this->cashAdvanceServices->reviewCashAdvance($request);
     }
 
-    public function getCashAdvances(Request $request){
+    public function attachToPayroll(int $cashAdvanceId, int $payrollId)
+    {
+        try {
+            $this->ensureActivePayrollThisMonth();
+        } catch (\Throwable $th) {
+            return response_return($th->getMessage(), [], 409);
+        }
+        return $this->cashAdvanceServices->attachToPayroll($cashAdvanceId, $payrollId);
+    }
+
+    public function getCashAdvances(Request $request)
+    {
         return $this->cashAdvanceServices->getCashAdvances($request);
     }
 
-    public function getCashAdvance(Request $request){
+    public function getCashAdvance(Request $request)
+    {
         return $this->cashAdvanceServices->getCashAdvance($request);
     }
-
 }

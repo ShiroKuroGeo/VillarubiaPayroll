@@ -13,8 +13,8 @@ class PayrollController extends Controller
         $this->payrollServices = $payrollServices;
     }
 
-    public function generatePayroll(Request $request){
-        return $this->payrollServices->generatePayroll($request);
+    public function generatePayroll(){
+        return $this->payrollServices->generatePayroll();
     }
 
     public function updateStatus(Request $request){

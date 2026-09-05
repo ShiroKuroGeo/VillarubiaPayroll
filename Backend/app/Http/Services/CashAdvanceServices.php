@@ -54,7 +54,7 @@ class CashAdvanceServices
         try {
             $validation = $request->validate([
                 'cash_advance_id' => ['required', 'integer', 'exists:cash_advances,id'],
-                'status' => ['required', Rule::in(['Approved', 'Rejected'])],
+                'status' => ['required', Rule::in(['Approved', 'Rejected', 'Deducted/Paid'])],
             ]);
         } catch (\Throwable $th) {
             return response_return('Error occurred in validating the request.', [], 422);
@@ -115,7 +115,7 @@ class CashAdvanceServices
                 'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
             ]);
         } catch (\Throwable $th) {
-            return response_return('Error occurred in validating the request.', [], 422);
+            return response_return($th->getMessage(), [], 422);
         }
 
         try {
@@ -137,7 +137,7 @@ class CashAdvanceServices
             return response_return('Error occurred in retrieving cash advances.', [], 500);
         }
     }
-    
+
     public function getCashAdvance(Request $request)
     {
         try {
