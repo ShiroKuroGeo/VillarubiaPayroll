@@ -54,7 +54,7 @@ class CashAdvanceServices
         try {
             $validation = $request->validate([
                 'cash_advance_id' => ['required', 'integer', 'exists:cash_advances,id'],
-                'status' => ['required', Rule::in(['Approved', 'Rejected', 'Deducted/Paid'])],
+                'status' => ['required', Rule::in(['Approved', 'Rejected'])],
             ]);
         } catch (\Throwable $th) {
             return response_return('Error occurred in validating the request.', [], 422);

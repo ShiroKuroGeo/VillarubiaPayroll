@@ -613,7 +613,6 @@ function openEditModal(employee) {
     editingSalary.value = true
 
     salaryForm.value = {
-
         id: employee.id,
         employeeId: employee.employeeId,
         salaryType: employee.salaryType,
