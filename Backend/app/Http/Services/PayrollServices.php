@@ -103,7 +103,6 @@ class PayrollServices
                     'remarks'         => 'Auto-generated on ' . $today->toDateString(),
                 ]);
 
-                // 5. Update payroll totals
                 $totalDeductions = $sssTotal + $caTotal;
                 $payroll->update([
                     'total_deductions' => round($totalDeductions, 2),

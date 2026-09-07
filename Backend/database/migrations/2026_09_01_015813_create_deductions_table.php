@@ -15,10 +15,10 @@ return new class extends Migration
             $table->id();
             $table->foreignId('employee_id')->constrained()->cascadeOnDelete();
             $table->foreignId('payroll_id')->nullable()->constrained()->cascadeOnDelete();
-            $table->integer('sss_deduction');
-            $table->integer('ca_deduction');
+            $table->integer('sss_deduction')->nullable();
+            $table->integer('ca_deduction')->nullable();
             $table->json('other_deduction')->nullable();
-            $table->string('remarks');
+            $table->string('remarks')->nullable();
             $table->timestamps();
         });
     }

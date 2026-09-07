@@ -148,6 +148,11 @@ const navManage = [
         icon: '<path d="M3 7h18v14H3z"/><path d="M3 7l2-4h14l2 4"/><circle cx="12" cy="14" r="3"/><path d="M6 11h.01M18 17h.01"/>',
     },
     {
+        key: 'SSSContributionManagement',
+        label: 'SSS Contribution',
+        icon: '<path d="M3 7h18v14H3z"/><path d="M3 7l2-4h14l2 4"/><circle cx="12" cy="14" r="3"/><path d="M6 11h.01M18 17h.01"/>',
+    },
+    {
         key: 'deductionManagement',
         label: 'Deductions',
         icon: '<path d="M3 7h18v14H3z"/><path d="M3 7l2-4h14l2 4"/><circle cx="12" cy="14" r="3"/><path d="M6 11h.01M18 17h.01"/>',
@@ -181,6 +186,7 @@ function select(key) {
         payrollManagement: 'admin.payrollManagement',
         attendanceManagement: 'admin.attendanceManagement',
         deductionManagement: 'admin.deductionManagement',
+        SSSContributionManagement: 'admin.SSSContributionManagement',
         setting: 'admin.setting',
     }
 
@@ -209,6 +215,7 @@ function isActive(key) {
         cashAdvanceManagement: 'admin.cashAdvanceManagement',
         attendanceManagement: 'admin.attendanceManagement',
         deductionManagement: 'admin.deductionManagement',
+        SSSContributionManagement: 'admin.SSSContributionManagement',
         setting: 'admin.setting',
     }
 

@@ -14,6 +14,7 @@ import CashAdvanceManagement from '@/pages/Managements/CashAdvanceManagement.vue
 import AttendanceManagement from '@/pages/Managements/AttendanceManagement.vue'
 import PayrollManagement from '@/pages/Managements/PayrollManagement.vue'
 import DeductionManagement from '@/pages/Managements/DeductionManagement.vue'
+import SSSContributionManagement from '@/pages/Managements/SSSContributionManagement.vue'
 
 const router = createRouter({
     history: createWebHistory(import.meta.env.BASE_URL),
@@ -81,6 +82,11 @@ const router = createRouter({
                     path: 'management/deduction',
                     name: 'admin.deductionManagement',
                     component: DeductionManagement,
+                },
+                {
+                    path: 'management/SSS',
+                    name: 'admin.SSSContributionManagement',
+                    component: SSSContributionManagement,
                 },
                 {
                     path: 'setting',

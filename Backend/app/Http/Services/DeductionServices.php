@@ -10,21 +10,15 @@ use Illuminate\Support\Facades\DB;
 
 class DeductionServices
 {
-    /**
-     * Creates the deduction record for a payroll run.
-     * ca_deduction is NOT taken from the request — it's computed by summing
-     * every Approved, unattached cash advance for this employee, which then
-     * each get attached to this payroll and flipped to Deducted/Paid.
-     */
     public function createDeduction(Request $request)
     {
         try {
             $validation = $request->validate([
-                'payroll_id' => ['required', 'integer', 'exists:payrolls,id'],
-                'employee_id' => ['required', 'integer', 'exists:employees,id'],
-                'sss_deduction' => ['required', 'numeric', 'min:0'],
+                // 'payroll_id' => ['required', 'integer', 'exists:payrolls,id'],
+                'employee_id' => ['nullable', 'integer', 'exists:employees,id'],
+                'sss_deduction' => ['nullable', 'numeric', 'min:0'],
                 'other_deduction' => ['nullable', 'array'],
-                'remarks' => ['required', 'string'],
+                'remarks' => ['nullable', 'string'],
             ]);
         } catch (\Throwable $th) {
             return response_return('Error occurred in validating deduction information.', [], 422);
@@ -46,8 +40,6 @@ class DeductionServices
             }
 
             $result = DB::transaction(function () use ($validation, $checkPayroll) {
-                // Pull every Approved cash advance for this employee that
-                // hasn't already been attached to a payroll.
                 $approvedAdvances = CashAdvance::where('employee_id', $validation['employee_id'])
                     ->where('status', 'Approved')
                     ->whereNull('payroll_id')
@@ -125,7 +117,7 @@ class DeductionServices
     {
         try {
             $validation = $request->validate([
-                'payroll_id' => ['required', 'integer', 'exists:payrolls,id'],
+                'deduction_id' => ['required', 'integer', 'exists:payrolls,id'],
             ]);
         } catch (\Throwable $th) {
             return response_return('Error occurred in validating the request.', [], 422);
@@ -133,7 +125,7 @@ class DeductionServices
 
         try {
             $deduction = Deduction::with(['employee', 'payroll'])
-                ->where('payroll_id', $validation['payroll_id'])
+                ->where('id', $validation['deduction_id'])
                 ->first();
 
             if (!$deduction) {

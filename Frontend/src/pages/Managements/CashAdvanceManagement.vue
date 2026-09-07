@@ -650,7 +650,7 @@ const approveRequest = async (selectedRequest) => {
     getCashAdvances({
         "employee_id": null,
         "status": null,
-        "per_page": 50,
+        "per_page": 100,
     });
     showReviewModal.value = false
 }
@@ -664,7 +664,7 @@ const rejectRequest = async (selectedRequest) => {
     getCashAdvances({
         "employee_id": null,
         "status": null,
-        "per_page": 50,
+        "per_page": 100,
     });
     showReviewModal.value = false
 }
@@ -691,7 +691,7 @@ const markAsPaid = async () => {
     getCashAdvances({
         "employee_id": null,
         "status": null,
-        "per_page": 50,
+        "per_page": 100,
     });
 
     // selectedRequest.value.paymentReference =
@@ -822,7 +822,7 @@ onMounted(() => {
     getCashAdvances({
         "employee_id": null,
         "status": null,
-        "per_page": 50,
+        "per_page": 100,
     });
 
 })
