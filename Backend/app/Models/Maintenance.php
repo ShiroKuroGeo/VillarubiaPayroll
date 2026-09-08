@@ -8,9 +8,9 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Notifications\Notifiable;
 
-#[Fillable(['label', 'value', 'status'])]
+#[Fillable(['name', 'description', 'value', 'tags', 'input_type', 'is_section', 'section_name', 'status',])]
 class Maintenance extends Model
 {
-    protected $table = 'system_maintenances';
+    protected $table = 'maintenances';
     use HasFactory, Notifiable;
 }

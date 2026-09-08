@@ -11,11 +11,28 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // Schema::create('maintenances', function (Blueprint $table) {
+        //     $table->id();
+        //     $table->string('name');
+        //     $table->text('description')->nullable();
+        //     $table->string('value')->nullable();
+        //     $table->string('tags')->nullable();
+        //     $table->boolean('is_section')->default(false);
+        //     $table->string('section_name')->nullable();
+        //     $table->enum('status', ['Online', 'Offline', 'Busy'])->default('Online');
+        //     $table->timestamps();
+        // });
+
         Schema::create('maintenances', function (Blueprint $table) {
             $table->id();
-            $table->string('label');
-            $table->string('value');
-            $table->enum('status', ['Online', 'Offline', 'Busy']);
+            $table->string('name');
+            $table->text('description')->nullable();
+            $table->string('value')->nullable();
+            $table->string('tags')->nullable();
+            $table->boolean('is_section')->default(false);
+            $table->string('section_name')->nullable();
+            $table->enum('input_type', ['text', 'number', 'time', 'pay-period'])->nullable();
+            $table->enum('status', ['Online', 'Offline', 'Busy'])->default('Online');
             $table->timestamps();
         });
     }

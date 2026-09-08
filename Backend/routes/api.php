@@ -71,6 +71,7 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::post('create', 'createMaintenance');
             Route::post('update', 'updateMaintenance');
             Route::post('remove', 'removeMaintenance');
+            Route::get('maintenance_list', 'getMaintenances');
         });
 
     Route::controller(PayrollController::class)

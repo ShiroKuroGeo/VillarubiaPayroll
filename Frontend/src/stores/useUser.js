@@ -1,11 +1,13 @@
 import api from "@/api/axios";
 import { showStatusAlert } from "@/utils/Swals";
 import { defineStore } from "pinia";
+import { ref } from "vue";
 import { useRouter } from "vue-router";
 
 export const useUserStore = defineStore('userStore', () => {
 
     const router = useRouter();
+    const username = ref('');
 
     const login = async (formData) => {
         try {
@@ -31,6 +33,11 @@ export const useUserStore = defineStore('userStore', () => {
         }
     }
 
+    const user = async () => {
+        const result = await api.get('user/isAuthenticated');
+        return result.data.data;
+    }
+
     const logout = async () => {
         try {
             await api.post('user/logout');
@@ -42,5 +49,5 @@ export const useUserStore = defineStore('userStore', () => {
         }
     };
 
-    return { login, logout }
+    return { login, logout, user, username }
 });

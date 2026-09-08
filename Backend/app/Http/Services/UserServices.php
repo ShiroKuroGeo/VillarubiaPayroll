@@ -107,7 +107,8 @@ class UserServices
         $user = User::where('id', auth()->user()->id)->first();
 
         return response_return('Succesfully created user.', [
-            'isAdmin' => $user->role === 'admin' ? true : false
+            'isAdmin' => $user->role === 'admin' ? true : false,
+            'name' => $user->name
         ], 201);
     }
 

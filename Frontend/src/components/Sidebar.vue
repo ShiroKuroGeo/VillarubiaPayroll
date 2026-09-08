@@ -7,67 +7,46 @@
                 <div class="brand-sub">Attendance &amp; Payroll</div>
             </div>
         </div>
-
         <nav class="nav-ledger">
             <div class="nav-label">Overview</div>
-            <a v-for="item in navOverview" :key="item.key" :class="{ active: isActive(item.key) }"
-                @click="select(item.key)">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                    v-html="item.icon"></svg>
+            <a v-for="item in navOverview" :key="item.key" :class="{ active: isActive(item.key) }" @click="select(item.key)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" v-html="item.icon"></svg>
                 {{ item.label }}
             </a>
-
             <div class="nav-label">Manage</div>
-            <a v-for="item in navManage" :key="item.key" :class="{ active: isActive(item.key) }"
-                @click="select(item.key)">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                    v-html="item.icon"></svg>
+            <a v-for="item in navManage" :key="item.key" :class="{ active: isActive(item.key) }" @click="select(item.key)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" v-html="item.icon"></svg>
                 {{ item.label }}
             </a>
         </nav>
-
         <div class="sidebar-foot">
-
             <div class="foot-user">
-
                 <div class="avatar-ring">
                     {{ userInitials }}
                 </div>
-
                 <div class="foot-copy">
-
                     <div class="foot-name">
-                        {{ userName }}
+                        {{ username }}
                     </div>
-
                     <div class="foot-role">
                         {{ userRole }}
                     </div>
-
                 </div>
-
             </div>
-
-
             <button class="logout-btn" @click="logout" aria-label="Log out" title="Log out">
-
-                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none"
-                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
                     <polyline points="16 17 21 12 16 7" />
                     <line x1="21" y1="12" x2="9" y2="12" />
                 </svg>
-
             </button>
-
         </div>
     </aside>
 </template>
 
 <script setup>
 import { useUserStore } from '@/stores/useUser'
-import { computed } from 'vue'
-
+import { onMounted, ref } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 
 const router = useRouter()
@@ -83,15 +62,14 @@ const props = defineProps({
         type: String,
         default: 'dashboard',
     },
-    userName: {
-        type: String,
-        default: 'Mara Reyes',
-    },
     userRole: {
         type: String,
         default: 'HR Administrator',
     },
 })
+
+const username = ref([]);
+const userInitials = ref('');
 
 const emit = defineEmits([
     'update:modelValue',
@@ -164,15 +142,6 @@ const navManage = [
     },
 ]
 
-const userInitials = computed(() => {
-    return props.userName
-        .split(' ')
-        .map(w => w[0])
-        .join('')
-        .slice(0, 2)
-        .toUpperCase()
-})
-
 function select(key) {
     emit('update:activeNav', key)
 
@@ -221,6 +190,21 @@ function isActive(key) {
 
     return route.name === routes[key]
 }
+
+const userInfo = async () => {
+    const result = await useUser.user()
+    username.value = result.name;
+    userInitials.value = result.name
+        .split(' ')
+        .map(w => w[0])
+        .join('')
+        .slice(0, 2)
+        .toUpperCase()
+}
+
+onMounted(async () => {
+    userInfo();
+});
 </script>
 
 

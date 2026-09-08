@@ -4,6 +4,7 @@ namespace App\Http\Services;
 
 use App\Models\Maintenance;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class MaintenanceServices
 {
@@ -36,28 +37,29 @@ class MaintenanceServices
     public function updateMaintenance(Request $request)
     {
         try {
-            $validation = $request->validate([
-                'id' => ['required', 'exists:maintenances,id']
+            $validated = $request->validate([
+                'settings' => 'required|array|min:1',
+                'settings.*.id' => 'required|integer|exists:maintenances,id',
+                'settings.*.value' => 'nullable|string',
             ]);
+        } catch (\Throwable $th) {
+            return response_return($th->getMessage(), [], 500);
+        }
 
-            $checkMaintenance = Maintenance::where('id', $validation['id'])->first();
+        try {
+            DB::transaction(function () use ($validated) {
+                foreach ($validated['settings'] as $setting) {
+                    Maintenance::where('id', $setting['id'])
+                        ->update(['value' => $setting['value']]);
+                }
+            });
 
-            if (!$checkMaintenance) return response_return('There is no existing maintenance', [], 409);
-
-            $updateMaintenance = $checkMaintenance->create($request->only(['label', 'value', 'status']));
-
-            if (!$updateMaintenance) return response_return('Failed to update the maintenance', [], 409);
-
-            return response_return('Succesfully updated the maintenance', [
-                'label' => $checkMaintenance->label,
-                'value' => $checkMaintenance->value,
-                'status' => $checkMaintenance->status
-            ], 201);
+            return response_return('Settings updated successfully.', [], 200);
         } catch (\Throwable $th) {
             return response_return('Error occurred in updating the maintenance', [], 500);
         }
     }
-    
+
     public function removeMaintenance(Request $request)
     {
         try {
@@ -72,6 +74,31 @@ class MaintenanceServices
             return response_return('Successfully remove the maintenance', [], 201);
         } catch (\Throwable $th) {
             return response_return('Error occurred in removing the maintenance', [], 500);
+        }
+    }
+
+    public function getMaintenances()
+    {
+        try {
+            $getMaintenance = Maintenance::orderBy('id', 'ASC')->get();
+
+            $data = $getMaintenance->map(function ($maintenance) {
+                return [
+                    'main_id' => $maintenance->id,
+                    'main_name' => $maintenance->name,
+                    'main_desc' => $maintenance->description,
+                    'main_value' => $maintenance->value,
+                    'main_tags' => $maintenance->tags,
+                    'main_is_section' => $maintenance->is_section,
+                    'main_section_name' => $maintenance->section_name,
+                    'main_input_type' => $maintenance->input_type,
+                    'main_status' => $maintenance->status,
+                ];
+            });
+
+            return response_return('Successfully retrieve the maintenance', $data->toArray(), 200);
+        } catch (\Throwable $th) {
+            return response_return('Error occurred in retrieving the maintenance', [], 500);
         }
     }
 }

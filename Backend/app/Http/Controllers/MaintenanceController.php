@@ -26,4 +26,7 @@ class MaintenanceController extends Controller
         return $this->maintenanceServices->removeMaintenance($request);
     }
 
+    public function getMaintenances(){
+        return $this->maintenanceServices->getMaintenances();
+    }
 }
