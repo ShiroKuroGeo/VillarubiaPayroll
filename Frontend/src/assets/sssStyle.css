@@ -1,4 +1,3 @@
-
 .main {
     flex: 1;
     min-width: 0;
@@ -980,8 +979,7 @@
     padding:
         1rem;
 
-    z-index:
-        9999;
+    z-index: 9;
 }
 
 

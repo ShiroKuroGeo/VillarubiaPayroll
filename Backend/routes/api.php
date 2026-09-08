@@ -8,7 +8,9 @@ use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\MaintenanceController;
 use App\Http\Controllers\PayrollController;
 use App\Http\Controllers\SalaryController;
+use App\Http\Controllers\SSSController;
 use App\Http\Controllers\UserController;
+use App\Http\Services\SSSServices;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/login', [UserController::class, 'login']);
@@ -98,4 +100,13 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::get('isAuthenticated', 'isAuthenticated');
         });
 
+    Route::controller(SSSController::class)
+        ->prefix('sss')
+        ->group(function () {
+            Route::post('create', 'createSSSDeduction');
+            Route::post('getRecords', 'getSSSDeductionsRecords');
+            Route::post('getHistory', 'getSSSDeductionsHistory');
+            Route::post('removeSSS', 'removeSSSDeduction');
+            Route::post('updateSSS', 'updateSSSDeduction');
+        });
 });

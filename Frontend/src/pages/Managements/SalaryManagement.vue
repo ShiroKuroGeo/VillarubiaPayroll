@@ -308,6 +308,7 @@
                         <div class="form-group">
                             <label>Basic Salary</label>
                             <div class="input-money">
+                                <span>₱</span>
                                 <input v-model.number="salaryForm.basicSalary" type="number" min="0" step="0.01" class="form-control" placeholder="0.00" />
                             </div>
                         </div>
@@ -467,15 +468,6 @@ const activeEmployeeCount = computed(() => {
 
 })
 
-const inactiveCount = computed(() => {
-
-    return salaryData.value.filter(
-        employee =>
-            employee.status === 'inactive'
-    ).length
-
-})
-
 const totalBasicSalary = computed(() => {
 
     return salaryData.value
@@ -537,36 +529,6 @@ const estimatedNetPayroll = computed(() => {
 
 })
 
-const monthlyCount = computed(() => {
-
-    return salaryData.value.filter(
-        employee =>
-            employee.status === 'active' &&
-            employee.salaryType === 'monthly'
-    ).length
-
-})
-
-const dailyCount = computed(() => {
-
-    return salaryData.value.filter(
-        employee =>
-            employee.status === 'active' &&
-            employee.salaryType === 'daily'
-    ).length
-
-})
-
-const hourlyCount = computed(() => {
-
-    return salaryData.value.filter(
-        employee =>
-            employee.status === 'active' &&
-            employee.salaryType === 'hourly'
-    ).length
-
-})
-
 const showModal = ref(false)
 
 const editingSalary = ref(false)
@@ -582,7 +544,7 @@ function createEmptyForm() {
         salaryType: 'Weekly',
         basicSalary: 0,
         effectiveDate: '2026-01-01',
-        status: 'active'
+        status: true
     }
 }
 

@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class SSSContribution extends Model
 {
+    protected $table = 'sss_contributions';
     protected $fillable = [
         'employee_id',
         'payroll_id',

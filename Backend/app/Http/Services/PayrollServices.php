@@ -26,7 +26,7 @@ class PayrollServices
             throw new \Exception('Payroll can only be generated on Saturdays.', 422);
         }
 
-        $cutoffEnd   = $today->copy()->startOfDay(); 
+        $cutoffEnd   = $today->copy()->startOfDay();
         $cutoffStart = $cutoffEnd->copy()->subDays(6);
         $payoutDate  = $cutoffEnd->copy();
 
@@ -86,12 +86,14 @@ class PayrollServices
                     ->where('status', 'Approved')
                     ->whereNull('payroll_id')
                     ->get();
+
                 $caTotal = $cashAdvances->sum('amount');
 
                 $sssEntries = SssContribution::where('employee_id', $employee->id)
                     ->where('status', 'Pending')
                     ->whereNull('payroll_id')
                     ->get();
+                    
                 $sssTotal = $sssEntries->sum('amount');
 
                 Deduction::create([
@@ -109,19 +111,26 @@ class PayrollServices
                     'net_pay'          => round($grossPay - $totalDeductions, 2),
                 ]);
 
-                // 6. Mark cash advances as posted/paid
                 CashAdvance::whereIn('id', $cashAdvances->pluck('id'))
                     ->update([
                         'payroll_id' => $payroll->id,
                         'status'     => 'Deducted/Paid',
                     ]);
 
-                // 7. Mark SSS entries as posted
-                SssContribution::whereIn('id', $sssEntries->pluck('id'))
-                    ->update([
+                foreach ($sssEntries as $sssEntry) {
+
+                    $sssEntry->update([
                         'payroll_id' => $payroll->id,
                         'status'     => 'Posted',
                     ]);
+
+                    $newEntry = $sssEntry->replicate();
+
+                    $newEntry->payroll_id = null;
+                    $newEntry->status = 'Pending';
+
+                    $newEntry->save();
+                }
 
                 DB::commit();
 

@@ -30,7 +30,6 @@ export const useSalaryStore = defineStore('salaryStore', () => {
             const updateSalary = await api.post('salary/update', data);
 
             await showStatusAlert(updateSalary.status, updateSalary.data.message);
-            
             return updateSalary.data;
         } catch (err) {
             const status = err.response?.status || 500;
