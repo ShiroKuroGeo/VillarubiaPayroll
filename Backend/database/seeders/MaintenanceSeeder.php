@@ -100,7 +100,18 @@ class MaintenanceSeeder extends Seeder
         Maintenance::create([
             'name' => 'Work Start Time',
             'description' => 'Official shift start time used to determine lateness.',
-            'value' => '08:00 AM',
+            'value' => '08:00',
+            'tags' => 'attendance,schedule',
+            'is_section' => false,
+            'section_name' => 'Overtime & Attendance Rules',
+            'input_type' => 'time',
+            'status' => 'Online',
+        ]);
+
+        Maintenance::create([
+            'name' => 'Work End Time',
+            'description' => 'Official shift end time.',
+            'value' => '17:00',
             'tags' => 'attendance,schedule',
             'is_section' => false,
             'section_name' => 'Overtime & Attendance Rules',

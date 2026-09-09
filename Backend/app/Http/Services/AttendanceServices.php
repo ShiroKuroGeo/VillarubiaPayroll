@@ -3,9 +3,14 @@
 namespace App\Http\Services;
 
 use App\Models\Attendance;
+use App\Models\Employee;
+use App\Models\Maintenance;
+use App\Models\BiometricLog;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use PhpOffice\PhpSpreadsheet\IOFactory;
 
 class AttendanceServices
 {
@@ -71,12 +76,10 @@ class AttendanceServices
     {
         try {
             $validation = $request->validate([
-                'attendance_id' => ['required', 'integer', 'exists:attendances,id'],
+                'id' => ['required', 'integer', 'exists:attendances,id'],
                 'date' => ['sometimes', 'date'],
-                'time_in' => ['nullable', 'date_format:H:i'],
-                'time_out' => ['nullable', 'date_format:H:i', 'after:time_in'],
-                'status' => ['sometimes', Rule::in(['Present', 'Leave', 'Half Day', 'Absent'])],
-                'remarks' => ['nullable', 'string'],
+                'timeIn' => ['nullable', 'date_format:H:i'],
+                'timeOut' => ['nullable', 'date_format:H:i', 'after:time_in'],
             ]);
         } catch (\Throwable $th) {
             return response_return('Error occurred in validating attendance information.', [], 422);
@@ -163,11 +166,326 @@ class AttendanceServices
     public function getAttendances()
     {
         try {
-            $attedance = Attendance::orderByDesc('date')->get();
+            $attedance = Attendance::with(['employee'])->orderByDesc('date')->get();
 
-            return response_return('Successfully retrieved salary history.', $attedance->toArray(), 200);
+            $data = $attedance->map(function ($attendance) {
+                return [
+                    "id" => $attendance->id,
+                    "employeeId" => $attendance->employee->id,
+                    "employeeName" => $attendance->employee->last_name . ', ' . $attendance->employee->first_name,
+                    "initials" => 'AA',
+                    "phoneNumber" => $attendance->employee->phone_number,
+                    "date" => $attendance->date,
+                    "timeIn" => $attendance->time_in,
+                    "timeOut" => $attendance->time_out,
+                    "overtimeHours" => $attendance->overtime_hours,
+                    "status" => $attendance->status,
+                    "notes" => $attendance->remarks,
+                    "image" => $attendance->employee->image
+                ];
+            });
+
+            return response_return('Successfully retrieved salary history.', $data->toArray(), 200);
         } catch (\Throwable $th) {
             return response_return('Error occurred in retrieving salary history.', [], 500);
         }
+    }
+
+    public function import(Request $request)
+    {
+        $request->validate([
+            'file' => [
+                'required',
+                'file',
+                'mimes:xlsx,xls,csv',
+            ],
+        ]);
+
+        $file = $request->file('file');
+
+        $spreadsheet = IOFactory::load(
+            $file->getPathname()
+        );
+
+        $worksheet = $spreadsheet->getActiveSheet();
+
+        $rows = $worksheet->toArray();
+
+        $imported = 0;
+        $duplicates = 0;
+        $employeesNotFound = [];
+
+        $affectedAttendances = [];
+
+        DB::beginTransaction();
+
+        $workStartTimeSetting = Maintenance::where(
+            'name',
+            'Work Start Time'
+        )->first();
+
+        $workEndTimeSetting = Maintenance::where(
+            'name',
+            'Work End Time'
+        )->first();
+
+        if (!$workStartTimeSetting || !$workEndTimeSetting) {
+
+            return response()->json([
+                'message' => 'Work Start Time or Work End Time setting was not found.'
+            ], 422);
+        }
+
+        $workStartTime = $workStartTimeSetting->value;
+        $workEndTime = $workEndTimeSetting->value;
+
+        try {
+
+            foreach ($rows as $index => $row) {
+
+                if ($index === 0) {
+                    continue;
+                }
+
+                $biometricUserId = trim(
+                    (string) ($row[0] ?? '')
+                );
+
+                $scanDateTime = trim(
+                    (string) ($row[1] ?? '')
+                );
+
+                if (
+                    empty($biometricUserId) ||
+                    empty($scanDateTime)
+                ) {
+                    continue;
+                }
+
+                try {
+                    $scanTime = Carbon::createFromFormat(
+                        'd/m/Y H:i',
+                        $scanDateTime
+                    );
+                } catch (\Exception $e) {
+
+                    continue;
+                }
+                $employee = Employee::where(
+                    'biometric_user_id',
+                    $biometricUserId
+                )->first();
+
+                if (!$employee) {
+
+                    $employeesNotFound[] =
+                        $biometricUserId;
+
+                    continue;
+                }
+
+                $log = BiometricLog::firstOrCreate(
+                    [
+                        'employee_id' => $employee->id,
+                        'scan_time' => $scanTime,
+                    ],
+                    [
+                        'biometric_user_id' =>
+                        $biometricUserId,
+                    ]
+                );
+
+                if ($log->wasRecentlyCreated) {
+
+                    $imported++;
+                } else {
+
+                    $duplicates++;
+                }
+
+                $date = $scanTime->format('Y-m-d');
+
+                $key =
+                    $employee->id .
+                    '_' .
+                    $date;
+
+                $affectedAttendances[$key] = [
+                    'employee_id' => $employee->id,
+                    'date' => $date,
+                ];
+            }
+
+            foreach ($affectedAttendances as $attendanceData) {
+                $this->processAttendance(
+                    $attendanceData['employee_id'],
+                    $attendanceData['date'],
+                    $workStartTime,
+                    $workEndTime
+                );
+            }
+
+            DB::commit();
+
+            return response_return('Biometric logs imported and attendance processed successfully.', [
+                'imported' =>
+                $imported,
+                'duplicates' =>
+                $duplicates,
+                'employees_not_found' =>
+                array_values(
+                    array_unique(
+                        $employeesNotFound
+                    )
+                ),
+                'attendances_processed' =>
+                count(
+                    $affectedAttendances
+                ),
+            ], 200);
+        } catch (\Exception $e) {
+
+            DB::rollBack();
+            return response_return('Failed to import biometric logs.', [], 500);
+        }
+    }
+
+    private function processAttendance($employeeId, $date, $workStartTime, $workEndTime)
+    {
+        $logs = BiometricLog::where(
+            'employee_id',
+            $employeeId
+        )
+            ->whereDate(
+                'scan_time',
+                $date
+            )
+            ->orderBy(
+                'scan_time',
+                'asc'
+            )
+            ->get();
+
+        if ($logs->isEmpty()) {
+            return;
+        }
+
+        $scheduledStartTime = Carbon::parse(
+            $date . ' ' . $workStartTime
+        );
+
+        $scheduledEndTime = Carbon::parse(
+            $date . ' ' . $workEndTime
+        );
+
+        $timeIn = Carbon::parse(
+            $logs->first()->scan_time
+        );
+
+        $timeOut = $logs->count() >= 2
+            ? Carbon::parse(
+                $logs->last()->scan_time
+            )
+            : null;
+
+        $lunchOut = null;
+        $lunchIn = null;
+
+        if ($logs->count() >= 4) {
+
+            $lunchOut = Carbon::parse(
+                $logs[1]->scan_time
+            );
+
+            $lunchIn = Carbon::parse(
+                $logs[2]->scan_time
+            );
+        }
+
+        /*
+     * Determine status
+     */
+
+        $status = 'Present';
+
+        if (
+            $timeIn->greaterThan(
+                $scheduledStartTime
+            )
+        ) {
+            $status = 'Late';
+        }
+
+        /*
+     * Calculate total worked minutes
+     */
+
+        $workedMinutes = 0;
+
+        if ($timeOut) {
+
+            $totalMinutes = $timeIn
+                ->diffInMinutes($timeOut);
+
+            $lunchMinutes = 0;
+
+            if ($lunchOut && $lunchIn) {
+
+                $lunchMinutes = $lunchOut
+                    ->diffInMinutes($lunchIn);
+            }
+
+            $workedMinutes =
+                $totalMinutes - $lunchMinutes;
+        }
+
+        $hoursWorked = round(
+            $workedMinutes / 60,
+            2
+        );
+
+        /*
+     * Calculate overtime
+     */
+
+        $overtimeHours = 0;
+
+        if (
+            $timeOut &&
+            $timeOut->greaterThan(
+                $scheduledEndTime
+            )
+        ) {
+
+            $overtimeHours = round(
+                $scheduledEndTime
+                    ->diffInMinutes($timeOut)
+                    / 60,
+                2
+            );
+        }
+
+        Attendance::updateOrCreate(
+            [
+                'employee_id' => $employeeId,
+                'date' => $date,
+            ],
+            [
+                'time_in' => $timeIn->format('H:i:s'),
+
+                'time_out' => $timeOut
+                    ? $timeOut->format('H:i:s')
+                    : null,
+
+                'hours_worked' => $hoursWorked,
+
+                'overtime_hours' => $overtimeHours,
+
+                'status' => $status,
+
+                'remarks' =>
+                'Generated from biometric logs',
+            ]
+        );
     }
 }

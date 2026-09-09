@@ -27,10 +27,6 @@ export const useCashAdvanceStore = defineStore('cashAdvanceStore', () => {
         }
     }
 
-    // employee_id
-    // status
-    // per_page
-
     const getCashAdvances = async (data) => {
         try {
 

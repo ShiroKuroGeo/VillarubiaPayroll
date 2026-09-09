@@ -354,8 +354,6 @@ const getInputType = (setting) => {
         return setting.inputType
     }
 
-    return setting
-
     const name = setting.name.toLowerCase()
 
     if (name.includes('time')) {
@@ -524,20 +522,14 @@ const saveSettings = async () => {
                 item.value = updated.value
             }
         })
-
     } catch (error) {
-
         console.error(
             'Failed to save settings:',
             error
         )
-
         alert('Failed to save system settings.')
-
     } finally {
-
         saving.value = false
-
     }
 
 }

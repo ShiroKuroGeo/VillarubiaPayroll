@@ -29,4 +29,8 @@ class AttendanceController extends Controller
     public function getAttendances(){
         return $this->attendanceServices->getAttendances();
     }
+
+    public function import(Request $request){
+        return $this->attendanceServices->import($request);
+    }
 }

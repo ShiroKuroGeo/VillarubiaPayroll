@@ -25,6 +25,7 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::post('update', 'updateAttendance');
             Route::post('view', 'getAttendance');
             Route::get('list', 'getAttendances');
+            Route::post('import', 'import');
         });
 
     Route::controller(BackupController::class)

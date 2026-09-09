@@ -1,199 +1,125 @@
 <template>
     <div class="main">
-
-        <!-- =====================================================
-             TOPBAR
-        ====================================================== -->
-
         <div class="topbar">
-
             <div class="d-flex align-items-center gap-2">
-
                 <button class="btn-menu d-lg-none" @click="$emit('toggle-sidebar')" aria-label="Toggle menu">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M3 12h18M3 6h18M3 18h18" />
                     </svg>
                 </button>
-
                 <div>
-
                     <div class="eyebrow">
                         Saturday, August 29, 2026
                     </div>
-
                     <h1>
                         Attendance Management
                     </h1>
-
                 </div>
-
             </div>
-
-
             <div class="d-flex align-items-center gap-3">
-
                 <div class="clock-chip">
-
                     <span class="dot"></span>
-
                     <span>
                         {{ liveClock }}
                     </span>
-
                 </div>
-
-
                 <input v-model="selectedDate" type="date" class="date-chip" />
-
-
                 <button class="btn btn-outline-ledger btn-sm" @click="exportCsv">
                     Export
                 </button>
-
             </div>
-
         </div>
-
         <div class="content">
-
             <div class="row g-3">
-
                 <div class="col-6 col-lg-3">
-
                     <div class="punch-card">
-
                         <div class="stamp green">
                             IN
                         </div>
-
                         <div class="stat-label">
                             Present Today
                         </div>
-
                         <div class="stat-period">
                             {{ formattedSelectedDate }}
                         </div>
-
                         <div class="stat-value">
                             {{ presentCount }}
                         </div>
-
                         <div class="stat-delta stat-delta--slate">
                             Out of {{ totalEmployeeCount }} employees
                         </div>
-
                     </div>
-
                 </div>
-
                 <div class="col-6 col-lg-3">
-
                     <div class="punch-card">
-
                         <div class="stamp gold">
                             LATE
                         </div>
-
                         <div class="stat-label">
                             Late Arrivals
                         </div>
-
                         <div class="stat-period">
                             {{ formattedSelectedDate }}
                         </div>
-
                         <div class="stat-value">
                             {{ lateCount }}
                         </div>
-
                         <div class="stat-delta stat-delta--gold">
                             Clocked in after 9:00 AM
                         </div>
-
                     </div>
-
                 </div>
-
                 <div class="col-6 col-lg-3">
-
                     <div class="punch-card">
-
                         <div class="stamp blue">
                             HRS
                         </div>
-
                         <div class="stat-label">
                             Total Hours Logged
                         </div>
-
                         <div class="stat-period">
                             {{ formattedSelectedDate }}
                         </div>
-
                         <div class="stat-value stat-value-money">
                             {{ totalHoursLogged }}
                         </div>
-
                         <div class="stat-delta stat-delta--blue">
                             Across all employees
                         </div>
-
                     </div>
-
                 </div>
-
-
                 <div class="col-6 col-lg-3">
-
                     <div class="punch-card">
-
                         <div class="stamp red">
                             OUT
                         </div>
-
                         <div class="stat-label">
                             Absent / On Leave
                         </div>
-
                         <div class="stat-period">
                             {{ formattedSelectedDate }}
                         </div>
-
                         <div class="stat-value">
                             {{ absentCount + leaveCount }}
                         </div>
-
                         <div class="stat-delta" style="color: var(--red, #C24D3B);">
                             {{ absentCount }} absent · {{ leaveCount }} on leave
                         </div>
-
                     </div>
-
                 </div>
-
             </div>
-
             <div class="row g-3 mb-3">
-
                 <div class="col-lg-8">
-
                     <div class="panel h-100">
-
                         <div class="d-flex justify-content-between align-items-start">
-
                             <div>
-
                                 <div class="panel-title">
                                     Attendance overview
                                 </div>
-
                                 <div class="panel-sub">
                                     Daily check-in / check-out summary
                                 </div>
-
                             </div>
-
-
                             <span class="chip">
                                 {{ formattedSelectedDate }}
                             </span>
@@ -375,65 +301,38 @@
                     </div>
 
                 </div>
-
             </div>
-
             <div class="panel">
-
                 <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-
                     <div>
-
                         <div class="section-title mb-0">
                             Daily attendance log
                         </div>
-
                         <div class="panel-sub">
                             Track employee check-ins, check-outs, and hours worked
                         </div>
-
                     </div>
 
                     <div class="d-flex gap-2 flex-wrap">
-
-
                         <div class="search-box">
-
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <circle cx="11" cy="11" r="7" />
                                 <path d="m20 20-3-3" />
                             </svg>
-
                             <input v-model="searchQuery" type="text" placeholder="Search employee..." />
-
                         </div>
-
-
                         <button class="add-btn" @click="openAddModal">
-                            + Add Record
+                            + Import Biometrics
                         </button>
-
                     </div>
-
                 </div>
-
-
-                <!-- FILTERS -->
-
                 <div class="filter-row">
-
                     <button v-for="filter in statusFilters" :key="filter.key" class="filter-pill" :class="{
                         active: statusFilter === filter.key
                     }" @click="statusFilter = filter.key">
                         {{ filter.label }}
                     </button>
-
                 </div>
-
-
-                <!-- TABLE -->
-
                 <div class="table-responsive">
 
 
@@ -448,7 +347,7 @@
                                 </th>
 
                                 <th>
-                                    Department
+                                    Phone Number
                                 </th>
 
                                 <th>
@@ -486,7 +385,6 @@
 
                         <tbody>
 
-
                             <tr v-for="record in paginatedAttendanceData" :key="record.id">
 
                                 <td>
@@ -495,22 +393,15 @@
 
 
                                         <div class="avatar-sm">
-
-                                            <img v-if="record.image" :src="record.image" :alt="record.employeeName" />
-
+                                            <img v-if="record.image" :src="storageImage(record.image)" :alt="record.employeeName" />
                                             <span v-else>
                                                 {{ record.initials }}
                                             </span>
-
                                         </div>
-
-
                                         <div>
-
                                             <div class="emp-name">
                                                 {{ record.employeeName }}
                                             </div>
-
                                             <div class="emp-role">
                                                 Employee #{{
                                                     record.employeeId
@@ -518,107 +409,53 @@
                                                         .padStart(4, '0')
                                                 }}
                                             </div>
-
                                         </div>
-
                                     </div>
-
                                 </td>
-
-
-                                <!-- Department -->
-
                                 <td>
-
-                                    <span class="department">
-                                        {{ record.department }}
+                                    <span class="phoneNumber">
+                                        {{ record.phoneNumber }}
                                     </span>
-
                                 </td>
-
-
-                                <!-- Date -->
-
                                 <td class="money">
-                                    {{ record.date }}
+                                    {{ formatDate(record.date) }}
                                 </td>
-
-
-                                <!-- Time In -->
-
                                 <td class="money" :class="{ deduction: record.status === 'late' }">
-                                    {{ record.timeIn || '—' }}
+                                    {{ formatTime(record.timeIn) || '—' }}
                                 </td>
-
-
-                                <!-- Time Out -->
-
                                 <td class="money">
-                                    {{ record.timeOut || '—' }}
+                                    {{ formatTime(record.timeOut) || '—' }}
                                 </td>
-
-
-                                <!-- Hours -->
-
                                 <td class="money allowance">
                                     {{ hoursWorked(record) }} hrs
                                 </td>
-
-
-                                <!-- Overtime -->
-
                                 <td class="money">
                                     {{ record.overtimeHours || 0 }} hrs
                                 </td>
-
-
-                                <!-- Status -->
-
                                 <td>
-
                                     <span class="badge-status" :class="badgeClass(record.status)">
                                         {{ formatStatus(record.status) }}
                                     </span>
-
                                 </td>
-
-
-                                <!-- Action -->
-
                                 <td>
-
                                     <div class="action-group">
-
                                         <button class="action-btn edit-btn" @click="openEditModal(record)">
                                             Edit
                                         </button>
-
-
                                         <button class="action-btn delete-btn" @click="deleteAttendance(record)">
                                             Delete
                                         </button>
-
                                     </div>
-
                                 </td>
-
                             </tr>
-
-
                         </tbody>
-
                     </table>
-
 
                     <div v-else class="empty-state">
                         No attendance records match your search or filter.
                     </div>
 
                 </div>
-
-
-                <!-- PAGINATION -->
-
                 <div class="pagination-bar" v-if="filteredAttendanceData.length">
 
                     <div class="pagination-info">
@@ -633,8 +470,7 @@
                         </button>
 
 
-                        <button v-for="page in pageNumbers" :key="page" class="page-btn"
-                            :class="{ active: page === currentPage }" @click="currentPage = page">
+                        <button v-for="page in pageNumbers" :key="page" class="page-btn" :class="{ active: page === currentPage }" @click="currentPage = page">
                             {{ page }}
                         </button>
 
@@ -654,224 +490,193 @@
                     </div>
 
                 </div>
-
             </div>
-
         </div>
 
         <div v-if="showModal" class="modal-backdrop" @click.self="closeModal">
-
             <div class="salary-modal">
-
                 <div class="modal-header">
-
                     <div>
-
                         <div class="modal-eyebrow">
                             {{ editingAttendance ? 'EDIT RECORD' : 'NEW RECORD' }}
                         </div>
-
                         <div class="modal-title">
                             {{ editingAttendance ? 'Edit Attendance' : 'Add Attendance' }}
                         </div>
-
                         <div class="modal-sub">
                             Log employee check-in and check-out
                         </div>
-
                     </div>
-
                     <button class="close-btn" @click="closeModal" aria-label="Close">
                         ×
                     </button>
-
                 </div>
-
-
-                <!-- Modal Body -->
-
                 <div class="modal-body">
+                    <div class="modal-body">
 
+                        <div class="import-section" v-if="!editingAttendance">
 
-                    <!-- Employee -->
-
-                    <div class="form-group">
-
-                        <label>
-                            Employee
-                        </label>
-
-                        <select v-model="attendanceForm.employeeId" class="form-control">
-
-                            <option value="" disabled>
-                                Select employee
-                            </option>
-
-                            <option v-for="employee in employeeOptions" :key="employee.id" :value="employee.id">
-                                {{ employee.name }}
-                            </option>
-
-                        </select>
-
-                    </div>
-
-
-                    <!-- Date / Status -->
-
-                    <div class="form-row">
-
-
-                        <div class="form-group">
-
-                            <label>
-                                Date
+                            <label class="import-label">
+                                Biometric Attendance File
                             </label>
 
-                            <input v-model="attendanceForm.date" type="date" class="form-control" />
+                            <input ref="biometricFileInput" type="file" accept=".csv,.xls,.xlsx,.txt" class="file-input" @change="handleBiometricFile" />
 
-                        </div>
-
-
-                        <div class="form-group">
-
-                            <label>
-                                Status
-                            </label>
-
-                            <select v-model="attendanceForm.status" class="form-control">
-
-                                <option value="present">
-                                    Present
-                                </option>
-
-                                <option value="late">
-                                    Late
-                                </option>
-
-                                <option value="absent">
-                                    Absent
-                                </option>
-
-                                <option value="leave">
-                                    On Leave
-                                </option>
-
-                            </select>
-
-                        </div>
-
-                    </div>
-
-
-                    <!-- Time In / Out -->
-
-                    <div class="form-row">
-
-
-                        <div class="form-group">
-
-                            <label>
-                                Time In
-                            </label>
-
-                            <input v-model="attendanceForm.timeIn" type="time" class="form-control"
-                                :disabled="attendanceForm.status === 'absent' || attendanceForm.status === 'leave'" />
-
-                        </div>
-
-
-                        <div class="form-group">
-
-                            <label>
-                                Time Out
-                            </label>
-
-                            <input v-model="attendanceForm.timeOut" type="time" class="form-control"
-                                :disabled="attendanceForm.status === 'absent' || attendanceForm.status === 'leave'" />
-
-                        </div>
-
-                    </div>
-
-
-                    <div class="form-row">
-
-                        <div class="form-group">
-                            <label>
-                                Overtime (hours)
-                            </label>
-                            <input v-model.number="attendanceForm.overtimeHours" type="number" min="0" step="0.25"
-                                class="form-control" placeholder="0" />
-                        </div>
-
-                        <div class="form-group">
-                            <label>
-                                Notes
-                            </label>
-                            <input v-model="attendanceForm.notes" type="text" class="form-control"
-                                placeholder="Optional remarks" />
-                        </div>
-
-                    </div>
-
-
-                    <!-- Preview -->
-
-                    <div class="salary-preview">
-
-
-                        <div>
-
-                            <div class="preview-label">
-                                HOURS WORKED
+                            <div v-if="selectedBiometricFile" class="selected-file">
+                                <strong>Selected File:</strong>
+                                {{ selectedBiometricFile.name }}
                             </div>
 
-                            <div class="preview-value">
-                                {{ formHoursWorked }} hrs
+                            <p class="import-description">
+                                Upload the attendance file exported from the biometric machine.
+                            </p>
+
+                        </div>
+
+                        <div class="" v-else>
+                            <div class="form-group">
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="avatar-md">
+                                        <img v-if="attendanceForm.image" :src="storageImage(attendanceForm.image)" :alt="attendanceForm.employeeName" />
+                                        <span v-else>
+                                            AA
+                                        </span>
+                                    </div>
+                                    <div>
+                                        <div class="emp-name" style="text-transform: uppercase;">
+                                            {{ attendanceForm.employeeName }}
+                                        </div>
+                                        <input type="text" hidden v-model="attendanceForm.employeeId">
+                                        <div class="emp-role">
+                                            Employee #{{
+                                                attendanceForm.employeeId
+                                                    .toString()
+                                                    .padStart(4, '0')
+                                            }}
+                                        </div>
+                                    </div>
+                                </div>
+
+
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>
+                                        Date
+                                    </label>
+                                    <input v-model="attendanceForm.date" type="date" class="form-control" />
+                                </div>
+                                <div class="form-group">
+                                    <label>
+                                        Status
+                                    </label>
+                                    <select v-model="attendanceForm.status" class="form-control">
+                                        <option value="Present">
+                                            Present
+                                        </option>
+                                        <option value="Half Day">
+                                            Half Day
+                                        </option>
+                                        <option value="Late">
+                                            Late
+                                        </option>
+                                        <option value="Absent">
+                                            Absent
+                                        </option>
+                                        <option value="Leave">
+                                            On Leave
+                                        </option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>
+                                        Time In
+                                    </label>
+                                    <input v-model="attendanceForm.timeIn" type="time" class="form-control" :disabled="attendanceForm.status === 'absent' || attendanceForm.status === 'leave'" />
+
+                                </div>
+
+
+                                <div class="form-group">
+
+                                    <label>
+                                        Time Out
+                                    </label>
+
+                                    <input v-model="attendanceForm.timeOut" type="time" class="form-control" :disabled="attendanceForm.status === 'absent' || attendanceForm.status === 'leave'" />
+
+                                </div>
+
+                            </div>
+
+
+                            <div class="form-row">
+
+                                <div class="form-group">
+                                    <label>
+                                        Overtime (hours)
+                                    </label>
+                                    <input v-model.number="attendanceForm.overtimeHours" type="number" min="0" step="0.25" class="form-control" placeholder="0" />
+                                </div>
+
+                                <div class="form-group">
+                                    <label>
+                                        Notes
+                                    </label>
+                                    <input v-model="attendanceForm.notes" type="text" class="form-control" placeholder="Optional remarks" />
+                                </div>
+
+                            </div>
+                            <div class="salary-preview">
+                                <div>
+                                    <div class="preview-label">
+                                        HOURS WORKED
+                                    </div>
+                                    <div class="preview-value">
+                                        {{ formHoursWorked }} hrs
+                                    </div>
+                                </div>
+                                <div class="preview-equation">
+                                    {{ attendanceForm.timeIn || '--:--' }}
+                                    →
+                                    {{ attendanceForm.timeOut || '--:--' }}
+
+                                    (+{{ attendanceForm.overtimeHours || 0 }} OT)
+
+                                </div>
+
                             </div>
 
                         </div>
 
-
-                        <div class="preview-equation">
-
-                            {{ attendanceForm.timeIn || '--:--' }}
-
-                            →
-
-                            {{ attendanceForm.timeOut || '--:--' }}
-
-                            (+{{ attendanceForm.overtimeHours || 0 }} OT)
-
-                        </div>
-
                     </div>
-
                 </div>
-
                 <div class="modal-footer">
-
                     <button class="cancel-btn" @click="closeModal">
                         Cancel
                     </button>
-
-
-                    <button class="save-btn" @click="saveAttendance">
-                        {{ editingAttendance ? 'Save Changes' : 'Add Record' }}
+                    <button class="save-btn" @click="saveBiometrics">
+                        {{ importing
+                            ? 'Importing...'
+                            : editingAttendance
+                                ? 'Save Changesasd'
+                                : 'Import Biometrics'
+                        }}
                     </button>
-
                 </div>
-
             </div>
-
         </div>
-
     </div>
 </template>
 
 
 <script setup>
 
+import { useAttendanceStore } from '@/stores/useAttendance';
+import { storageImage } from '@/utils/image';
 import {
     computed,
     onMounted,
@@ -890,15 +695,12 @@ defineEmits([
     'toggle-sidebar'
 ])
 
-
-// =====================================================
-// CLOCK
-// =====================================================
-
 const liveClock = ref('--:--:--')
-
+const selectedBiometricFile = ref(null);
+const importing = ref(false);
 let clockTimer = null
 
+const attendanceStore = useAttendanceStore();
 
 function tickClock() {
 
@@ -912,13 +714,24 @@ function tickClock() {
 
 }
 
+const formatDate = (date) => {
+    if (!date) return '';
 
-// =====================================================
-// SELECTED DATE (drives the stat cards)
-// =====================================================
+    return new Date(
+        `${date}T00:00:00`
+    ).toLocaleDateString(
+        'en-US',
+        {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric'
+        }
+    );
+};
 
-const selectedDate = ref('2026-08-29')
-
+const selectedDate = ref(
+    new Date().toISOString().split('T')[0]
+)
 
 const formattedSelectedDate = computed(() => {
 
@@ -926,7 +739,9 @@ const formattedSelectedDate = computed(() => {
         return ''
     }
 
-    const date = new Date(`${selectedDate.value}T00:00:00`)
+    const date = new Date(
+        `${selectedDate.value}T00:00:00`
+    )
 
     return date.toLocaleDateString(
         'en-US',
@@ -936,215 +751,24 @@ const formattedSelectedDate = computed(() => {
             year: 'numeric'
         }
     )
-
 })
 
+const handleBiometricFile = (event) => {
+    const file = event.target.files[0];
 
-// =====================================================
-// EMPLOYEE DATA
-// =====================================================
-
-const employeeOptions = ref([
-
-    {
-        id: 1,
-        name: 'Jonas Diaz',
-        department: 'Warehouse'
-    },
-
-    {
-        id: 2,
-        name: 'Carla Santos',
-        department: 'Accounting'
-    },
-
-    {
-        id: 3,
-        name: 'Ramon Tan',
-        department: 'Logistics'
-    },
-
-    {
-        id: 4,
-        name: 'Paulo Lim',
-        department: 'Customer Care'
-    },
-
-    {
-        id: 5,
-        name: 'Nadia Ang',
-        department: 'Marketing'
-    },
-
-    {
-        id: 6,
-        name: 'Erik Villar',
-        department: 'Warehouse'
+    if (!file) {
+        selectedBiometricFile.value = null;
+        return;
     }
 
-])
+    selectedBiometricFile.value = file;
+};
 
-
-// =====================================================
-// ATTENDANCE DATA
-// =====================================================
-
-const attendanceData = ref([
-
-    {
-        id: 1,
-
-        employeeId: 1,
-        employeeName: 'Jonas Diaz',
-        initials: 'JD',
-
-        department: 'Warehouse',
-
-        date: '2026-08-29',
-
-        timeIn: '08:02',
-        timeOut: '17:05',
-
-        overtimeHours: 0.5,
-
-        status: 'present',
-
-        notes: '',
-
-        image: null
-    },
-
-
-    {
-        id: 2,
-
-        employeeId: 2,
-        employeeName: 'Carla Santos',
-        initials: 'CS',
-
-        department: 'Accounting',
-
-        date: '2026-08-29',
-
-        timeIn: '09:24',
-        timeOut: '18:10',
-
-        overtimeHours: 0,
-
-        status: 'late',
-
-        notes: 'Traffic delay',
-
-        image: null
-    },
-
-
-    {
-        id: 3,
-
-        employeeId: 3,
-        employeeName: 'Ramon Tan',
-        initials: 'RT',
-
-        department: 'Logistics',
-
-        date: '2026-08-29',
-
-        timeIn: '07:55',
-        timeOut: '17:00',
-
-        overtimeHours: 1,
-
-        status: 'present',
-
-        notes: '',
-
-        image: null
-    },
-
-
-    {
-        id: 4,
-
-        employeeId: 4,
-        employeeName: 'Paulo Lim',
-        initials: 'PL',
-
-        department: 'Customer Care',
-
-        date: '2026-08-29',
-
-        timeIn: '',
-        timeOut: '',
-
-        overtimeHours: 0,
-
-        status: 'absent',
-
-        notes: 'No call, no show',
-
-        image: null
-    },
-
-
-    {
-        id: 5,
-
-        employeeId: 5,
-        employeeName: 'Nadia Ang',
-        initials: 'NA',
-
-        department: 'Marketing',
-
-        date: '2026-08-29',
-
-        timeIn: '',
-        timeOut: '',
-
-        overtimeHours: 0,
-
-        status: 'leave',
-
-        notes: 'Approved vacation leave',
-
-        image: null
-    },
-
-
-    {
-        id: 6,
-
-        employeeId: 6,
-        employeeName: 'Erik Villar',
-        initials: 'EV',
-
-        department: 'Warehouse',
-
-        date: '2026-08-29',
-
-        timeIn: '08:10',
-        timeOut: '17:15',
-
-        overtimeHours: 0,
-
-        status: 'present',
-
-        notes: '',
-
-        image: null
-    }
-
-])
-
-
-// =====================================================
-// FILTERS
-// =====================================================
+const attendanceData = ref([])
 
 const searchQuery = ref('')
 
 const statusFilter = ref('all')
-
 
 const statusFilters = [
 
@@ -1201,7 +825,7 @@ const filteredAttendanceData = computed(() => {
             record.employeeName
                 .toLowerCase()
                 .includes(search) ||
-            record.department
+            record.phoneNumber
                 .toLowerCase()
                 .includes(search)
 
@@ -1216,11 +840,6 @@ const filteredAttendanceData = computed(() => {
     })
 
 })
-
-
-// =====================================================
-// PAGINATION
-// =====================================================
 
 const currentPage = ref(1)
 
@@ -1283,11 +902,6 @@ const pageNumbers = computed(() => {
 
 })
 
-
-// Reset to page 1 whenever the visible record set changes shape
-// (date, search, or status filter), so pagination never points
-// at an empty page after a filter change.
-
 watch(
     [selectedDate, searchQuery, statusFilter, pageSize],
     () => {
@@ -1305,14 +919,9 @@ watch(
     }
 )
 
-
-// =====================================================
-// STATISTICS (based on selected date)
-// =====================================================
-
 const totalEmployeeCount = computed(() => {
 
-    return employeeOptions.value.length
+    return attendanceData.value.length
 
 })
 
@@ -1321,7 +930,7 @@ const presentCount = computed(() => {
 
     return recordsForSelectedDate.value.filter(
         record =>
-            record.status === 'present'
+            record.status === 'Present'
     ).length
 
 })
@@ -1329,22 +938,20 @@ const presentCount = computed(() => {
 
 const onTimeCount = computed(() => presentCount.value)
 
-
 const lateCount = computed(() => {
 
     return recordsForSelectedDate.value.filter(
         record =>
-            record.status === 'late'
+            record.status === 'Late'
     ).length
 
 })
-
 
 const absentCount = computed(() => {
 
     return recordsForSelectedDate.value.filter(
         record =>
-            record.status === 'absent'
+            record.status === 'Absent'
     ).length
 
 })
@@ -1354,11 +961,10 @@ const leaveCount = computed(() => {
 
     return recordsForSelectedDate.value.filter(
         record =>
-            record.status === 'leave'
+            record.status === 'Leave'
     ).length
 
 })
-
 
 const attendanceRate = computed(() => {
 
@@ -1374,7 +980,6 @@ const attendanceRate = computed(() => {
     )
 
 })
-
 
 function timeStringToHours(timeStr) {
 
@@ -1428,11 +1033,6 @@ const totalHoursLogged = computed(() => {
     return total.toFixed(1)
 
 })
-
-
-// =====================================================
-// MODAL
-// =====================================================
 
 const showModal = ref(false)
 
@@ -1492,11 +1092,6 @@ const formHoursWorked = computed(() => {
 
 })
 
-
-// =====================================================
-// ADD
-// =====================================================
-
 function openAddModal() {
 
     editingAttendance.value = false
@@ -1508,11 +1103,6 @@ function openAddModal() {
 
 }
 
-
-// =====================================================
-// EDIT
-// =====================================================
-
 function openEditModal(record) {
 
     editingAttendance.value = true
@@ -1522,6 +1112,10 @@ function openEditModal(record) {
         id: record.id,
 
         employeeId: record.employeeId,
+
+        image: record.image,
+
+        employeeName: record.employeeName,
 
         date: record.date,
 
@@ -1541,192 +1135,29 @@ function openEditModal(record) {
 
 }
 
-
-// =====================================================
-// CLOSE
-// =====================================================
-
 function closeModal() {
 
     showModal.value = false
 
 }
 
-
-// =====================================================
-// SAVE
-// =====================================================
-
-function saveAttendance() {
-
-    if (!attendanceForm.value.employeeId) {
-
-        alert('Please select an employee.')
-
-        return
-
-    }
-
-
-    if (!attendanceForm.value.date) {
-
-        alert('Please select a date.')
-
-        return
-
-    }
-
-
-    const employee =
-        employeeOptions.value.find(
-            item =>
-                Number(item.id) ===
-                Number(attendanceForm.value.employeeId)
-        )
-
-
-    if (!employee) {
-
-        alert('Employee not found.')
-
-        return
-
-    }
-
-
-    const isAbsentOrLeave =
-        attendanceForm.value.status === 'absent' ||
-        attendanceForm.value.status === 'leave'
-
-
+const saveBiometrics = async () => {
     if (editingAttendance.value) {
-
-        const index =
-            attendanceData.value.findIndex(
-                item =>
-                    item.id ===
-                    attendanceForm.value.id
-            )
-
-
-        if (index !== -1) {
-
-            attendanceData.value[index] = {
-
-                ...attendanceData.value[index],
-
-                employeeName: employee.name,
-
-                employeeId:
-                    Number(attendanceForm.value.employeeId),
-
-                department:
-                    employee.department,
-
-                date:
-                    attendanceForm.value.date,
-
-                timeIn:
-                    isAbsentOrLeave ? '' : attendanceForm.value.timeIn,
-
-                timeOut:
-                    isAbsentOrLeave ? '' : attendanceForm.value.timeOut,
-
-                overtimeHours:
-                    Number(attendanceForm.value.overtimeHours) || 0,
-
-                status:
-                    attendanceForm.value.status,
-
-                notes:
-                    attendanceForm.value.notes
-
-            }
-
-        }
-
+        console.log(attendanceForm.value);
     } else {
+        const formData = new FormData();
 
-        const exists =
-            attendanceData.value.some(
-                item =>
-                    item.employeeId ===
-                    Number(attendanceForm.value.employeeId) &&
-                    item.date ===
-                    attendanceForm.value.date
-            )
+        formData.append(
+            'file',
+            selectedBiometricFile.value
+        );
 
+        await attendanceStore.importBiometrics(formData);
 
-        if (exists) {
-
-            alert(
-                'This employee already has an attendance record for this date. Please edit the existing record instead.'
-            )
-
-            return
-
-        }
-
-
-        const initials =
-            employee.name
-                .split(' ')
-                .map(name => name.charAt(0))
-                .join('')
-                .substring(0, 2)
-                .toUpperCase()
-
-
-        attendanceData.value.push({
-
-            id:
-                Date.now(),
-
-            employeeId:
-                Number(attendanceForm.value.employeeId),
-
-            employeeName:
-                employee.name,
-
-            initials,
-
-            department:
-                employee.department,
-
-            date:
-                attendanceForm.value.date,
-
-            timeIn:
-                isAbsentOrLeave ? '' : attendanceForm.value.timeIn,
-
-            timeOut:
-                isAbsentOrLeave ? '' : attendanceForm.value.timeOut,
-
-            overtimeHours:
-                Number(attendanceForm.value.overtimeHours) || 0,
-
-            status:
-                attendanceForm.value.status,
-
-            notes:
-                attendanceForm.value.notes,
-
-            image:
-                null
-
-        })
-
+        closeModal()
     }
-
-
-    closeModal()
 
 }
-
-
-// =====================================================
-// DELETE
-// =====================================================
 
 function deleteAttendance(record) {
 
@@ -1748,11 +1179,6 @@ function deleteAttendance(record) {
         )
 
 }
-
-
-// =====================================================
-// FORMATTING
-// =====================================================
 
 function formatStatus(status) {
 
@@ -1793,10 +1219,28 @@ function badgeClass(status) {
 
 }
 
+const formatTime = (time) => {
+    if (!time) return '';
 
-// =====================================================
-// EXPORT
-// =====================================================
+    const [hours, minutes] = time.split(':');
+
+    const date = new Date();
+
+    date.setHours(
+        Number(hours),
+        Number(minutes),
+        0
+    );
+
+    return date.toLocaleTimeString(
+        'en-US',
+        {
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true
+        }
+    );
+};
 
 function exportCsv() {
 
@@ -1804,7 +1248,7 @@ function exportCsv() {
 
         [
             'Employee',
-            'Department',
+            'Phone Number',
             'Date',
             'Time In',
             'Time Out',
@@ -1823,7 +1267,7 @@ function exportCsv() {
 
             record.employeeName,
 
-            record.department,
+            record.phoneNumber,
 
             record.date,
 
@@ -1890,12 +1334,13 @@ function exportCsv() {
 
 }
 
+const getAttendance = async () => {
+    const lists = await attendanceStore.attendances();
+    attendanceData.value = lists.data;
+}
 
-// =====================================================
-// LIFECYCLE
-// =====================================================
 
-onMounted(() => {
+onMounted(async () => {
 
     tickClock()
 
@@ -1904,7 +1349,7 @@ onMounted(() => {
             tickClock,
             1000
         )
-
+    await getAttendance();
 })
 
 
@@ -3040,11 +2485,6 @@ onBeforeUnmount(() => {
         none;
 }
 
-
-/* =====================================================
-   AVATAR
-===================================================== */
-
 .avatar-sm {
 
     width:
@@ -3088,8 +2528,64 @@ onBeforeUnmount(() => {
         0;
 }
 
-
 .avatar-sm img {
+
+    width:
+        100%;
+
+    height:
+        100%;
+
+    object-fit:
+        cover;
+}
+
+.avatar-md {
+
+    width:
+        100px;
+
+    height:
+        100px;
+
+    margin-bottom: 10px;
+
+    border-radius:
+        50%;
+
+    overflow:
+        hidden;
+
+    background:
+        var(--amber-bg, #F6EEDB);
+
+    color:
+        var(--gold-dark, #9C7726);
+
+    display:
+        flex;
+
+    align-items:
+        center;
+
+    justify-content:
+        center;
+
+    font-family:
+        'Fraunces',
+        serif;
+
+    font-weight:
+        600;
+
+    font-size:
+        .78rem;
+
+    flex-shrink:
+        0;
+}
+
+.avatar-md img {
 
     width:
         100%;
@@ -3122,7 +2618,7 @@ onBeforeUnmount(() => {
 }
 
 
-.department {
+.phoneNumber {
 
     color:
         var(--ink-2, #28395E);
@@ -3541,11 +3037,6 @@ onBeforeUnmount(() => {
 
 }
 
-
-/* =====================================================
-   MODAL
-===================================================== */
-
 .modal-backdrop {
 
     position:
@@ -3570,7 +3061,7 @@ onBeforeUnmount(() => {
         1rem;
 
     z-index:
-        9999;
+        9;
 }
 
 
@@ -4294,5 +3785,67 @@ onBeforeUnmount(() => {
             1;
     }
 
+}
+
+.import-section {
+    padding: 1.25rem;
+    border: 1px solid var(--border, #E4E1D8);
+    border-radius: 12px;
+    background: var(--surface, #FAF9F5);
+}
+
+.import-label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--ink, #1F1D1A);
+    margin-bottom: 0.5rem;
+}
+
+.file-input {
+    display: block;
+    width: 100%;
+    font-size: 0.875rem;
+    color: var(--slate, #6B6455);
+    padding: 0.5rem 0;
+}
+
+.file-input::file-selector-button {
+    padding: 0.5rem 1rem;
+    margin-right: 0.75rem;
+    border: 1px solid var(--border, #E4E1D8);
+    border-radius: 8px;
+    background: #FFFFFF;
+    color: var(--ink, #1F1D1A);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.file-input::file-selector-button:hover {
+    background: var(--surface-hover, #F1EEE5);
+    border-color: var(--gold, #C9A24B);
+}
+
+.selected-file {
+    margin-top: 0.75rem;
+    padding: 0.625rem 0.875rem;
+    border-radius: 8px;
+    background: var(--surface-hover, #F1EEE5);
+    font-size: 0.8125rem;
+    color: var(--ink, #1F1D1A);
+}
+
+.selected-file strong {
+    font-weight: 600;
+    margin-right: 0.375rem;
+}
+
+.import-description {
+    margin-top: 0.75rem;
+    font-size: 0.8125rem;
+    color: var(--slate, #6B6455);
+    line-height: 1.5;
 }
 </style>
