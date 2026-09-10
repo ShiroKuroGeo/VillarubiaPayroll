@@ -44,7 +44,9 @@ const login = async () => {
     const login_user = await userStore.login({
         'email': email.value,
         'password': password.value,
-    });
+    }); 
+
+    console.log(login_user.data.data)
 
     if(login_user.data.role === 'admin') {
        router.push({ name: 'admin.dashboard' });

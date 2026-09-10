@@ -71,77 +71,258 @@ class AttendanceServices
             return response_return('Error occurred in creating an attendance.', [], 500);
         }
     }
-
     public function updateAttendance(Request $request)
     {
         try {
+
             $validation = $request->validate([
-                'id' => ['required', 'integer', 'exists:attendances,id'],
-                'date' => ['sometimes', 'date'],
-                'timeIn' => ['nullable', 'date_format:H:i'],
-                'timeOut' => ['nullable', 'date_format:H:i', 'after:time_in'],
+                'id' => [
+                    'required',
+                    'integer',
+                    'exists:attendances,id',
+                ],
+
+                'date' => [
+                    'sometimes',
+                    'date',
+                ],
+
+                'timeIn' => [
+                    'nullable',
+                    'date_format:H:i',
+                ],
+
+                'timeOut' => [
+                    'nullable',
+                    'date_format:H:i',
+                ],
+
+                'status' => [
+                    'sometimes',
+                    'in:Present,Leave,Half Day,Absent,Late',
+                ],
+
+                'remarks' => [
+                    'nullable',
+                    'string',
+                ],
             ]);
         } catch (\Throwable $th) {
-            return response_return('Error occurred in validating attendance information.', [], 422);
+
+            return response_return(
+                $th->getMessage(),
+                [],
+                422
+            );
         }
 
+
         try {
-            $checkAttendance = Attendance::where('id', $validation['attendance_id'])->first();
+
+            $checkAttendance = Attendance::find(
+                $validation['id']
+            );
+
 
             if (!$checkAttendance) {
-                return response_return('Attendance record was not found. Please try again.', [], 409);
+
+                return response_return(
+                    'Attendance record was not found. Please try again.',
+                    [],
+                    409
+                );
             }
 
-            if (!empty($validation['date']) && $validation['date'] !== $checkAttendance->date) {
-                $checkDuplicate = Attendance::where('employee_id', $checkAttendance->employee_id)
-                    ->where('date', $validation['date'])
-                    ->where('id', '!=', $checkAttendance->id)
+
+            if (
+                !empty($validation['date']) &&
+                $validation['date'] !== $checkAttendance->date
+            ) {
+
+                $checkDuplicate = Attendance::where(
+                    'employee_id',
+                    $checkAttendance->employee_id
+                )
+                    ->where(
+                        'date',
+                        $validation['date']
+                    )
+                    ->where(
+                        'id',
+                        '!=',
+                        $checkAttendance->id
+                    )
                     ->exists();
 
+
                 if ($checkDuplicate) {
-                    return response_return('Attendance for this employee on this date already exists.', [], 409);
+
+                    return response_return(
+                        'Attendance for this employee on this date already exists.',
+                        [],
+                        409
+                    );
                 }
             }
 
-            $timeIn = array_key_exists('time_in', $validation) ? $validation['time_in'] : $checkAttendance->time_in;
-            $timeOut = array_key_exists('time_out', $validation) ? $validation['time_out'] : $checkAttendance->time_out;
 
-            $hoursWorked = $checkAttendance->hours_worked;
-            $overtimeHours = $checkAttendance->overtime_hours;
+            $timeIn = array_key_exists(
+                'timeIn',
+                $validation
+            )
+                ? $validation['timeIn']
+                : $checkAttendance->time_in;
 
-            if (!empty($timeIn) && !empty($timeOut)) {
-                $parsedIn = Carbon::createFromFormat('H:i', substr($timeIn, 0, 5));
-                $parsedOut = Carbon::createFromFormat('H:i', substr($timeOut, 0, 5));
+            $timeOut = array_key_exists(
+                'timeOut',
+                $validation
+            )
+                ? $validation['timeOut']
+                : $checkAttendance->time_out;
 
-                $totalHours = $parsedIn->diffInMinutes($parsedOut) / 60;
+            if (
+                !empty($timeIn) &&
+                !empty($timeOut)
+            ) {
 
-                $hoursWorked = round(min($totalHours, 8), 2);
-                $overtimeHours = round(max($totalHours - 8, 0), 2);
-            } elseif (empty($timeIn) || empty($timeOut)) {
-                $hoursWorked = 0;
-                $overtimeHours = 0;
+                $parsedIn = Carbon::createFromFormat(
+                    'H:i',
+                    substr($timeIn, 0, 5)
+                );
+
+
+                $parsedOut = Carbon::createFromFormat(
+                    'H:i',
+                    substr($timeOut, 0, 5)
+                );
+
+
+                if (
+                    $parsedOut->lessThanOrEqualTo(
+                        $parsedIn
+                    )
+                ) {
+
+                    return response_return(
+                        'Time Out must be later than Time In.',
+                        [],
+                        422
+                    );
+                }
             }
 
+            $hoursWorked = 0;
+
+            $overtimeHours = 0;
+
+
+            if (
+                !empty($timeIn) &&
+                !empty($timeOut)
+            ) {
+
+                $parsedIn = Carbon::createFromFormat(
+                    'H:i',
+                    substr($timeIn, 0, 5)
+                );
+
+
+                $parsedOut = Carbon::createFromFormat(
+                    'H:i',
+                    substr($timeOut, 0, 5)
+                );
+
+
+                $totalMinutes =
+                    $parsedIn->diffInMinutes(
+                        $parsedOut
+                    );
+
+
+                $totalHours =
+                    $totalMinutes / 60;
+
+                $hoursWorked = round(
+                    min(
+                        $totalHours,
+                        8
+                    ),
+                    2
+                );
+
+                $overtimeHours = round(
+                    max(
+                        $totalHours - 8,
+                        0
+                    ),
+                    2
+                );
+            }
+
+            $status = array_key_exists(
+                'status',
+                $validation
+            )
+                ? $validation['status']
+                : $checkAttendance->status;
+
             $updateAttendance = $checkAttendance->update([
-                'date' => $validation['date'] ?? $checkAttendance->date,
+                'date' =>
+                $validation['date']
+                    ?? $checkAttendance->date,
+
                 'time_in' => $timeIn,
+
                 'time_out' => $timeOut,
+
                 'hours_worked' => $hoursWorked,
+
                 'overtime_hours' => $overtimeHours,
-                'status' => $validation['status'] ?? $checkAttendance->status,
-                'remarks' => array_key_exists('remarks', $validation) ? $validation['remarks'] : $checkAttendance->remarks,
+
+                'status' => $status,
+
+                'remarks' => array_key_exists(
+                    'remarks',
+                    $validation
+                )
+                    ? $validation['remarks']
+                    : $checkAttendance->remarks,
             ]);
 
             if (!$updateAttendance) {
-                return response_return('Cannot save attendance information at this moment.', [], 409);
+                return response_return(
+                    'Cannot save attendance information at this moment.',
+                    [],
+                    409
+                );
             }
 
-            return response_return('Successfully updated attendance.', $checkAttendance->toArray(), 200);
+            $checkAttendance->refresh();
+
+            return response_return(
+                'Successfully updated attendance.',
+                $checkAttendance->toArray(),
+                200
+            );
         } catch (\Throwable $th) {
-            return response_return('Error occurred in updating attendance.', [], 500);
+
+            logger()->error(
+                'UPDATE ATTENDANCE ERROR',
+                [
+                    'message' => $th->getMessage(),
+                    'line' => $th->getLine(),
+                    'file' => $th->getFile(),
+                ]
+            );
+
+
+            return response_return(
+                'Error occurred in updating attendance.',
+                [],
+                500
+            );
         }
     }
-
     public function getAttendance(Request $request)
     {
         try {
@@ -205,10 +386,9 @@ class AttendanceServices
         $file = $request->file('file');
 
         $spreadsheet = IOFactory::load($file->getPathname());
-        $worksheet = $spreadsheet->getActiveSheet();
 
-        // Third arg "true" for formatted strings can help "18:25" come back as
-        // a plain string; keep the raw fallback in parseExcelTimeCell() too.
+        $worksheet = $spreadsheet->getSheet(2);
+
         $rows = $worksheet->toArray(null, true, true, false);
 
         $imported = 0;
@@ -216,61 +396,106 @@ class AttendanceServices
         $employeesNotFound = [];
         $affectedAttendances = [];
 
-        DB::beginTransaction();
+        $workStartTimeSetting = Maintenance::where(
+            'name',
+            'Work Start Time'
+        )->first();
 
-        $workStartTimeSetting = Maintenance::where('name', 'Work Start Time')->first();
-        $workEndTimeSetting = Maintenance::where('name', 'Work End Time')->first();
+        $workEndTimeSetting = Maintenance::where(
+            'name',
+            'Work End Time'
+        )->first();
 
         if (!$workStartTimeSetting || !$workEndTimeSetting) {
             return response()->json([
-                'message' => 'Work Start Time or Work End Time setting was not found.'
+                'message' =>
+                'Work Start Time or Work End Time setting was not found.'
             ], 422);
         }
 
         $workStartTime = $workStartTimeSetting->value;
         $workEndTime = $workEndTimeSetting->value;
 
+        DB::beginTransaction();
+
         try {
-            // Flatten the pivoted report into simple (biometric_user_id, scan_time) punches.
             $punches = $this->parseDeliAttendanceReport($rows);
 
-            foreach ($punches as $punch) {
-                $biometricUserId = $punch['biometric_user_id'];
-                $scanTime = $punch['scan_time'];
+            $groupedPunches = collect($punches)
+                ->groupBy(function ($punch) {
 
-                $employee = Employee::where('biometric_user_id', $biometricUserId)->first();
+                    return $punch['biometric_user_id']
+                        . '|'
+                        . Carbon::parse(
+                            $punch['scan_time']
+                        )->format('Y-m-d');
+                });
+
+            foreach ($groupedPunches as $key => $dailyPunches) {
+
+                $firstPunch = $dailyPunches->first();
+
+                $biometricUserId = trim(
+                    (string) $firstPunch['biometric_user_id']
+                );
+
+                $date = Carbon::parse(
+                    $firstPunch['scan_time']
+                )->format('Y-m-d');
+
+                $employee = Employee::where(
+                    'biometric_user_id',
+                    $biometricUserId
+                )->first();
 
                 if (!$employee) {
+
                     $employeesNotFound[] = $biometricUserId;
+
                     continue;
                 }
 
-                $log = BiometricLog::firstOrCreate(
-                    [
-                        'employee_id' => $employee->id,
-                        'scan_time' => $scanTime,
-                    ],
-                    [
-                        'biometric_user_id' => $biometricUserId,
-                    ]
-                );
+                BiometricLog::where(
+                    'employee_id',
+                    $employee->id
+                )
+                    ->whereDate(
+                        'scan_time',
+                        $date
+                    )
+                    ->delete();
 
-                if ($log->wasRecentlyCreated) {
+                foreach ($dailyPunches as $punch) {
+
+                    $scanTime = Carbon::parse(
+                        $punch['scan_time']
+                    );
+
+                    BiometricLog::create([
+                        'employee_id' =>
+                        $employee->id,
+
+                        'biometric_user_id' =>
+                        $biometricUserId,
+
+                        'scan_time' =>
+                        $scanTime,
+                    ]);
+
                     $imported++;
-                } else {
-                    $duplicates++;
                 }
 
-                $date = $scanTime->format('Y-m-d');
-                $key = $employee->id . '_' . $date;
-
-                $affectedAttendances[$key] = [
+                $affectedAttendances[$employee->id . '_' . $date] = [
                     'employee_id' => $employee->id,
                     'date' => $date,
                 ];
             }
 
-            foreach ($affectedAttendances as $attendanceData) {
+            foreach (
+                $affectedAttendances
+                as $attendanceData
+            ) {
+
                 $this->processAttendance(
                     $attendanceData['employee_id'],
                     $attendanceData['date'],
@@ -281,163 +506,303 @@ class AttendanceServices
 
             DB::commit();
 
-            return response_return('Biometric logs imported and attendance processed successfully.', [
-                'imported' => $imported,
-                'duplicates' => $duplicates,
-                'employees_not_found' => array_values(array_unique($employeesNotFound)),
-                'attendances_processed' => count($affectedAttendances),
-            ], 200);
-        } catch (\Exception $e) {
+            return response_return(
+                'Biometric logs imported and attendance processed successfully.',
+                [
+                    'imported' => $imported,
+                    'duplicates' => $duplicates,
+                    'employees_not_found' =>
+                    array_values(
+                        array_unique(
+                            $employeesNotFound
+                        )
+                    ),
+                    'attendances_processed' =>
+                    count(
+                        $affectedAttendances
+                    ),
+                ],
+                200
+            );
+        } catch (\Throwable $e) {
+
             DB::rollBack();
-            return response_return('Failed to import biometric logs: ' . $e->getMessage(), [], 500);
+
+            return response_return(
+                'Failed to import biometric logs: '
+                    . $e->getMessage(),
+                [],
+                500
+            );
         }
     }
 
-    /**
-     * Walks the pivoted "Employee Attendance Table" grid and returns a flat
-     * array of ['biometric_user_id' => string, 'scan_time' => Carbon] punches.
-     */
     private function parseDeliAttendanceReport(array $rows): array
     {
         $punches = [];
 
-        $numCols = 0;
-        foreach ($rows as $r) {
-            $numCols = max($numCols, count($r));
-        }
+        $reportStartDate = null;
 
-        // 1. One "User ID" label per employee block.
-        $userIdCells = [];
-        foreach ($rows as $rowIndex => $row) {
-            foreach ($row as $colIndex => $value) {
-                if (is_string($value) && trim($value) === 'User ID') {
-                    $userIdCells[] = ['row' => $rowIndex, 'col' => $colIndex];
-                }
-            }
-        }
-
-        if (empty($userIdCells)) {
-            return $punches;
-        }
-
-        // 2. "Dept." labels mark where each employee's block starts.
-        $deptCols = [];
         foreach ($rows as $row) {
-            foreach ($row as $colIndex => $value) {
-                if (is_string($value) && trim($value) === 'Dept.') {
-                    $deptCols[] = $colIndex;
+
+            foreach ($row as $cell) {
+
+                if (
+                    is_string($cell) &&
+                    preg_match(
+                        '/Attendance date:(\d{4}-\d{2}-\d{2})/i',
+                        trim($cell),
+                        $matches
+                    )
+                ) {
+
+                    $reportStartDate = Carbon::parse(
+                        $matches[1]
+                    );
+
+                    break 2;
                 }
             }
         }
-        $deptCols = array_values(array_unique($deptCols));
-        sort($deptCols);
 
-        $reportDate = $this->findReportMonth($rows) ?? Carbon::now();
+        if (!$reportStartDate) {
+            return [];
+        }
 
-        foreach ($userIdCells as $userIdCell) {
-            $userIdRow = $userIdCell['row'];
-            $userIdCol = $userIdCell['col'];
+        $blockSize = 15;
 
-            $biometricUserId = $this->firstNonEmptyRight($rows, $userIdRow, $userIdCol, $numCols);
-            if ($biometricUserId === null) {
-                continue;
+        $totalColumns = 0;
+
+        foreach ($rows as $row) {
+
+            $totalColumns = max(
+                $totalColumns,
+                count($row)
+            );
+        }
+
+        $timeCardRow = null;
+
+        foreach ($rows as $rowIndex => $row) {
+
+            foreach ($row as $cell) {
+
+                if (
+                    is_string($cell) &&
+                    trim($cell) === 'Time Card'
+                ) {
+
+                    $timeCardRow = $rowIndex;
+
+                    break 2;
+                }
             }
-            $biometricUserId = trim((string) $biometricUserId);
+        }
 
-            // Which block does this User ID belong to?
+        if ($timeCardRow === null) {
+            return [];
+        }
+
+        $headerRow = $timeCardRow + 2;
+
+        $dataStartRow = $timeCardRow + 3;
+
+        for (
             $blockStart = 0;
-            foreach ($deptCols as $deptCol) {
-                if ($deptCol <= $userIdCol) {
-                    $blockStart = $deptCol;
-                }
-            }
-            $blockEnd = $numCols - 1;
-            foreach ($deptCols as $deptCol) {
-                if ($deptCol > $blockStart) {
-                    $blockEnd = $deptCol - 1;
-                    break;
-                }
-            }
+            $blockStart < $totalColumns;
+            $blockStart += $blockSize
+        ) {
 
-            // 3. Find the "Date/Weekday" header inside this block -> Time Card
-            // data starts two rows below it (skip the In/Out sub-header row).
-            $timeCardHeaderRow = null;
-            for ($r = $userIdRow; $r < count($rows); $r++) {
-                for ($c = $blockStart; $c <= $blockEnd; $c++) {
-                    $cell = $rows[$r][$c] ?? null;
-                    if (is_string($cell) && str_contains($cell, 'Date/Weekday')) {
-                        $timeCardHeaderRow = $r;
-                        break 2;
+            $blockEnd = $blockStart + $blockSize - 1;
+
+            $biometricUserId = null;
+
+            for (
+                $r = 0;
+                $r < $dataStartRow;
+                $r++
+            ) {
+
+                for (
+                    $c = $blockStart;
+                    $c <= $blockEnd;
+                    $c++
+                ) {
+
+                    $cell =
+                        $rows[$r][$c]
+                        ?? null;
+
+                    if (
+                        is_string($cell) &&
+                        trim($cell) === 'User ID'
+                    ) {
+
+                        for (
+                            $nextCol = $c + 1;
+                            $nextCol <= $blockEnd;
+                            $nextCol++
+                        ) {
+
+                            $value =
+                                $rows[$r][$nextCol]
+                                ?? null;
+
+                            if (
+                                $value !== null &&
+                                trim((string) $value) !== ''
+                            ) {
+
+                                $biometricUserId =
+                                    trim((string) $value);
+
+                                break 3;
+                            }
+                        }
                     }
                 }
             }
 
-            if ($timeCardHeaderRow === null) {
+            if (!$biometricUserId) {
                 continue;
             }
 
-            $dayRowStart = $timeCardHeaderRow + 2;
+            $columnTypes = [];
 
-            // 4. Walk day rows until the day-label cell goes blank.
-            for ($r = $dayRowStart; $r < count($rows); $r++) {
-                $dayLabel = $rows[$r][$blockStart] ?? null;
+            for (
+                $c = $blockStart + 1;
+                $c <= $blockEnd;
+                $c++
+            ) {
 
-                if ($dayLabel === null || trim((string) $dayLabel) === '') {
-                    break;
+                $header =
+                    strtolower(
+                        trim(
+                            (string) (
+                                $rows[$headerRow][$c]
+                                ?? ''
+                            )
+                        )
+                    );
+
+                if ($header === 'in') {
+
+                    $columnTypes[$c] = 'in';
+                } elseif ($header === 'out') {
+
+                    $columnTypes[$c] = 'out';
                 }
+            }
 
-                if (!preg_match('/^(\d{1,2})/', trim((string) $dayLabel), $m)) {
+            logger()->info('COLUMN TYPES DEBUG', [
+                'employee_id' => $biometricUserId,
+                'block_start' => $blockStart,
+                'block_end' => $blockEnd,
+                'column_types' => $columnTypes,
+            ]);
+
+            for (
+                $r = $dataStartRow;
+                $r < count($rows);
+                $r++
+            ) {
+
+                $dayLabel =
+                    $rows[$r][$blockStart]
+                    ?? null;
+
+                if (
+                    empty(trim((string) $dayLabel))
+                ) {
                     continue;
                 }
-                $dayOfMonth = (int) $m[1];
 
-                for ($c = $blockStart + 1; $c <= $blockEnd; $c++) {
-                    $cell = $rows[$r][$c] ?? null;
+                if (
+                    !preg_match(
+                        '/^(\d{1,2})/',
+                        trim((string) $dayLabel),
+                        $matches
+                    )
+                ) {
+                    continue;
+                }
 
-                    if ($cell === null || trim((string) $cell) === '') {
+                $day = (int) $matches[1];
+
+
+                for (
+                    $c = $blockStart + 1;
+                    $c <= $blockEnd;
+                    $c++
+                ) {
+
+                    $type =
+                        $columnTypes[$c]
+                        ?? null;
+
+                    if (!$type) {
                         continue;
                     }
 
-                    $time = $this->parseExcelTimeCell($cell);
-                    if ($time === null) {
+                    $cell =
+                        $rows[$r][$c]
+                        ?? null;
+
+                    $time =
+                        $this->parseExcelTimeCell(
+                            $cell
+                        );
+
+                    if (!$time) {
                         continue;
                     }
 
                     $scanTime = Carbon::create(
-                        $reportDate->year,
-                        $reportDate->month,
-                        $dayOfMonth,
+                        $reportStartDate->year,
+                        $reportStartDate->month,
+                        $day,
                         $time['hour'],
                         $time['minute'],
                         0
                     );
 
                     $punches[] = [
-                        'biometric_user_id' => $biometricUserId,
-                        'scan_time' => $scanTime,
+
+                        'biometric_user_id' =>
+                        $biometricUserId,
+
+                        'scan_time' =>
+                        $scanTime,
+
+                        'type' =>
+                        $type,
                     ];
                 }
             }
         }
 
-        return $punches;
-    }
+        $uniquePunches = [];
 
-    private function firstNonEmptyRight(array $rows, int $rowIndex, int $fromCol, int $numCols)
-    {
-        for ($c = $fromCol + 1; $c < $numCols; $c++) {
-            $value = $rows[$rowIndex][$c] ?? null;
-            if ($value !== null && trim((string) $value) !== '') {
-                return $value;
-            }
+        foreach ($punches as $punch) {
+
+            $key =
+                $punch['biometric_user_id']
+                . '_'
+                . $punch['scan_time']
+                ->format('Y-m-d H:i:s')
+                . '_'
+                . $punch['type'];
+
+            $uniquePunches[$key] =
+                $punch;
         }
-        return null;
+
+
+        return array_values(
+            $uniquePunches
+        );
     }
 
-    /**
-     * Cells may come back as "18:25" text, or as an Excel time fraction
-     * (e.g. 0.7673611 = 18:25 as a fraction of a 24h day).
-     */
     private function parseExcelTimeCell($cell): ?array
     {
         if (is_string($cell) && preg_match('/^(\d{1,2}):(\d{2})$/', trim($cell), $m)) {
@@ -455,181 +820,9 @@ class AttendanceServices
         return null;
     }
 
-    private function findReportMonth(array $rows): ?Carbon
-    {
-        foreach ($rows as $row) {
-            foreach ($row as $value) {
-                if (is_string($value) && str_contains($value, 'Attendance date:')) {
-                    if (preg_match('/(\d{4}-\d{2}-\d{2})/', $value, $m)) {
-                        return Carbon::parse($m[1]);
-                    }
-                }
-            }
-        }
-        return null;
-    }
-
-    // public function import(Request $request)
-    // {
-    //     $request->validate([
-    //         'file' => [
-    //             'required',
-    //             'file',
-    //             'mimes:xlsx,xls,csv',
-    //         ],
-    //     ]);
-
-    //     $file = $request->file('file');
-
-    //     $spreadsheet = IOFactory::load(
-    //         $file->getPathname()
-    //     );
-
-    //     $worksheet = $spreadsheet->getActiveSheet();
-
-    //     $rows = $worksheet->toArray();
-
-    //     $imported = 0;
-    //     $duplicates = 0;
-    //     $employeesNotFound = [];
-
-    //     $affectedAttendances = [];
-
-    //     DB::beginTransaction();
-
-    //     $workStartTimeSetting = Maintenance::where(
-    //         'name',
-    //         'Work Start Time'
-    //     )->first();
-
-    //     $workEndTimeSetting = Maintenance::where(
-    //         'name',
-    //         'Work End Time'
-    //     )->first();
-
-    //     if (!$workStartTimeSetting || !$workEndTimeSetting) {
-
-    //         return response()->json([
-    //             'message' => 'Work Start Time or Work End Time setting was not found.'
-    //         ], 422);
-    //     }
-
-    //     $workStartTime = $workStartTimeSetting->value;
-    //     $workEndTime = $workEndTimeSetting->value;
-
-    //     try {
-
-    //         foreach ($rows as $index => $row) {
-
-    //             if ($index === 0) {
-    //                 continue;
-    //             }
-
-    //             $biometricUserId = trim(
-    //                 (string) ($row[0] ?? '')
-    //             );
-
-    //             $scanDateTime = trim(
-    //                 (string) ($row[1] ?? '')
-    //             );
-
-    //             if (
-    //                 empty($biometricUserId) ||
-    //                 empty($scanDateTime)
-    //             ) {
-    //                 continue;
-    //             }
-
-    //             try {
-    //                 $scanTime = Carbon::createFromFormat(
-    //                     'd/m/Y H:i',
-    //                     $scanDateTime
-    //                 );
-    //             } catch (\Exception $e) {
-
-    //                 continue;
-    //             }
-    //             $employee = Employee::where(
-    //                 'biometric_user_id',
-    //                 $biometricUserId
-    //             )->first();
-
-    //             if (!$employee) {
-
-    //                 $employeesNotFound[] =
-    //                     $biometricUserId;
-
-    //                 continue;
-    //             }
-
-    //             $log = BiometricLog::firstOrCreate(
-    //                 [
-    //                     'employee_id' => $employee->id,
-    //                     'scan_time' => $scanTime,
-    //                 ],
-    //                 [
-    //                     'biometric_user_id' =>
-    //                     $biometricUserId,
-    //                 ]
-    //             );
-
-    //             if ($log->wasRecentlyCreated) {
-
-    //                 $imported++;
-    //             } else {
-
-    //                 $duplicates++;
-    //             }
-
-    //             $date = $scanTime->format('Y-m-d');
-
-    //             $key =
-    //                 $employee->id .
-    //                 '_' .
-    //                 $date;
-
-    //             $affectedAttendances[$key] = [
-    //                 'employee_id' => $employee->id,
-    //                 'date' => $date,
-    //             ];
-    //         }
-
-    //         foreach ($affectedAttendances as $attendanceData) {
-    //             $this->processAttendance(
-    //                 $attendanceData['employee_id'],
-    //                 $attendanceData['date'],
-    //                 $workStartTime,
-    //                 $workEndTime
-    //             );
-    //         }
-
-    //         DB::commit();
-
-    //         return response_return('Biometric logs imported and attendance processed successfully.', [
-    //             'imported' =>
-    //             $imported,
-    //             'duplicates' =>
-    //             $duplicates,
-    //             'employees_not_found' =>
-    //             array_values(
-    //                 array_unique(
-    //                     $employeesNotFound
-    //                 )
-    //             ),
-    //             'attendances_processed' =>
-    //             count(
-    //                 $affectedAttendances
-    //             ),
-    //         ], 200);
-    //     } catch (\Exception $e) {
-
-    //         DB::rollBack();
-    //         return response_return('Failed to import biometric logs.', [], 500);
-    //     }
-    // }
-
     private function processAttendance($employeeId, $date, $workStartTime, $workEndTime)
     {
+
         $logs = BiometricLog::where(
             'employee_id',
             $employeeId
@@ -644,87 +837,228 @@ class AttendanceServices
             )
             ->get();
 
+
+        /*
+    |--------------------------------------------------------------------------
+    | No biometric logs = Absent
+    |--------------------------------------------------------------------------
+    */
+
         if ($logs->isEmpty()) {
+
+            Attendance::updateOrCreate(
+                [
+                    'employee_id' => $employeeId,
+                    'date' => $date,
+                ],
+                [
+                    'time_in' => null,
+
+                    'time_out' => null,
+
+                    'hours_worked' => 0,
+
+                    'overtime_hours' => 0,
+
+                    'status' => 'Absent',
+
+                    'remarks' => 'No biometric logs found',
+                ]
+            );
+
             return;
         }
+
+
+        /*
+    |--------------------------------------------------------------------------
+    | Get first IN
+    |--------------------------------------------------------------------------
+    */
+
+        $timeInLog = $logs
+            ->where('type', 'in')
+            ->sortBy('scan_time')
+            ->first();
+
+
+        /*
+    |--------------------------------------------------------------------------
+    | Get last OUT
+    |--------------------------------------------------------------------------
+    */
+
+        $timeOutLog = $logs
+            ->where('type', 'out')
+            ->sortByDesc('scan_time')
+            ->first();
+
+
+        /*
+    |--------------------------------------------------------------------------
+    | Fallback for old logs without type
+    |--------------------------------------------------------------------------
+    */
+
+        $hasTypedLogs =
+            $timeInLog !== null ||
+            $timeOutLog !== null;
+
+
+        if (!$hasTypedLogs) {
+
+            $timeInLog = $logs->first();
+
+            $timeOutLog =
+                $logs->count() >= 2
+                ? $logs->last()
+                : null;
+        }
+
+
+        $timeIn = $timeInLog
+            ? Carbon::parse(
+                $timeInLog->scan_time
+            )
+            : null;
+
+
+        $timeOut = $timeOutLog
+            ? Carbon::parse(
+                $timeOutLog->scan_time
+            )
+            : null;
+
 
         $scheduledStartTime = Carbon::parse(
             $date . ' ' . $workStartTime
         );
 
+
         $scheduledEndTime = Carbon::parse(
             $date . ' ' . $workEndTime
         );
 
-        $timeIn = Carbon::parse(
-            $logs->first()->scan_time
-        );
-
-        $timeOut = $logs->count() >= 2
-            ? Carbon::parse(
-                $logs->last()->scan_time
-            )
-            : null;
-
-        $lunchOut = null;
-        $lunchIn = null;
-
-        if ($logs->count() >= 4) {
-
-            $lunchOut = Carbon::parse(
-                $logs[1]->scan_time
-            );
-
-            $lunchIn = Carbon::parse(
-                $logs[2]->scan_time
-            );
-        }
-
-        /*
-     * Determine status
-     */
 
         $status = 'Present';
 
+        $remarks = 'Generated from biometric logs';
+
+
+        /*
+    |--------------------------------------------------------------------------
+    | Missing punches
+    |--------------------------------------------------------------------------
+    */
+
+        if ($timeIn && !$timeOut) {
+
+            $remarks =
+                'Generated from biometric logs - Missing Time Out';
+        } elseif (!$timeIn && $timeOut) {
+
+            $remarks =
+                'Generated from biometric logs - Missing Time In';
+        }
+
+
+        /*
+    |--------------------------------------------------------------------------
+    | Late
+    |--------------------------------------------------------------------------
+    */
+
         if (
+            $timeIn &&
             $timeIn->greaterThan(
                 $scheduledStartTime
             )
         ) {
+
             $status = 'Late';
+
+            $lateMinutes =
+                $scheduledStartTime->diffInMinutes(
+                    $timeIn
+                );
+
+            $remarks .=
+                ' - Late by ' .
+                $lateMinutes .
+                ' minute(s)';
         }
 
+
         /*
-     * Calculate total worked minutes
-     */
+    |--------------------------------------------------------------------------
+    | Worked hours
+    |--------------------------------------------------------------------------
+    */
 
         $workedMinutes = 0;
 
-        if ($timeOut) {
-
-            $totalMinutes = $timeIn
-                ->diffInMinutes($timeOut);
-
-            $lunchMinutes = 0;
-
-            if ($lunchOut && $lunchIn) {
-
-                $lunchMinutes = $lunchOut
-                    ->diffInMinutes($lunchIn);
-            }
+        if ($timeIn && $timeOut) {
 
             $workedMinutes =
-                $totalMinutes - $lunchMinutes;
+                $timeIn->diffInMinutes(
+                    $timeOut
+                );
         }
+
 
         $hoursWorked = round(
             $workedMinutes / 60,
             2
         );
 
+
         /*
-     * Calculate overtime
-     */
+    |--------------------------------------------------------------------------
+    | Expected working time
+    |--------------------------------------------------------------------------
+    */
+
+        $expectedMinutes =
+            $scheduledStartTime->diffInMinutes(
+                $scheduledEndTime
+            );
+
+
+        /*
+    |--------------------------------------------------------------------------
+    | Half Day
+    |--------------------------------------------------------------------------
+    */
+
+        if (
+            $timeIn &&
+            $timeOut &&
+            $workedMinutes > 0 &&
+            $workedMinutes <= (
+                $expectedMinutes / 2
+            )
+        ) {
+
+            $status = 'Half Day';
+
+            $remarks =
+                'Generated from biometric logs - Half Day';
+        }
+
+
+        if (
+            $timeIn &&
+            $timeOut &&
+            $timeOut->lessThan(
+                $scheduledEndTime
+            ) &&
+            $status !== 'Half Day'
+        ) {
+
+            $remarks .=
+                ' - Early Leave';
+        }
+
 
         $overtimeHours = 0;
 
@@ -737,10 +1071,16 @@ class AttendanceServices
 
             $overtimeHours = round(
                 $scheduledEndTime
-                    ->diffInMinutes($timeOut)
-                    / 60,
+                    ->diffInMinutes(
+                        $timeOut
+                    ) / 60,
                 2
             );
+
+            $remarks .=
+                ' - Overtime: ' .
+                $overtimeHours .
+                ' hour(s)';
         }
 
         Attendance::updateOrCreate(
@@ -749,7 +1089,9 @@ class AttendanceServices
                 'date' => $date,
             ],
             [
-                'time_in' => $timeIn->format('H:i:s'),
+                'time_in' => $timeIn
+                    ? $timeIn->format('H:i:s')
+                    : null,
 
                 'time_out' => $timeOut
                     ? $timeOut->format('H:i:s')
@@ -761,10 +1103,8 @@ class AttendanceServices
 
                 'status' => $status,
 
-                'remarks' =>
-                'Generated from biometric logs',
+                'remarks' => $remarks,
             ]
         );
     }
-    
 }

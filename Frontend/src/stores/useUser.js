@@ -13,6 +13,8 @@ export const useUserStore = defineStore('userStore', () => {
         try {
             const login_user = await api.post('login', formData);
 
+            console.log(login_user.data.data)
+
             await showStatusAlert(login_user.status, login_user.data.message);
 
             localStorage.setItem('auth_token', login_user.data.data.token);

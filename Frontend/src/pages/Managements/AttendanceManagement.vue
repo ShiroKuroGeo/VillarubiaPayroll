@@ -442,9 +442,9 @@
                                         <button class="action-btn edit-btn" @click="openEditModal(record)">
                                             Edit
                                         </button>
-                                        <button class="action-btn delete-btn" @click="deleteAttendance(record)">
+                                        <!-- <button class="action-btn delete-btn" @click="deleteAttendance(record)">
                                             Delete
-                                        </button>
+                                        </button> -->
                                     </div>
                                 </td>
                             </tr>
@@ -1108,55 +1108,51 @@ function openEditModal(record) {
     editingAttendance.value = true
 
     attendanceForm.value = {
-
         id: record.id,
-
         employeeId: record.employeeId,
-
         image: record.image,
-
         employeeName: record.employeeName,
-
         date: record.date,
-
         timeIn: record.timeIn,
-
         timeOut: record.timeOut,
-
         overtimeHours: record.overtimeHours,
-
         status: record.status,
-
         notes: record.notes
-
     }
-
     showModal.value = true
-
 }
 
 function closeModal() {
-
     showModal.value = false
+}
 
+
+const formatTimeUpdate = (time) => {
+    if (!time) {
+        return null
+    }
+
+    return time.substring(0, 5)
 }
 
 const saveBiometrics = async () => {
     if (editingAttendance.value) {
-        console.log(attendanceForm.value);
+        await attendanceStore.updateAttendance({
+            ...attendanceForm.value,
+            timeIn: formatTimeUpdate(
+                attendanceForm.value.timeIn
+            ),
+            timeOut: formatTimeUpdate(
+                attendanceForm.value.timeOut
+            ),
+        })
+        closeModal()
     } else {
         const formData = new FormData();
-
-        formData.append(
-            'file',
-            selectedBiometricFile.value
-        );
-
+        formData.append('file', selectedBiometricFile.value);
         await attendanceStore.importBiometrics(formData);
-
         closeModal()
     }
-
 }
 
 function deleteAttendance(record) {
@@ -1166,11 +1162,9 @@ function deleteAttendance(record) {
             `Delete attendance record for ${record.employeeName} on ${record.date}?`
         )
 
-
     if (!confirmed) {
         return
     }
-
 
     attendanceData.value =
         attendanceData.value.filter(

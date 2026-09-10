@@ -10,6 +10,7 @@ class BiometricLog extends Model
         'employee_id',
         'biometric_user_id',
         'scan_time',
+        'type',
     ];
 
     protected $casts = [

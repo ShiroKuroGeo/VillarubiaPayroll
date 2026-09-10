@@ -72,7 +72,7 @@ class UserServices
                 'role' => $checkingUser->role
             ], 200);
         } catch (\Throwable $th) {
-            return response_return('Error occurred during the execution of creating a user.', [], 501);
+            return response_return($th->getMessage(), [], 501);
         }
     }
 

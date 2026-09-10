@@ -65,5 +65,27 @@ export const useAttendanceStore = defineStore('attendanceStore', () => {
         }
     }
 
-    return { importBiometrics, attendances, createAttendace }
+    const updateAttendance = async (data) => {
+        try {
+            const updateAtt = await api.post('attendance/update', data)
+
+            await showStatusAlert(updateAtt.status, updateAtt.data.message);
+
+            return updateAtt.data
+        } catch (err) {
+            const status = err.response?.status || 500;
+
+            const message =
+                err.response?.data?.message ||
+                err.response?.data?.error ||
+                err.message ||
+                'An unexpected error occurred.';
+
+            showStatusAlert(status, message);
+
+            return status;
+        }
+    }
+
+    return { importBiometrics, attendances, createAttendace, updateAttendance }
 });
