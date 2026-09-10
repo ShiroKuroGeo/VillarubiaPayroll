@@ -259,6 +259,75 @@ class AttendanceServices
                 );
             }
 
+            $lateHours = 0;
+
+            $undertimeHours = 0;
+
+            $workStartTimeSetting = Maintenance::where(
+                'name',
+                'Work Start Time'
+            )->first();
+
+            $workEndTimeSetting = Maintenance::where(
+                'name',
+                'Work End Time'
+            )->first();
+
+            if ($workStartTimeSetting && $workEndTimeSetting) {
+
+                if (!empty($timeIn)) {
+
+                    $scheduledStartTime = Carbon::createFromFormat(
+                        'H:i',
+                        substr($workStartTimeSetting->value, 0, 5)
+                    );
+
+                    $parsedIn = Carbon::createFromFormat(
+                        'H:i',
+                        substr($timeIn, 0, 5)
+                    );
+
+                    if ($parsedIn->greaterThan($scheduledStartTime)) {
+
+                        $lateMinutes =
+                            $scheduledStartTime->diffInMinutes(
+                                $parsedIn
+                            );
+
+                        $lateHours = round(
+                            $lateMinutes / 60,
+                            2
+                        );
+                    }
+                }
+
+                if (!empty($timeOut)) {
+
+                    $scheduledEndTime = Carbon::createFromFormat(
+                        'H:i',
+                        substr($workEndTimeSetting->value, 0, 5)
+                    );
+
+                    $parsedOut = Carbon::createFromFormat(
+                        'H:i',
+                        substr($timeOut, 0, 5)
+                    );
+
+                    if ($parsedOut->lessThan($scheduledEndTime)) {
+
+                        $undertimeMinutes =
+                            $parsedOut->diffInMinutes(
+                                $scheduledEndTime
+                            );
+
+                        $undertimeHours = round(
+                            $undertimeMinutes / 60,
+                            2
+                        );
+                    }
+                }
+            }
+
             $status = array_key_exists(
                 'status',
                 $validation
@@ -267,26 +336,16 @@ class AttendanceServices
                 : $checkAttendance->status;
 
             $updateAttendance = $checkAttendance->update([
-                'date' =>
-                $validation['date']
-                    ?? $checkAttendance->date,
-
+                'date' => $validation['date'] ?? $checkAttendance->date,
                 'time_in' => $timeIn,
-
                 'time_out' => $timeOut,
-
                 'hours_worked' => $hoursWorked,
-
                 'overtime_hours' => $overtimeHours,
-
+                'late_hours' => $lateHours,
+                'undertime_hours' => $undertimeHours,
                 'status' => $status,
-
-                'remarks' => array_key_exists(
-                    'remarks',
-                    $validation
-                )
-                    ? $validation['remarks']
-                    : $checkAttendance->remarks,
+                'remarks' => array_key_exists('remarks', $validation)
+                    ? $validation['remarks'] : $checkAttendance->remarks,
             ]);
 
             if (!$updateAttendance) {
@@ -371,7 +430,6 @@ class AttendanceServices
             return response_return('Error occurred in retrieving salary history.', [], 500);
         }
     }
-
 
     public function import(Request $request)
     {
@@ -839,10 +897,10 @@ class AttendanceServices
 
 
         /*
-    |--------------------------------------------------------------------------
-    | No biometric logs = Absent
-    |--------------------------------------------------------------------------
-    */
+|--------------------------------------------------------------------------
+| No biometric logs = Absent
+|--------------------------------------------------------------------------
+*/
 
         if ($logs->isEmpty()) {
 
@@ -860,6 +918,10 @@ class AttendanceServices
 
                     'overtime_hours' => 0,
 
+                    'late_hours' => 0,
+
+                    'undertime_hours' => 0,
+
                     'status' => 'Absent',
 
                     'remarks' => 'No biometric logs found',
@@ -871,10 +933,10 @@ class AttendanceServices
 
 
         /*
-    |--------------------------------------------------------------------------
-    | Get first IN
-    |--------------------------------------------------------------------------
-    */
+|--------------------------------------------------------------------------
+| Get first IN
+|--------------------------------------------------------------------------
+*/
 
         $timeInLog = $logs
             ->where('type', 'in')
@@ -883,10 +945,10 @@ class AttendanceServices
 
 
         /*
-    |--------------------------------------------------------------------------
-    | Get last OUT
-    |--------------------------------------------------------------------------
-    */
+|--------------------------------------------------------------------------
+| Get last OUT
+|--------------------------------------------------------------------------
+*/
 
         $timeOutLog = $logs
             ->where('type', 'out')
@@ -895,10 +957,10 @@ class AttendanceServices
 
 
         /*
-    |--------------------------------------------------------------------------
-    | Fallback for old logs without type
-    |--------------------------------------------------------------------------
-    */
+|--------------------------------------------------------------------------
+| Fallback for old logs without type
+|--------------------------------------------------------------------------
+*/
 
         $hasTypedLogs =
             $timeInLog !== null ||
@@ -946,10 +1008,10 @@ class AttendanceServices
 
 
         /*
-    |--------------------------------------------------------------------------
-    | Missing punches
-    |--------------------------------------------------------------------------
-    */
+|--------------------------------------------------------------------------
+| Missing punches
+|--------------------------------------------------------------------------
+*/
 
         if ($timeIn && !$timeOut) {
 
@@ -963,10 +1025,12 @@ class AttendanceServices
 
 
         /*
-    |--------------------------------------------------------------------------
-    | Late
-    |--------------------------------------------------------------------------
-    */
+|--------------------------------------------------------------------------
+| Late
+|--------------------------------------------------------------------------
+*/
+
+        $lateHours = 0;
 
         if (
             $timeIn &&
@@ -982,6 +1046,11 @@ class AttendanceServices
                     $timeIn
                 );
 
+            $lateHours = round(
+                $lateMinutes / 60,
+                2
+            );
+
             $remarks .=
                 ' - Late by ' .
                 $lateMinutes .
@@ -990,10 +1059,10 @@ class AttendanceServices
 
 
         /*
-    |--------------------------------------------------------------------------
-    | Worked hours
-    |--------------------------------------------------------------------------
-    */
+|--------------------------------------------------------------------------
+| Worked hours
+|--------------------------------------------------------------------------
+*/
 
         $workedMinutes = 0;
 
@@ -1013,10 +1082,10 @@ class AttendanceServices
 
 
         /*
-    |--------------------------------------------------------------------------
-    | Expected working time
-    |--------------------------------------------------------------------------
-    */
+|--------------------------------------------------------------------------
+| Expected working time
+|--------------------------------------------------------------------------
+*/
 
         $expectedMinutes =
             $scheduledStartTime->diffInMinutes(
@@ -1025,10 +1094,10 @@ class AttendanceServices
 
 
         /*
-    |--------------------------------------------------------------------------
-    | Half Day
-    |--------------------------------------------------------------------------
-    */
+|--------------------------------------------------------------------------
+| Half Day
+|--------------------------------------------------------------------------
+*/
 
         if (
             $timeIn &&
@@ -1045,6 +1114,7 @@ class AttendanceServices
                 'Generated from biometric logs - Half Day';
         }
 
+        $undertimeHours = 0;
 
         if (
             $timeIn &&
@@ -1054,6 +1124,16 @@ class AttendanceServices
             ) &&
             $status !== 'Half Day'
         ) {
+
+            $undertimeMinutes =
+                $timeOut->diffInMinutes(
+                    $scheduledEndTime
+                );
+
+            $undertimeHours = round(
+                $undertimeMinutes / 60,
+                2
+            );
 
             $remarks .=
                 ' - Early Leave';
@@ -1100,6 +1180,10 @@ class AttendanceServices
                 'hours_worked' => $hoursWorked,
 
                 'overtime_hours' => $overtimeHours,
+
+                'late_hours' => $lateHours,
+
+                'undertime_hours' => $undertimeHours,
 
                 'status' => $status,
 

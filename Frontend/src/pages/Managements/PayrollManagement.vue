@@ -47,180 +47,147 @@
         </div>
 
         <div class="content">
+            <div v-if="showGenerateOnly" class="generate-gate">
 
-            <!-- PERIOD BAR -->
+                <div class="generate-card">
 
-            <div class="period-bar">
-
-                <div class="period-info">
-
-                    <div class="period-label">
-                        Pay period
+                    <div class="stamp gold">
+                        PAYROLL
                     </div>
 
-                    <input v-model="payPeriod" type="text" class="period-input" placeholder="e.g. Aug 25 – Aug 29, 2026" />
+                    <div class="generate-title">
+                        It's payroll day
+                    </div>
 
-                </div>
+                    <div class="generate-sub">
+                        Generate this week's payroll to view and release employee payouts.
+                    </div>
 
+                    <div v-if="generateError" class="generate-error">
+                        {{ generateError }}
+                    </div>
 
-                <div class="period-actions">
-
-                    <span class="period-tag">
-                        {{ paidCount }} of {{ activeEmployeeCount }} paid
-                    </span>
-
-                    <button class="add-btn" :disabled="!pendingCount" @click="markAllPaid">
-                        Mark all as paid
+                    <button class="generate-btn" :disabled="generating" @click="handleGeneratePayroll">
+                        {{ generating ? 'Generating…' : 'Generate Payroll' }}
                     </button>
 
                 </div>
 
             </div>
 
+            <template v-else>
 
-            <div class="row g-3 mb-3">
-
-                <div class="col-6 col-lg-3">
-
-                    <div class="punch-card">
-
-                        <div class="stamp green">
-                            STAFF
+                <div class="period-bar">
+                    <div class="period-info">
+                        <div class="period-label">
+                            Pay period
                         </div>
-
-                        <div class="stat-label">
-                            Active Employees
-                        </div>
-
-                        <div class="stat-period">
-                            This pay period
-                        </div>
-
-                        <div class="stat-value">
-                            {{ activeEmployeeCount }}
-                        </div>
-
-                        <div class="stat-delta stat-delta--slate">
-                            Included in this payroll run
-                        </div>
-
                     </div>
-
+                    <div class="period-actions">
+                        <span class="period-tag">
+                            {{ paidCount }} of {{ activeEmployeeCount }} paid
+                        </span>
+                        <button class="add-btn" :disabled="!pendingCount" @click="markAllPaid">
+                            Mark all as paid
+                        </button>
+                    </div>
                 </div>
-
-                <div class="col-6 col-lg-3">
-
-                    <div class="punch-card">
-
-                        <div class="stamp gold">
-                            NET
+                <div class="row g-3 mb-3">
+                    <div class="col-6 col-lg-3">
+                        <div class="punch-card">
+                            <div class="stamp green">
+                                STAFF
+                            </div>
+                            <div class="stat-label">
+                                Active Employees
+                            </div>
+                            <div class="stat-period">
+                                This pay period
+                            </div>
+                            <div class="stat-value">
+                                {{ activeEmployeeCount }}
+                            </div>
+                            <div class="stat-delta stat-delta--slate">
+                                Included in this payroll run
+                            </div>
                         </div>
+                    </div>
+                    <div class="col-6 col-lg-3">
+                        <div class="punch-card">
+                            <div class="stamp gold">
+                                NET
+                            </div>
+                            <div class="stat-label">
+                                Total Payroll
+                            </div>
 
-                        <div class="stat-label">
-                            Total Payroll
-                        </div>
+                            <div class="stat-period">
+                                This pay period
+                            </div>
 
-                        <div class="stat-period">
-                            This pay period
-                        </div>
+                            <div class="stat-value stat-value-money">
+                                {{ formatCurrency(totalNetPayroll) }}
+                            </div>
 
-                        <div class="stat-value stat-value-money">
-                            {{ formatCurrency(totalNetPayroll) }}
-                        </div>
+                            <div class="stat-delta stat-delta--gold">
+                                Across all active employees
+                            </div>
 
-                        <div class="stat-delta stat-delta--gold">
-                            Across all active employees
                         </div>
 
                     </div>
 
-                </div>
+                    <div class="col-6 col-lg-3">
 
-                <div class="col-6 col-lg-3">
+                        <div class="punch-card">
 
-                    <div class="punch-card">
+                            <div class="stamp green">
+                                PAID
+                            </div>
 
-                        <div class="stamp green">
-                            PAID
-                        </div>
+                            <div class="stat-label">
+                                Paid Out
+                            </div>
 
-                        <div class="stat-label">
-                            Paid Out
-                        </div>
+                            <div class="stat-period">
+                                This pay period
+                            </div>
 
-                        <div class="stat-period">
-                            This pay period
-                        </div>
+                            <div class="stat-value stat-value-money">
+                                {{ formatCurrency(totalPaidAmount) }}
+                            </div>
 
-                        <div class="stat-value stat-value-money">
-                            {{ formatCurrency(totalPaidAmount) }}
-                        </div>
+                            <div class="stat-delta text-success">
+                                {{ paidCount }} employees paid
+                            </div>
 
-                        <div class="stat-delta text-success">
-                            {{ paidCount }} employees paid
-                        </div>
-
-                    </div>
-
-                </div>
-
-                <div class="col-6 col-lg-3">
-
-                    <div class="punch-card">
-
-                        <div class="stamp blue">
-                            DUE
-                        </div>
-
-                        <div class="stat-label">
-                            Still Pending
-                        </div>
-
-                        <div class="stat-period">
-                            This pay period
-                        </div>
-
-                        <div class="stat-value stat-value-money">
-                            {{ formatCurrency(totalPendingAmount) }}
-                        </div>
-
-                        <div class="stat-delta stat-delta--blue">
-                            {{ pendingCount }} employees pending
                         </div>
 
                     </div>
 
-                </div>
+                    <div class="col-6 col-lg-3">
 
-            </div>
+                        <div class="punch-card">
 
-            <div class="panel">
+                            <div class="stamp blue">
+                                DUE
+                            </div>
 
-                <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                            <div class="stat-label">
+                                Still Pending
+                            </div>
 
-                    <div>
+                            <div class="stat-period">
+                                This pay period
+                            </div>
 
-                        <div class="section-title mb-0">
-                            Employee payouts
-                        </div>
+                            <div class="stat-value stat-value-money">
+                                {{ formatCurrency(totalPendingAmount) }}
+                            </div>
 
-                        <div class="panel-sub">
-                            Mark each employee as paid once their salary is released
-                        </div>
-
-                    </div>
-
-                    <div class="d-flex gap-2 flex-wrap">
-
-
-                        <div class="search-box">
-
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <circle cx="11" cy="11" r="7" />
-                                <path d="m20 20-3-3" />
-                            </svg>
-
-                            <input v-model="searchQuery" type="text" placeholder="Search employee..." />
+                            <div class="stat-delta stat-delta--blue">
+                                {{ pendingCount }} employees pending
+                            </div>
 
                         </div>
 
@@ -228,112 +195,149 @@
 
                 </div>
 
+                <div class="panel">
 
-                <!-- FILTERS -->
+                    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
 
-                <div class="filter-row">
+                        <div>
 
-                    <button v-for="filter in statusFilters" :key="filter.key" class="filter-pill" :class="{
-                        active: paymentFilter === filter.key
-                    }" @click="paymentFilter = filter.key">
-                        {{ filter.label }}
-                    </button>
+                            <div class="section-title mb-0">
+                                Employee payouts
+                            </div>
 
-                </div>
+                            <div class="panel-sub">
+                                Mark each employee as paid once their salary is released
+                            </div>
+
+                        </div>
+
+                        <div class="d-flex gap-2 flex-wrap">
 
 
-                <!-- TABLE -->
+                            <div class="search-box">
 
-                <div class="table-responsive">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="11" cy="11" r="7" />
+                                    <path d="m20 20-3-3" />
+                                </svg>
+
+                                <input v-model="searchQuery" type="text" placeholder="Search employee..." />
+
+                            </div>
+
+                        </div>
+
+                    </div>
 
 
-                    <table class="table-ledger salary-table" v-if="filteredPayrollData.length">
-                        <thead>
-                            <tr>
-                                <th>Employee</th>
-                                <th>Basic Salary</th>
-                                <th>Total Att.
-                                    <span title="Total Attendance" style="color: lightseagreen;">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                            <circle cx="12" cy="12" r="10"></circle>
-                                            <path d="M12 16v-4"></path>
-                                            <path d="M12 8h.01"></path>
-                                        </svg>
-                                    </span>
-                                </th>
-                                <th>Gross Pay</th>
-                                <th>Deductions</th>
-                                <th>Net Salary</th>
-                                <th>Payment Status</th>
-                                <th>Paid On</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr v-for="employee in filteredPayrollData" :key="employee.id">
-                                <td>
-                                    <div class="d-flex align-items-center gap-2">
-                                        <div class="avatar-sm">
-                                            <img v-if="employee.image" :src="employee.image" :alt="employee.employeeName" />
-                                            <span v-else>
-                                                {{ employee.initials }}
-                                            </span>
-                                        </div>
-                                        <div>
-                                            <div class="emp-name">
-                                                {{ employee.employeeName }}
+                    <!-- FILTERS -->
+
+                    <div class="filter-row">
+
+                        <button v-for="filter in statusFilters" :key="filter.key" class="filter-pill" :class="{
+                            active: paymentFilter === filter.key
+                        }" @click="paymentFilter = filter.key">
+                            {{ filter.label }}
+                        </button>
+
+                    </div>
+
+
+                    <!-- TABLE -->
+
+                    <div class="table-responsive">
+
+
+                        <table class="table-ledger salary-table" v-if="filteredPayrollData.length">
+                            <thead>
+                                <tr>
+                                    <th>Employee</th>
+                                    <th>Basic Salary</th>
+                                    <th>Total Att.
+                                        <span title="Total Attendance" style="color: lightseagreen;">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                <circle cx="12" cy="12" r="10"></circle>
+                                                <path d="M12 16v-4"></path>
+                                                <path d="M12 8h.01"></path>
+                                            </svg>
+                                        </span>
+                                    </th>
+                                    <th>Gross Pay</th>
+                                    <th>Deductions</th>
+                                    <th>Net Salary</th>
+                                    <th>Payment Status</th>
+                                    <th>Paid On</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="employee in filteredPayrollData" :key="employee.id">
+                                    <td>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <div class="avatar-sm">
+                                                <img v-if="employee.image" :src="employee.image" :alt="employee.employeeName" />
+                                                <span v-else>
+                                                    {{ employee.initials }}
+                                                </span>
                                             </div>
-                                            <div class="emp-role">
-                                                Employee #{{
-                                                    employee.employeeId
-                                                        .toString()
-                                                        .padStart(4, '0')
-                                                }}
+                                            <div>
+                                                <div class="emp-name">
+                                                    {{ employee.employeeName }}
+                                                </div>
+                                                <div class="emp-role">
+                                                    Employee #{{
+                                                        employee.employeeId
+                                                            .toString()
+                                                            .padStart(4, '0')
+                                                    }}
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
-                                </td>
-                                <td>
-                                    <span class="department">{{ formatCurrency(employee.basicSalary) }}</span>
-                                </td>
-                                <td class="money net-pay">
-                                    {{ employee.totalAttendance }}{{ employee.totalAttendance >= 1 ? ' days' : 'day' }}
-                                </td>
-                                <td class="money net-pay">
-                                    {{ formatCurrency(employee.totalAttendance * employee.basicSalary) }}
-                                </td>
-                                <td class="money net-pay" style="color: #FF7F7F;">
-                                    {{ formatCurrency(employee.deductions) }}
-                                </td>
-                                <td class="money net-pay">
-                                    {{ formatCurrency((employee.totalAttendance * employee.basicSalary) - employee.deductions) }}
-                                </td>
-                                <td>
-                                    <span class="badge-status" :class="employee.paid ? 'badge-active' : 'badge-pending'">
-                                        {{ employee.paid ? 'PAID' : 'PENDING' }}
-                                    </span>
-                                </td>
-                                <td class="money">
-                                    {{ employee.paidDate ? formatDate(employee.paidDate) : '—' }}
-                                </td>
-                                <td>
-                                    <div class="action-group">
-                                        <button v-if="!employee.paid" class="action-btn pay-btn" @click="openPayModal(employee)">
-                                            Mark as Paid
-                                        </button>
-                                        <button v-else class="action-btn undo-btn" @click="unmarkPaid(employee)">
-                                            Undo
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                    <div v-else class="empty-state">
-                        No employees match your search or filter.
+                                    </td>
+                                    <td>
+                                        <span class="department">{{ formatCurrency(employee.basicSalary) }}</span>
+                                    </td>
+                                    <td class="money net-pay">
+                                        {{ employee.totalAttendance }}{{ employee.totalAttendance >= 1 ? ' days' : 'day' }}
+                                    </td>
+                                    <td class="money net-pay">
+                                        {{ formatCurrency(employee.totalAttendance * employee.basicSalary) }}
+                                    </td>
+                                    <td class="money net-pay" style="color: #FF7F7F;">
+                                        {{ formatCurrency(employee.deductions) }}
+                                    </td>
+                                    <td class="money net-pay">
+                                        {{ formatCurrency((employee.totalAttendance * employee.basicSalary) - employee.deductions) }}
+                                    </td>
+                                    <td>
+                                        <span class="badge-status" :class="employee.paid ? 'badge-active' : 'badge-pending'">
+                                            {{ employee.paid ? 'PAID' : 'PENDING' }}
+                                        </span>
+                                    </td>
+                                    <td class="money">
+                                        {{ employee.paidDate ? formatDate(employee.paidDate) : '—' }}
+                                    </td>
+                                    <td>
+                                        <div class="action-group">
+                                            <button v-if="!employee.paid" class="action-btn pay-btn" @click="openPayModal(employee)">
+                                                Mark as Paid
+                                            </button>
+                                            <button v-else class="action-btn undo-btn" @click="unmarkPaid(employee)">
+                                                Undo
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <div v-else class="empty-state">
+                            No employees match your search or filter.
+                        </div>
                     </div>
                 </div>
-            </div>
+
+            </template>
+
         </div>
 
         <div v-if="showModal" class="modal-backdrop" @click.self="closeModal">
@@ -418,38 +422,70 @@
 </template>
 
 <script setup>
+import { usePayrollStore } from '@/stores/usePayroll'
 import { computed, onMounted, onBeforeUnmount, ref } from 'vue'
-
 
 defineOptions({
     name: 'PayrollPage'
 })
 
-
 defineEmits([
     'toggle-sidebar'
 ])
 
-
-// =====================================================
-// CLOCK
-// =====================================================
-
 const liveClock = ref('--:--:--')
+
+const now = ref(new Date())
+const payrollStore = usePayrollStore();
 
 let clockTimer = null
 
-
 function tickClock() {
-
+    const current = new Date()
+    now.value = current
     liveClock.value =
-        new Date().toLocaleTimeString(
+        current.toLocaleTimeString(
             'en-US',
             {
                 hour12: true
             }
         )
+}
 
+const isSaturday = computed(() => now.value.getDay() === 6)
+const payrollGenerated = ref(false)
+const generating = ref(false)
+const generateError = ref('')
+const showGenerateOnly = computed(() => isSaturday.value && !payrollGenerated.value)
+
+async function checkPayrollGenerated(data) {
+    try {
+        const response = await payrollStore.payrollList({ ...data });
+
+        console.log(response)
+        if (!response.ok) {
+            return
+        }
+        const result = await response.json()
+        payrollGenerated.value = Boolean(result?.data?.length)
+    } catch (err) {
+        console.error('Failed to check existing payroll', err)
+    }
+}
+
+async function handleGeneratePayroll() {
+    generating.value = true
+    generateError.value = ''
+
+    try {
+        await payrollStore.generatePayroll();
+
+        payrollGenerated.value = true
+    } catch (err) {
+        generateError.value = err.message || 'Something went wrong while generating payroll.'
+    } finally {
+        generating.value = false
+    }
 }
 
 
@@ -575,7 +611,6 @@ const payrollData = ref([
         deductions: 1300,
         status: 'active',
         image: null,
-
         paid: false,
         paidDate: null,
         paymentMethod: null,
@@ -584,10 +619,6 @@ const payrollData = ref([
 
 ])
 
-
-// =====================================================
-// FILTERS
-// =====================================================
 
 const searchQuery = ref('')
 
@@ -652,11 +683,6 @@ const filteredPayrollData = computed(() => {
         })
 
 })
-
-
-// =====================================================
-// STATISTICS
-// =====================================================
 
 const activeEmployees = computed(() => {
 
@@ -724,11 +750,6 @@ const totalPendingAmount = computed(() => {
     return totalNetPayroll.value - totalPaidAmount.value
 
 })
-
-
-// =====================================================
-// PAYMENT MODAL
-// =====================================================
 
 const showModal = ref(false)
 
@@ -922,11 +943,6 @@ function markAllPaid() {
 
 }
 
-
-// =====================================================
-// CALCULATIONS
-// =====================================================
-
 function calculateNet(employee) {
 
     return (
@@ -936,11 +952,6 @@ function calculateNet(employee) {
     )
 
 }
-
-
-// =====================================================
-// FORMATTING
-// =====================================================
 
 function formatCurrency(amount) {
 
@@ -1023,11 +1034,6 @@ function formatDate(dateString) {
 
 }
 
-
-// =====================================================
-// EXPORT
-// =====================================================
-
 function exportCsv() {
 
     const rows = [
@@ -1093,20 +1099,16 @@ function exportCsv() {
             }
         )
 
-
     const url =
         URL.createObjectURL(blob)
 
-
     const a =
         document.createElement('a')
-
 
     a.href = url
 
     a.download =
         'payroll.csv'
-
 
     document.body.appendChild(a)
 
@@ -1114,28 +1116,28 @@ function exportCsv() {
 
     document.body.removeChild(a)
 
-
     URL.revokeObjectURL(url)
 
 }
 
-
-// =====================================================
-// LIFECYCLE
-// =====================================================
-
 onMounted(() => {
-
     tickClock()
-
     clockTimer =
         setInterval(
             tickClock,
             1000
         )
 
-})
+    checkPayrollGenerated({
+        "per_page": 100
+    })
+    if (isSaturday.value) {
+        checkPayrollGenerated({
+            "per_page": 100
+        })
+    }
 
+})
 
 onBeforeUnmount(() => {
 
@@ -1463,6 +1465,84 @@ onBeforeUnmount(() => {
 .stamp.blue {
     color: #426B8F;
     border-color: #6D94B6;
+}
+
+
+/* =====================================================
+   SATURDAY GENERATE GATE
+===================================================== */
+
+.generate-gate {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 50vh;
+    padding: 2rem 1rem;
+}
+
+
+.generate-card {
+    position: relative;
+    background: var(--paper-2, #FBFAF6);
+    border: 1px solid var(--line, #DCD8CB);
+    border-radius: 12px;
+    padding: 2.4rem 2.2rem 2rem;
+    max-width: 420px;
+    width: 100%;
+    text-align: center;
+}
+
+
+.generate-title {
+    font-family: 'Fraunces', serif;
+    font-weight: 600;
+    font-size: 1.4rem;
+    color: var(--ink, #1C2B4A);
+    margin-top: .6rem;
+}
+
+
+.generate-sub {
+    font-size: .82rem;
+    color: var(--slate, #6B7280);
+    margin-top: .5rem;
+    line-height: 1.5;
+}
+
+
+.generate-error {
+    margin-top: 1rem;
+    font-size: .78rem;
+    color: #C0392B;
+    background: #FBEAEA;
+    border: 1px solid #F0C4C4;
+    border-radius: 6px;
+    padding: .5rem .7rem;
+}
+
+
+.generate-btn {
+    margin-top: 1.4rem;
+    border: 1px solid var(--ink, #1C2B4A);
+    background: var(--ink, #1C2B4A);
+    color: #F3DFA6;
+    border-radius: 6px;
+    padding: .6rem 1.4rem;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: .8rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+
+.generate-btn:hover:not(:disabled) {
+    background: #28395E;
+}
+
+
+.generate-btn:disabled {
+    opacity: .6;
+    cursor: not-allowed;
 }
 
 

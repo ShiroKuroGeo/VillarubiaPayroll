@@ -442,57 +442,39 @@
                                         <button class="action-btn edit-btn" @click="openEditModal(record)">
                                             Edit
                                         </button>
-                                        <!-- <button class="action-btn delete-btn" @click="deleteAttendance(record)">
-                                            Delete
-                                        </button> -->
                                     </div>
                                 </td>
                             </tr>
                         </tbody>
                     </table>
-
                     <div v-else class="empty-state">
                         No attendance records match your search or filter.
                     </div>
-
                 </div>
                 <div class="pagination-bar" v-if="filteredAttendanceData.length">
-
                     <div class="pagination-info">
                         Showing {{ paginationStart }}–{{ paginationEnd }} of {{ filteredAttendanceData.length }}
                     </div>
-
-
                     <div class="pagination-controls">
-
                         <button class="page-btn" :disabled="currentPage === 1" @click="currentPage--">
                             Prev
                         </button>
-
-
                         <button v-for="page in pageNumbers" :key="page" class="page-btn" :class="{ active: page === currentPage }" @click="currentPage = page">
                             {{ page }}
                         </button>
-
-
                         <button class="page-btn" :disabled="currentPage === totalPages" @click="currentPage++">
                             Next
                         </button>
-
-
                         <select v-model.number="pageSize" class="page-size-select">
                             <option :value="5">5 / page</option>
                             <option :value="10">10 / page</option>
                             <option :value="25">25 / page</option>
                             <option :value="50">50 / page</option>
                         </select>
-
                     </div>
-
                 </div>
             </div>
         </div>
-
         <div v-if="showModal" class="modal-backdrop" @click.self="closeModal">
             <div class="salary-modal">
                 <div class="modal-header">

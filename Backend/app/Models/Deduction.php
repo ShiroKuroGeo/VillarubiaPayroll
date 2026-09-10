@@ -17,11 +17,17 @@ class Deduction extends Model
 {
     protected $table = 'deductions';
 
-    public function employee(){
+    public function employee()
+    {
         return $this->belongsTo(Employee::class, 'employee_id');
     }
 
-    public function payroll(){
+    public function payroll()
+    {
         return $this->belongsTo(Payroll::class, 'payroll_id');
     }
+
+    protected $casts = [
+        'other_deduction' => 'array',
+    ];
 }

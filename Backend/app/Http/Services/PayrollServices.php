@@ -12,231 +12,685 @@ use App\Models\Employee;
 use App\Models\CashAdvance;
 use App\Models\SSSContribution;
 use App\Models\Deduction;
+use App\Models\Maintenance;
 use Illuminate\Support\Facades\DB;
 
 class PayrollServices
 {
-    const SUNDAY_PREMIUM_RATE = 1;
+
 
     public function generatePayroll(): array
     {
         $today = Carbon::now();
 
-        if (!$today->isSaturday()) {
-            throw new \Exception('Payroll can only be generated on Saturdays.', 422);
-        }
 
-        $cutoffEnd   = $today->copy()->startOfDay();
-        $cutoffStart = $cutoffEnd->copy()->subDays(6);
-        $payoutDate  = $cutoffEnd->copy();
+        $cutoffEnd = $today->copy()->startOfDay();
 
-        $employees = Employee::whereNotIn('status', ['Separated', 'Terminated'])
+        $cutoffStart = $cutoffEnd
+            ->copy()
+            ->subDays(6)
+            ->startOfDay();
+
+        /*
+    |--------------------------------------------------------------------------
+    | Payout Date
+    |--------------------------------------------------------------------------
+    */
+
+        $payoutDate = $cutoffEnd->copy();
+
+        /*
+    |--------------------------------------------------------------------------
+    | Get active employees
+    |--------------------------------------------------------------------------
+    */
+
+        $employees = Employee::whereNotIn(
+            'status',
+            [
+                'Separated',
+                'Terminated',
+                'Separated-Terminated',
+            ]
+        )
             ->whereNull('deleted_at')
             ->get();
 
+        /*
+    |--------------------------------------------------------------------------
+    | Maintenance Settings — Grace Period / Late Deduction / Work Start Time
+    |--------------------------------------------------------------------------
+    */
+
+        $gracePeriodMinutes = (float) (
+            Maintenance::where('name', 'Grace Period')->value('value') ?? 0
+        );
+
+        $lateDeductionPerMinute = (float) (
+            Maintenance::where('name', 'Late Deduction (Per Minute)')->value('value') ?? 0
+        );
+
+        $sundayPremiumRate = (float) (
+            Maintenance::where('name', 'Overtime Multiplier')->value('value') ?? 1.30
+        );
+
+        $workStartTime = Maintenance::where('name', 'Work Start Time')->value('value') ?? '08:00:00';
+
         $result = [
+
             'cutoff_start' => $cutoffStart->toDateString(),
-            'cutoff_end'   => $cutoffEnd->toDateString(),
-            'generated'    => [],
-            'skipped'      => [],
-            'failed'       => [],
+
+            'cutoff_end' => $cutoffEnd->toDateString(),
+
+            'generated' => [],
+
+            'skipped' => [],
+
+            'failed' => [],
+
         ];
 
+        /*
+    |--------------------------------------------------------------------------
+    | Process every employee
+    |--------------------------------------------------------------------------
+    */
+
         foreach ($employees as $employee) {
+
             try {
-                $exists = Payroll::where('employee_id', $employee->id)
-                    ->where('cutoff_start', $cutoffStart->toDateString())
-                    ->where('cutoff_end', $cutoffEnd->toDateString())
+
+                /*
+            |--------------------------------------------------------------------------
+            | Check if payroll already exists
+            |--------------------------------------------------------------------------
+            */
+
+                $exists = Payroll::where(
+                    'employee_id',
+                    $employee->id
+                )
+                    ->where(
+                        'cutoff_start',
+                        $cutoffStart->toDateString()
+                    )
+                    ->where(
+                        'cutoff_end',
+                        $cutoffEnd->toDateString()
+                    )
                     ->exists();
 
                 if ($exists) {
-                    $result['skipped'][] = ['employee_id' => $employee->id, 'reason' => 'Already exists'];
+
+                    $result['skipped'][] = [
+
+                        'employee_id' => $employee->id,
+
+                        'reason' => 'Payroll already exists for this cutoff.',
+
+                    ];
+
                     continue;
                 }
 
-                $salary = Salary::where('employee_id', $employee->id)
-                    ->where('is_active', true)
+                /*
+            |--------------------------------------------------------------------------
+            | Get active salary
+            |--------------------------------------------------------------------------
+            */
+
+                $salary = Salary::where(
+                    'employee_id',
+                    $employee->id
+                )
+                    ->where(
+                        'is_active',
+                        true
+                    )
                     ->first();
 
                 if (!$salary) {
-                    $result['skipped'][] = ['employee_id' => $employee->id, 'reason' => 'No active salary'];
+
+                    $result['skipped'][] = [
+
+                        'employee_id' => $employee->id,
+
+                        'reason' => 'No active salary found.',
+
+                    ];
+
                     continue;
                 }
 
-                $attendances = Attendance::where('employee_id', $employee->id)
-                    ->whereBetween('date', [$cutoffStart->toDateString(), $cutoffEnd->toDateString()])
+                /*
+            |--------------------------------------------------------------------------
+            | Get attendance for Sunday to Saturday
+            |--------------------------------------------------------------------------
+            */
+
+                $attendances = Attendance::where(
+                    'employee_id',
+                    $employee->id
+                )
+                    ->whereBetween(
+                        'date',
+                        [
+                            $cutoffStart->toDateString(),
+                            $cutoffEnd->toDateString(),
+                        ]
+                    )
+                    ->orderBy(
+                        'date',
+                        'asc'
+                    )
                     ->get();
 
-                $grossPay = $this->calculateGrossPay($salary, $attendances);
+                /*
+            |--------------------------------------------------------------------------
+            | Calculate gross pay
+            |--------------------------------------------------------------------------
+            */
+
+                $grossPay = $this->calculateGrossPay(
+                    $salary,
+                    $attendances,
+                    $sundayPremiumRate
+                );
+
+                /*
+            |--------------------------------------------------------------------------
+            | Start transaction
+            |--------------------------------------------------------------------------
+            */
 
                 DB::beginTransaction();
 
+                /*
+            |--------------------------------------------------------------------------
+            | Create payroll
+            |--------------------------------------------------------------------------
+            */
+
                 $payroll = Payroll::create([
-                    'employee_id'      => $employee->id,
-                    'cutoff_start'     => $cutoffStart->toDateString(),
-                    'cutoff_end'       => $cutoffEnd->toDateString(),
-                    'payout_date'      => $payoutDate->toDateString(),
-                    'gross_pay'        => round($grossPay, 2),
+
+                    'employee_id' => $employee->id,
+
+                    'cutoff_start' =>
+                    $cutoffStart->toDateString(),
+
+                    'cutoff_end' =>
+                    $cutoffEnd->toDateString(),
+
+                    'payout_date' =>
+                    $payoutDate->toDateString(),
+
+                    'gross_pay' =>
+                    round($grossPay, 2),
+
                     'total_deductions' => 0,
-                    'net_pay'          => round($grossPay, 2),
-                    'status'           => 'Draft',
+
+                    'net_pay' =>
+                    round($grossPay, 2),
+
+                    'status' => 'Draft',
+
                 ]);
+
+                /*
+            |--------------------------------------------------------------------------
+            | Cash Advances
+            |--------------------------------------------------------------------------
+            */
 
                 $cashAdvances = CashAdvance::where('employee_id', $employee->id)
-                    ->where('status', 'Approved')
-                    ->whereNull('payroll_id')
+                    ->where(
+                        'status',
+                        'Approved'
+                    )
+                    ->whereNull(
+                        'payroll_id'
+                    )
                     ->get();
 
-                $caTotal = $cashAdvances->sum('amount');
+                $caTotal = round(
+                    $cashAdvances->sum('amount'),
+                    2
+                );
 
-                $sssEntries = SssContribution::where('employee_id', $employee->id)
-                    ->where('status', 'Pending')
-                    ->whereNull('payroll_id')
+                /*
+            |--------------------------------------------------------------------------
+            | SSS Contributions
+            |--------------------------------------------------------------------------
+            */
+
+                $sssEntries = SssContribution::where(
+                    'employee_id',
+                    $employee->id
+                )
+                    ->where(
+                        'status',
+                        'Pending'
+                    )
+                    ->whereNull(
+                        'payroll_id'
+                    )
                     ->get();
-                    
-                $sssTotal = $sssEntries->sum('amount');
+
+                $sssTotal = round(
+                    $sssEntries->sum('amount'),
+                    2
+                );
+
+                /*
+            |--------------------------------------------------------------------------
+            | Late Deduction
+            |--------------------------------------------------------------------------
+            */
+
+                $lateDeduction = $this->calculateLateDeduction(
+                    $attendances,
+                    $workStartTime,
+                    $gracePeriodMinutes,
+                    $lateDeductionPerMinute
+                );
+
+                /*
+            |--------------------------------------------------------------------------
+            | Create deduction record
+            |--------------------------------------------------------------------------
+            */
 
                 Deduction::create([
-                    'employee_id'     => $employee->id,
-                    'payroll_id'      => $payroll->id,
-                    'sss_deduction'   => $sssTotal,
-                    'ca_deduction'    => $caTotal,
-                    'other_deduction' => null,
-                    'remarks'         => 'Auto-generated on ' . $today->toDateString(),
+
+                    'employee_id' =>
+                    $employee->id,
+
+                    'payroll_id' =>
+                    $payroll->id,
+
+                    'sss_deduction' =>
+                    $sssTotal,
+
+                    'ca_deduction' =>
+                    $caTotal,
+
+                    'other_deduction' => [
+                        'late_deduction' => $lateDeduction,
+                    ],
+
+                    'remarks' =>
+                    'Auto-generated on '
+                        . $today->toDateString(),
+
                 ]);
 
-                $totalDeductions = $sssTotal + $caTotal;
+                /*
+            |--------------------------------------------------------------------------
+            | Total deductions
+            |--------------------------------------------------------------------------
+            */
+
+                $totalDeductions = round(
+                    $sssTotal + $caTotal + $lateDeduction,
+                    2
+                );
+
+                /*
+            |--------------------------------------------------------------------------
+            | Net pay
+            |--------------------------------------------------------------------------
+            */
+
+                $netPay = round(
+                    max(
+                        $grossPay - $totalDeductions,
+                        0
+                    ),
+                    2
+                );
+
+                /*
+            |--------------------------------------------------------------------------
+            | Update payroll totals
+            |--------------------------------------------------------------------------
+            */
+
                 $payroll->update([
-                    'total_deductions' => round($totalDeductions, 2),
-                    'net_pay'          => round($grossPay - $totalDeductions, 2),
+
+                    'total_deductions' =>
+                    $totalDeductions,
+
+                    'net_pay' =>
+                    $netPay,
+
                 ]);
 
-                CashAdvance::whereIn('id', $cashAdvances->pluck('id'))
-                    ->update([
-                        'payroll_id' => $payroll->id,
-                        'status'     => 'Deducted/Paid',
-                    ]);
+
+                if ($cashAdvances->isNotEmpty()) {
+
+                    CashAdvance::whereIn(
+                        'id',
+                        $cashAdvances->pluck('id')
+                    )
+                        ->update([
+                            'payroll_id' => $payroll->id,
+                            'status' =>
+                            'Deducted/Paid',
+                        ]);
+                }
 
                 foreach ($sssEntries as $sssEntry) {
 
                     $sssEntry->update([
-                        'payroll_id' => $payroll->id,
-                        'status'     => 'Posted',
+
+                        'payroll_id' =>
+                        $payroll->id,
+
+                        'status' =>
+                        'Posted',
+
                     ]);
 
                     $newEntry = $sssEntry->replicate();
 
                     $newEntry->payroll_id = null;
+
                     $newEntry->status = 'Pending';
+
+                    $newEntry->date = null;
 
                     $newEntry->save();
                 }
 
                 DB::commit();
 
-                $result['generated'][] = $payroll;
+                $result['generated'][] = [
+
+                    'employee_id' =>
+                    $employee->id,
+
+                    'payroll_id' =>
+                    $payroll->id,
+
+                    'employee_name' =>
+                    $employee->first_name
+                        . ' '
+                        . $employee->last_name,
+
+                    'gross_pay' =>
+                    $payroll->gross_pay,
+
+                    'deductions' =>
+                    $totalDeductions,
+
+                    'late_deduction' =>
+                    $lateDeduction,
+
+                    'net_pay' =>
+                    $netPay,
+
+                ];
             } catch (\Throwable $th) {
+
                 DB::rollBack();
-                $result['failed'][] = ['employee_id' => $employee->id, 'reason' => $th->getMessage()];
+
+                logger()->error(
+                    'PAYROLL GENERATION ERROR',
+                    [
+
+                        'employee_id' =>
+                        $employee->id,
+
+                        'message' =>
+                        $th->getMessage(),
+
+                        'file' =>
+                        $th->getFile(),
+
+                        'line' =>
+                        $th->getLine(),
+
+                    ]
+                );
+
+                $result['failed'][] = [
+
+                    'employee_id' =>
+                    $employee->id,
+
+                    'reason' =>
+                    $th->getMessage(),
+
+                ];
             }
         }
 
         return $result;
     }
 
-    // public function generatePayroll(Request $request)
-    // {
-    //     try {
-    //         $validation = $request->validate([
-    //             'employee_id' => ['required', 'integer', 'exists:employees,id'],
-    //             'cutoff_start' => ['required', 'date'],
-    //             'cutoff_end' => ['required', 'date', 'after_or_equal:cutoff_start'],
-    //             'payout_date' => ['required', 'date', 'after_or_equal:cutoff_end'],
-    //         ]);
-    //     } catch (\Throwable $th) {
-    //         return response_return('Error occurred in validating payroll information.', [], 422);
-    //     }
-
-    //     try {
-    //         $checkExisting = Payroll::where('employee_id', $validation['employee_id'])
-    //             ->where('cutoff_start', $validation['cutoff_start'])
-    //             ->where('cutoff_end', $validation['cutoff_end'])
-    //             ->exists();
-
-    //         if ($checkExisting) {
-    //             return response_return('Payroll for this employee and cutoff already exists.', [], 409);
-    //         }
-
-    //         $salary = Salary::where('employee_id', $validation['employee_id'])
-    //             ->where('is_active', true)
-    //             ->first();
-
-    //         if (!$salary) {
-    //             return response_return('This employee has no active salary rate set.', [], 409);
-    //         }
-
-    //         $attendances = Attendance::where('employee_id', $validation['employee_id'])
-    //             ->whereBetween('date', [$validation['cutoff_start'], $validation['cutoff_end']])
-    //             ->get();
-
-    //         $grossPay = $this->calculateGrossPay($salary, $attendances);
-
-    //         $createPayroll = Payroll::create([
-    //             'employee_id' => $validation['employee_id'],
-    //             'cutoff_start' => $validation['cutoff_start'],
-    //             'cutoff_end' => $validation['cutoff_end'],
-    //             'payout_date' => $validation['payout_date'],
-    //             'gross_pay' => round($grossPay, 2),
-    //             'total_deductions' => 0,
-    //             'net_pay' => round($grossPay, 2),
-    //             'status' => 'Draft',
-    //         ]);
-
-    //         if (!$createPayroll) {
-    //             return response_return('Cannot save payroll information at this moment.', [], 409);
-    //         }
-
-    //         return response_return('Successfully generated payroll.', $createPayroll->toArray(), 201);
-    //     } catch (\Throwable $th) {
-    //         return response_return('Error occurred in generating payroll.', [], 500);
-    //     }
-    // }
-
-    private function calculateGrossPay(Salary $salary, $attendances): float
+    private function calculateGrossPay(Salary $salary, $attendances, $sundayPremiumRate): float
     {
+
         $gross = 0;
 
-        foreach ($attendances as $attendance) {
-            $isSunday = Carbon::parse($attendance->date)->isSunday();
-            $isPaidDay = in_array($attendance->status, ['Present', 'Half Day']);
+        $paidStatuses = [
+            'Present',
+            'Late',
+            'Half Day',
+        ];
 
-            if (!$isPaidDay) {
+        foreach ($attendances as $attendance) {
+
+
+            if (!in_array(
+                $attendance->status,
+                $paidStatuses
+            )) {
                 continue;
             }
 
-            if ($salary->salary_type === 'Daily') {
-                $dayRate = $salary->basic_salary;
+            $attendanceDate = Carbon::parse(
+                $attendance->date
+            );
+
+            $isSunday =
+                $attendanceDate->isSunday();
+
+            /*
+        |--------------------------------------------------------------------------
+        | DAILY SALARY
+        |--------------------------------------------------------------------------
+        */
+
+            if (
+                $salary->salary_type === 'Daily'
+            ) {
+
+                $dayRate = (float)
+                $salary->basic_salary;
 
                 if ($attendance->status === 'Half Day') {
                     $dayRate = $dayRate / 2;
                 }
 
                 if ($isSunday) {
-                    $dayRate *= self::SUNDAY_PREMIUM_RATE;
+
+                    $dayRate =
+                        $dayRate
+                        * $sundayPremiumRate;
                 }
+
 
                 $gross += $dayRate;
 
-                $hourlyEquivalent = $salary->basic_salary / 8;
-                $gross += $attendance->overtime_hours * $hourlyEquivalent * ($isSunday ? self::SUNDAY_PREMIUM_RATE : 1);
-            } elseif ($salary->salary_type === 'Hourly') {
-                $rate = $isSunday ? $salary->basic_salary * self::SUNDAY_PREMIUM_RATE : $salary->basic_salary;
-                $gross += $attendance->hours_worked * $rate;
-                $gross += $attendance->overtime_hours * $rate;
+                /*
+            |--------------------------------------------------------------------------
+            | Overtime
+            |--------------------------------------------------------------------------
+            */
+
+                $overtimeHours =
+                    (float) (
+                        $attendance->overtime_hours
+                        ?? 0
+                    );
+
+                if ($overtimeHours > 0) {
+
+                    $hourlyRate =
+                        (float)
+                        $salary->basic_salary
+                        / 8;
+
+                    /*
+                |--------------------------------------------------------------------------
+                | Sunday OT also receives Sunday premium
+                |--------------------------------------------------------------------------
+                */
+
+                    if ($isSunday) {
+
+                        $hourlyRate =
+                            $hourlyRate
+                            * $sundayPremiumRate;
+                    }
+
+                    $gross +=
+                        $overtimeHours
+                        * $hourlyRate;
+                }
+            }
+
+            /*
+        |--------------------------------------------------------------------------
+        | HOURLY SALARY
+        |--------------------------------------------------------------------------
+        */ elseif (
+                $salary->salary_type === 'Hourly'
+            ) {
+
+                $hourlyRate =
+                    (float)
+                    $salary->basic_salary;
+
+                /*
+            |--------------------------------------------------------------------------
+            | Sunday +30%
+            |--------------------------------------------------------------------------
+            */
+
+                if ($isSunday) {
+
+                    $hourlyRate =
+                        $hourlyRate
+                        * $sundayPremiumRate;
+                }
+
+                /*
+            |--------------------------------------------------------------------------
+            | Worked hours
+            |--------------------------------------------------------------------------
+            */
+
+                $hoursWorked =
+                    (float) (
+                        $attendance->hours_worked
+                        ?? 0
+                    );
+
+                /*
+            |--------------------------------------------------------------------------
+            | Overtime hours
+            |--------------------------------------------------------------------------
+            */
+
+                $overtimeHours =
+                    (float) (
+                        $attendance->overtime_hours
+                        ?? 0
+                    );
+
+                /*
+            |--------------------------------------------------------------------------
+            | Prevent overtime from being paid twice
+            |--------------------------------------------------------------------------
+            |
+            | Example:
+            |
+            | hours_worked = 10
+            | overtime_hours = 2
+            |
+            | Regular hours = 8
+            |
+            */
+
+                $regularHours =
+                    max(
+                        $hoursWorked
+                            - $overtimeHours,
+                        0
+                    );
+
+                /*
+            |--------------------------------------------------------------------------
+            | Add regular pay
+            |--------------------------------------------------------------------------
+            */
+
+                $gross +=
+                    $regularHours
+                    * $hourlyRate;
+
+                /*
+            |--------------------------------------------------------------------------
+            | Add overtime pay
+            |--------------------------------------------------------------------------
+            */
+
+                $gross +=
+                    $overtimeHours
+                    * $hourlyRate;
             }
         }
 
-        return $gross;
+        return round(
+            $gross,
+            2
+        );
+    }
+
+    private function calculateLateDeduction($attendances, string $workStartTime, float $gracePeriodMinutes, float $perMinuteRate): float
+    {
+
+        $totalDeduction = 0;
+
+        foreach ($attendances as $attendance) {
+
+            if ($attendance->status !== 'Late') {
+                continue;
+            }
+
+            if (!$attendance->time_in) {
+                continue;
+            }
+
+            $attendanceDate = Carbon::parse($attendance->date)->toDateString();
+
+            $scheduledStart = Carbon::parse($attendanceDate . ' ' . $workStartTime);
+            $graceEnd = $scheduledStart->copy()->addMinutes($gracePeriodMinutes);
+
+            $timeIn = Carbon::parse($attendanceDate . ' ' . $attendance->time_in);
+
+            if ($timeIn->lessThanOrEqualTo($graceEnd)) {
+                continue;
+            }
+
+            $lateMinutes = $graceEnd->diffInMinutes($timeIn);
+
+            $totalDeduction += $lateMinutes * $perMinuteRate;
+        }
+
+        return round($totalDeduction, 2);
     }
 
     public function updateStatus(Request $request)
@@ -290,7 +744,7 @@ class PayrollServices
         }
 
         try {
-            $query = Payroll::with('employee');
+            $query = Payroll::with(['employee', 'employee.activeSalary', 'deductions']);
 
             if (!empty($validation['employee_id'])) {
                 $query->where('employee_id', $validation['employee_id']);
@@ -301,12 +755,168 @@ class PayrollServices
             }
 
             $payrolls = $query->orderByDesc('cutoff_start')
-                ->paginate($validation['per_page'] ?? 15);
+                ->paginate($validation['per_page'] ?? 100);
+
+            /*
+        |--------------------------------------------------------------------------
+        | Batch-fetch attendance for every employee/date range on this page
+        |--------------------------------------------------------------------------
+        |
+        | One query instead of one-per-payroll-row. We over-fetch (min start to
+        | max end across the page) then slice per payroll in memory below.
+        |
+        */
+
+            $pageItems = $payrolls->getCollection();
+
+            $employeeIds = $pageItems->pluck('employee_id')->unique()->values();
+            $minCutoffStart = $pageItems->min('cutoff_start');
+            $maxCutoffEnd = $pageItems->max('cutoff_end');
+
+            $attendancesByEmployee = collect();
+
+            if ($employeeIds->isNotEmpty() && $minCutoffStart && $maxCutoffEnd) {
+                $attendancesByEmployee = Attendance::whereIn('employee_id', $employeeIds)
+                    ->whereBetween('date', [$minCutoffStart, $maxCutoffEnd])
+                    ->orderBy('date')
+                    ->get()
+                    ->groupBy('employee_id');
+            }
+
+            $sundayPremiumRate = (float) (
+                Maintenance::where('name', 'Overtime Multiplier')->value('value') ?? 1.30
+            );
+
+            $payrolls->through(function ($payroll) use ($attendancesByEmployee, $sundayPremiumRate) {
+
+                $employee = $payroll->employee;
+                $salary = $employee?->activeSalary;
+
+                $initials = strtoupper(
+                    substr($employee->first_name ?? '', 0, 1)
+                        . substr($employee->last_name ?? '', 0, 1)
+                ) ?: '—';
+
+                $earningsBreakdown = ['sunday_premium' => 0.0, 'overtime_pay' => 0.0];
+
+                if ($salary) {
+
+                    $attendances = ($attendancesByEmployee->get($employee->id) ?? collect())
+                        ->filter(
+                            fn($a) =>
+                            $a->date >= $payroll->cutoff_start
+                                && $a->date <= $payroll->cutoff_end
+                        );
+
+                    $earningsBreakdown = $this->computeEarningsBreakdown(
+                        $salary,
+                        $attendances,
+                        $sundayPremiumRate
+                    );
+                }
+
+                // deductions relation returns a Collection if it's hasMany —
+                // grab the single row; rename the relation to hasOne if there's
+                // truly only ever one Deduction per Payroll.
+                $deduction = $payroll->deductions instanceof \Illuminate\Support\Collection
+                    ? $payroll->deductions->first()
+                    : $payroll->deductions;
+
+                return [
+                    "id" => $payroll->id,
+                    "employeeId" => $employee->id,
+                    "employeeName" => $employee->last_name . ', ' . $employee->first_name,
+                    "initials" => $initials,
+                    "department" => $employee->location,
+                    "salaryType" => $salary->salary_type ?? null,
+                    "grossPay" => (float) $payroll->gross_pay,
+
+                    'earnings' => [
+                        "basicSalary" => (float) ($salary->basic_salary ?? 0),
+                        "sundayPremium" => $earningsBreakdown['sunday_premium'],
+                        "overtime" => $earningsBreakdown['overtime_pay'],
+                    ],
+
+                    'deductions' => [
+                        'sss' => (float) ($deduction->sss_deduction ?? 0),
+                        'cashAdvance' => (float) ($deduction->ca_deduction ?? 0),
+                        'late' => (float) ($deduction->other_deduction['late_deduction'] ?? 0),
+                    ],
+
+                    "totalDeductions" => (float) $payroll->total_deductions,
+                    "netPay" => (float) $payroll->net_pay,
+                    "status" => $payroll->status,
+                    "image" => $employee->image,
+                    "paid" => $payroll->status === 'Paid',
+                    "paidDate" => $payroll->payment_date,
+                    "paymentMethod" => 'CASH',
+                    'reference' => 'VIP-' . now()->year . str_pad($payroll->id, 4, '0', STR_PAD_LEFT),
+                ];
+            });
 
             return response_return('Successfully retrieved payrolls.', $payrolls->toArray(), 200);
         } catch (\Throwable $th) {
-            return response_return('Error occurred in retrieving payrolls.', [], 500);
+
+            logger()->error('GET PAYROLLS ERROR', [
+                'message' => $th->getMessage(),
+                'file' => $th->getFile(),
+                'line' => $th->getLine(),
+            ]);
+
+            return response_return($th->getMessage(), [], 500);
         }
+    }
+
+    private function computeEarningsBreakdown(Salary $salary, $attendances, float $sundayPremiumRate): array
+    {
+        $sundayPremium = 0;
+        $overtimePay = 0;
+
+        $paidStatuses = ['Present', 'Late', 'Half Day'];
+
+        foreach ($attendances as $attendance) {
+
+            if (!in_array($attendance->status, $paidStatuses)) {
+                continue;
+            }
+
+            $isSunday = Carbon::parse($attendance->date)->isSunday();
+            $overtimeHours = (float) ($attendance->overtime_hours ?? 0);
+
+            if ($salary->salary_type === 'Daily') {
+
+                $baseDayRate = (float) $salary->basic_salary;
+
+                if ($attendance->status === 'Half Day') {
+                    $baseDayRate = $baseDayRate / 2;
+                }
+
+                if ($isSunday) {
+                    $sundayPremium += $baseDayRate * ($sundayPremiumRate - 1);
+                }
+
+                if ($overtimeHours > 0) {
+                    $hourlyRate = (float) $salary->basic_salary / 8;
+                    $overtimePay += $overtimeHours * $hourlyRate;
+                }
+            } elseif ($salary->salary_type === 'Hourly') {
+
+                $baseHourlyRate = (float) $salary->basic_salary;
+                $hoursWorked = (float) ($attendance->hours_worked ?? 0);
+                $regularHours = max($hoursWorked - $overtimeHours, 0);
+
+                if ($isSunday) {
+                    $sundayPremium += $regularHours * $baseHourlyRate * ($sundayPremiumRate - 1);
+                }
+
+                $overtimePay += $overtimeHours * $baseHourlyRate;
+            }
+        }
+
+        return [
+            'sunday_premium' => round($sundayPremium, 2),
+            'overtime_pay' => round($overtimePay, 2),
+        ];
     }
 
     public function getPayroll(Request $request)

@@ -14,7 +14,6 @@ class DeductionServices
     {
         try {
             $validation = $request->validate([
-                // 'payroll_id' => ['required', 'integer', 'exists:payrolls,id'],
                 'employee_id' => ['nullable', 'integer', 'exists:employees,id'],
                 'sss_deduction' => ['nullable', 'numeric', 'min:0'],
                 'other_deduction' => ['nullable', 'array'],

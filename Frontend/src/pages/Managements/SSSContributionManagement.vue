@@ -185,31 +185,12 @@
                         <button class="add-btn" @click="openAddContributionModal">
                             + Add Contribution
                         </button>
-
                     </div>
-
-                </div>
-
-                <div class="filter-row">
-
-                    <button v-for="filter in statusFilters" :key="filter.key" class="filter-pill" :class="{
-                        active:
-                            recordsStatusFilter ===
-                            filter.key
-                    }" @click="
-                        recordsStatusFilter =
-                        filter.key
-                        ">
-                        {{ filter.label }}
-                    </button>
-
                 </div>
 
                 <div class="table-responsive">
 
-                    <table v-if="
-                        paginatedContributionRecords.length
-                    " class="table-ledger">
+                    <table v-if="paginatedContributionRecords.length" class="table-ledger">
 
                         <thead>
                             <tr>
@@ -395,17 +376,14 @@ page in
                         </div>
                     </div>
 
-
                     <div class="d-flex gap-2 flex-wrap">
 
                         <div class="search-box">
-
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <circle cx="11" cy="11" r="7" />
 
                                 <path d="m20 20-3-3" />
                             </svg>
-
 
                             <input v-model="historiesSearchQuery
                                 " type="text" placeholder="Search employee..." />
@@ -416,26 +394,8 @@ page in
 
                 </div>
 
-
-                <!-- HISTORY FILTERS -->
-                <div class="filter-row">
-
-                    <button v-for="filter in statusFilters" :key="filter.key" class="filter-pill" :class="{
-                        active:
-                            historiesStatusFilter ===
-                            filter.key
-                    }" @click="
-                        historiesStatusFilter =
-                        filter.key
-                        ">
-                        {{ filter.label }}
-                    </button>
-                </div>
                 <div class="table-responsive">
-
-                    <table v-if="
-                        paginatedContributionHistories.length
-                    " class="table-ledger">
+                    <table v-if="paginatedContributionHistories.length" class="table-ledger">
 
                         <thead>
 
@@ -465,16 +425,10 @@ page in
 
                         </thead>
 
-
                         <tbody>
 
-                            <tr v-for="
-record in
-    paginatedContributionHistories
-                            " :key="record.id">
-
+                            <tr v-for="record in paginatedContributionHistories" :key="record.id">
                                 <td>
-
                                     <div class="d-flex align-items-center gap-2">
 
                                         <div class="avatar-sm">
@@ -790,11 +744,6 @@ const employeeStore =
 const sssStore =
     useSSSStore()
 
-
-/* =====================================================
-   COMPONENT OPTIONS
-===================================================== */
-
 defineOptions({
     name: 'SssContributionManagement'
 })
@@ -803,10 +752,6 @@ defineEmits([
     'toggle-sidebar'
 ])
 
-
-/* =====================================================
-   CLOCK
-===================================================== */
 
 const liveClock =
     ref('--:--:--')
@@ -1115,10 +1060,6 @@ const pageNumbersRecords =
     })
 
 
-/* =====================================================
-   HISTORIES PAGINATION
-===================================================== */
-
 const historiesCurrentPage =
     ref(1)
 
@@ -1144,22 +1085,8 @@ const totalPagesHistories =
 
 const paginatedContributionHistories =
     computed(() => {
-
-        const start =
-            (
-                historiesCurrentPage.value -
-                1
-            ) *
-            historiesPageSize.value
-
-        return filteredContributionHistories
-            .value
-            .slice(
-                start,
-                start +
-                historiesPageSize.value
-            )
-
+        const start = (historiesCurrentPage.value - 1) * historiesPageSize.value
+        return filteredContributionHistories.value.slice(start, start + historiesPageSize.value)
     })
 
 
@@ -1730,29 +1657,12 @@ const listHistories =
 
 const listRecords =
     async data => {
-
         try {
-
-            const response =
-                await sssStore
-                    .getSSSDeductionsRecords(
-                        data
-                    )
-
-
-            contributionRecords.value =
-                response?.data?.data ||
-                []
-
+            const response = await sssStore.getSSSDeductionsRecords(data)
+            contributionRecords.value = response?.data?.data || []
         } catch (error) {
-
-            console.error(
-                'Failed to load SSS records:',
-                error
-            )
-
-            contributionRecords.value =
-                []
+            console.error('Failed to load SSS records:', error)
+            contributionRecords.value = []
 
         }
 

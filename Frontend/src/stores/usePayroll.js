@@ -26,5 +26,25 @@ export const usePayrollStore = defineStore('payrollStore', () => {
         }
     }
 
-    return { generatePayroll }
+    const payrollList = async (data) => {
+        try {
+            const payrollLists = await api.post('payroll/list', data);
+
+            return payrollLists.data;
+        } catch (err) {
+            const status = err.response?.status || 500;
+
+            const message =
+                err.response?.data?.message ||
+                err.response?.data?.error ||
+                err.message ||
+                'An unexpected error occurred.';
+
+            showStatusAlert(status, message);
+
+            return status;
+        }
+    }
+
+    return { generatePayroll, payrollList }
 });
