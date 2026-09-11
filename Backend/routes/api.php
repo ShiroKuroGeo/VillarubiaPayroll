@@ -7,8 +7,10 @@ use App\Http\Controllers\DeductionController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\MaintenanceController;
 use App\Http\Controllers\PayrollController;
+use App\Http\Controllers\PayslipController;
 use App\Http\Controllers\SalaryController;
 use App\Http\Controllers\SSSController;
+use App\Http\Controllers\OverviewController;
 use App\Http\Controllers\UserController;
 use App\Http\Services\SSSServices;
 use Illuminate\Support\Facades\Route;
@@ -18,6 +20,13 @@ Route::post('/create', [UserController::class, 'createUser']);
 Route::post('/request/cash_advance', [CashAdvanceController::class, 'requestCashAdvance']);
 
 Route::middleware('auth:sanctum')->group(function () {
+    Route::controller(PayslipController::class)
+        ->prefix('payslip')
+        ->group(function () {
+            Route::get('paySlip', 'getPayslip');
+            Route::get('export', 'exportPayslips');
+        });
+
     Route::controller(AttendanceController::class)
         ->prefix('attendance')
         ->group(function () {
@@ -110,5 +119,11 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::post('getHistory', 'getSSSDeductionsHistory');
             Route::post('removeSSS', 'removeSSSDeduction');
             Route::post('updateSSS', 'updateSSSDeduction');
+        });
+
+    Route::controller(OverviewController::class)
+        ->prefix('overview')
+        ->group(function(){
+            Route::post('card_overview', 'cardOverview');
         });
 });

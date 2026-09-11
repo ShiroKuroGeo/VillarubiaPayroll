@@ -321,7 +321,7 @@
                             <div class="summary-row">
                                 <div class="summary-label">
                                     <span class="summary-dot red"></span>
-                                    Loans / Other
+                                    Other
                                 </div>
                                 <div class="summary-value">
                                     {{ countWithOther }}
@@ -347,37 +347,20 @@
                                 <circle cx="11" cy="11" r="7" />
                                 <path d="m20 20-3-3" />
                             </svg>
-
                             <input v-model="searchQuery" type="text" placeholder="Search employee..." />
-
                         </div>
-
                     </div>
-
-                </div>
-
-
-                <!-- FILTERS -->
-
-                <div class="filter-row">
-
-                    <button v-for="filter in statusFilters" :key="filter.key" class="filter-pill" :class="{
-                        active: statusFilter === filter.key
-                    }" @click="statusFilter = filter.key">
-                        {{ filter.label }}
-                    </button>
-
                 </div>
                 <div class="table-responsive">
                     <table class="table-ledger salary-table" v-if="filteredData.length">
                         <thead>
                             <tr>
                                 <th>Employee</th>
-
-                                <th>Department</th>
-
-                                <th>SSS</th>
-
+                                <th>Position</th>
+                                <th>Payroll Date</th>
+                                <th>
+                                    Cash Advance
+                                </th>
                                 <th>
                                     Cash Advance
                                 </th>
@@ -401,7 +384,7 @@
 
                                         <div class="avatar-sm">
 
-                                            <img v-if="employee.image" :src="employee.image" :alt="employee.employeeName" />
+                                            <img v-if="employee.image" :src="storageImage(employee.image)" :alt="employee.employeeName" />
 
                                             <span v-else>
                                                 {{ employee.initials }}
@@ -429,64 +412,41 @@
                                     </div>
 
                                 </td>
-
-
                                 <td>
-
                                     <span class="department">
                                         {{ employee.department }}
                                     </span>
-
                                 </td>
-
-
+                                <td class="money">
+                                    {{ formatDate(employee.payroll_date) }}
+                                </td>
                                 <td class="money deduction">
                                     {{ formatCurrency(employee.sss) }}
                                 </td>
-
                                 <td class="money deduction">
                                     {{ formatCurrency(employee.ca) }}
                                 </td>
-
-
                                 <td class="money">
-
                                     <span v-if="otherTotal(employee)">
                                         {{ formatCurrency(otherTotal(employee)) }}
                                     </span>
-
                                     <span v-else class="muted">
                                         —
                                     </span>
-
                                 </td>
-
-
                                 <td class="money net-pay">
                                     {{ formatCurrency(totalFor(employee)) }}
                                 </td>
-
-
                                 <td>
-
                                     <div class="action-group">
-
                                         <button class="action-btn edit-btn" @click="openEditModal(employee)">
                                             Edit
                                         </button>
-
                                     </div>
-
                                 </td>
-
                             </tr>
-
-
                         </tbody>
-
                     </table>
-
-
                     <div v-else class="empty-state">
                         No employees match your search or filter.
                     </div>
@@ -630,6 +590,8 @@
 
 <script setup>
 
+import { useDeductionStore } from '@/stores/useDeduction'
+import { storageImage } from '@/utils/image'
 import {
     computed,
     onMounted,
@@ -650,7 +612,7 @@ defineEmits([
 const liveClock = ref('--:--:--')
 
 let clockTimer = null
-
+const deductionStore = useDeductionStore();
 
 function tickClock() {
 
@@ -663,7 +625,6 @@ function tickClock() {
         )
 
 }
-
 
 const todayLabel =
     new Date().toLocaleDateString(
@@ -678,104 +639,86 @@ const todayLabel =
 
 const deductionsData = ref([
 
-    {
-        id: 1,
-        employeeId: 1,
-        employeeName: 'Jonas Diaz',
-        initials: 'JD',
-        department: 'Warehouse',
-        status: 'active',
-        image: null,
-        sss: 675,
-        ca: 675,
-        otherDeductions: []
-    },
+    // {
+    //     id: 1,
+    //     employeeId: 1,
+    //     employeeName: 'Jonas Diaz',
+    //     initials: 'JD',
+    //     department: 'Warehouse',
+    //     status: 'active',
+    //     image: null,
+    //     sss: 675,
+    //     ca: 675,
+    //     otherDeductions: []
+    // },
 
-    {
-        id: 2,
-        employeeId: 2,
-        employeeName: 'Carla Santos',
-        initials: 'CS',
-        department: 'Accounting',
-        status: 'active',
-        image: null,
-        sss: 675,
-        ca: 675,
-        otherDeductions: [
-            {
-                key: 'k1',
-                label: 'Salary loan',
-                amount: 500
-            }
-        ]
-    },
 
-    {
-        id: 3,
-        employeeId: 3,
-        employeeName: 'Ramon Tan',
-        initials: 'RT',
-        department: 'Logistics',
-        status: 'active',
-        image: null,
-        sss: 675,
-        ca: 450,
-        otherDeductions: []
-    },
 
-    {
-        id: 4,
-        employeeId: 4,
-        employeeName: 'Paulo Lim',
-        initials: 'PL',
-        department: 'Customer Care',
-        status: 'active',
-        image: null,
-        sss: 675,
-        ca: 300,
+    // {
+    //     id: 3,
+    //     employeeId: 3,
+    //     employeeName: 'Ramon Tan',
+    //     initials: 'RT',
+    //     department: 'Logistics',
+    //     status: 'active',
+    //     image: null,
+    //     sss: 675,
+    //     ca: 450,
+    //     otherDeductions: []
+    // },
 
-        otherDeductions: [
-            {
-                key: 'k2',
-                label: 'Uniform',
-                amount: 150
-            }
-        ]
-    },
+    // {
+    //     id: 4,
+    //     employeeId: 4,
+    //     employeeName: 'Paulo Lim',
+    //     initials: 'PL',
+    //     department: 'Customer Care',
+    //     status: 'active',
+    //     image: null,
+    //     sss: 675,
+    //     ca: 300,
 
-    {
-        id: 5,
-        employeeId: 5,
-        employeeName: 'Nadia Ang',
-        initials: 'NA',
-        department: 'Marketing',
-        status: 'active',
-        image: null,
-        sss: 675,
-        ca: 450,
-        otherDeductions: []
-    },
+    //     otherDeductions: [
+    //         {
+    //             key: 'k2',
+    //             label: 'Uniform',
+    //             amount: 150
+    //         }
+    //     ]
+    // },
 
-    {
-        id: 6,
-        employeeId: 6,
-        employeeName: 'Erik Villar',
-        initials: 'EV',
-        department: 'Warehouse',
-        status: 'active',
-        image: null,
-        sss: 675,
-        ca: 450,
+    // {
+    //     id: 5,
+    //     employeeId: 5,
+    //     employeeName: 'Nadia Ang',
+    //     initials: 'NA',
+    //     department: 'Marketing',
+    //     status: 'active',
+    //     image: null,
+    //     sss: 675,
+    //     ca: 450,
+    //     otherDeductions: []
+    // },
 
-        otherDeductions: []
-    }
+    // {
+    //     id: 6,
+    //     employeeId: 6,
+    //     employeeName: 'Erik Villar',
+    //     initials: 'EV',
+    //     department: 'Warehouse',
+    //     status: 'active',
+    //     image: null,
+    //     sss: 675,
+    //     ca: 450,
+
+    //     otherDeductions: []
+    // }
 
 ])
 
 const searchQuery = ref('')
 
 const statusFilter = ref('all')
-
 
 const statusFilters = [
 
@@ -852,7 +795,7 @@ const activeEmployees = computed(() => {
 
     return deductionsData.value.filter(
         employee =>
-            employee.status === 'active'
+            employee.status === 'Full Time'
     )
 
 })
@@ -1165,7 +1108,26 @@ function exportCsv() {
 
 }
 
-onMounted(() => {
+function formatDate(dateString) {
+    if (!dateString) return ''
+
+    const date = new Date(`${dateString}T00:00:00`)
+
+    return date.toLocaleDateString('en-PH', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+    })
+}
+
+const getDeductionList = async () => {
+    const deduction = await deductionStore.getDeductionList({
+        "per_page": 100
+    });
+    deductionsData.value = deduction;
+}
+
+onMounted(async () => {
 
     tickClock()
 
@@ -1174,7 +1136,7 @@ onMounted(() => {
             tickClock,
             1000
         )
-
+    await getDeductionList();
 })
 
 

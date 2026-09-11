@@ -549,18 +549,42 @@ class AttendanceServices
                 ];
             }
 
-            foreach (
-                $affectedAttendances
-                as $attendanceData
-            ) {
+            $attendanceDates = collect($punches)
+                ->map(function ($punch) {
+                    return Carbon::parse(
+                        $punch['scan_time']
+                    )->format('Y-m-d');
+                })
+                ->unique()
+                ->values();
 
-                $this->processAttendance(
-                    $attendanceData['employee_id'],
-                    $attendanceData['date'],
-                    $workStartTime,
-                    $workEndTime
-                );
+            $employees = Employee::where(
+                'status',
+                '!=',
+                'Separated/Terminated'
+            )->get();
+
+            foreach ($attendanceDates as $attendanceDate) {
+
+                foreach ($employees as $employee) {
+
+                    $this->processAttendance(
+                        $employee->id,
+                        $attendanceDate,
+                        $workStartTime,
+                        $workEndTime
+                    );
+                }
             }
+
+            // foreach ($affectedAttendances as $attendanceData) {
+            //     $this->processAttendance(
+            //         $attendanceData['employee_id'],
+            //         $attendanceData['date'],
+            //         $workStartTime,
+            //         $workEndTime
+            //     );
+            // }
 
             DB::commit();
 

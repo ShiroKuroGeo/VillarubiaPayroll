@@ -83,16 +83,6 @@ const navOverview = [
         label: 'Dashboard',
         icon: '<rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/>',
     },
-    {
-        key: 'attendance',
-        label: 'Attendance',
-        icon: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/>',
-    },
-    {
-        key: 'payroll',
-        label: 'Payroll',
-        icon: '<rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/>',
-    },
 ]
 
 const navManage = [

@@ -2,12 +2,12 @@ import api from "@/api/axios";
 import { showStatusAlert } from "@/utils/Swals";
 import { defineStore } from "pinia";
 
-export const useDeductionStore = defineStore('deductionStore', () => {
-    const getDeductionList = async (data) => {
+export const useOverviewStore = defineStore('useOverview', () => {
+    const cardOverview = async (data) => {
         try {
-            const deduction = await api.post('deduction/list', data);
+            const overview = await api.post('overview/card_overview', data);
 
-            return deduction.data.data;
+            return overview.data.data;
         } catch (err) {
             const status = err.response?.status || 500;
 
@@ -19,11 +19,11 @@ export const useDeductionStore = defineStore('deductionStore', () => {
 
             showStatusAlert(status, message);
 
-            return message;
+            return status;
         }
     }
 
     return {
-        getDeductionList
+        cardOverview
     }
 });

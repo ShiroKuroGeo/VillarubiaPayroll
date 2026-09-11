@@ -1,15 +1,12 @@
 <template>
     <div class="main">
         <div class="topbar">
-
             <div class="d-flex align-items-center gap-2">
-
                 <button class="btn-menu d-lg-none" @click="$emit('toggle-sidebar')" aria-label="Toggle menu">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M3 12h18M3 6h18M3 18h18" />
                     </svg>
                 </button>
-
                 <div>
 
                     <div class="eyebrow">
@@ -212,29 +209,18 @@
                                     </span>
                                 </td>
                                 <td>
-
                                     <div class="action-group">
-
                                         <button class="action-btn edit-btn" @click="openEditModal(employee)">
                                             Edit
                                         </button>
-
-
                                         <button class="action-btn delete-btn" @click="deleteSalary(employee)">
                                             Delete
                                         </button>
-
                                     </div>
-
                                 </td>
-
                             </tr>
-
-
                         </tbody>
-
                     </table>
-
 
                     <div v-else class="empty-state">
                         No salary records match your search or filter.

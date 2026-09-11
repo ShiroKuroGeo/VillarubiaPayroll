@@ -430,46 +430,29 @@ page in
                             <tr v-for="record in paginatedContributionHistories" :key="record.id">
                                 <td>
                                     <div class="d-flex align-items-center gap-2">
-
                                         <div class="avatar-sm">
-                                            <span>
-                                                {{
-                                                    record.initials
-                                                }}
+                                            <img v-if="record.employee.image" :src="storageImage(record.employee.image)" style="object-fit: cover; border-radius: 50%; border: 1px dashed gray;" width="45" height="45" alt="">
+                                            <span v-else>
+                                                AA
                                             </span>
                                         </div>
-
-
                                         <div>
-
                                             <div class="emp-name">
-                                                {{
-                                                    record.employeeName
-                                                }}
+                                                {{ record.employee.last_name }}, {{ record.employee.first_name }}
                                             </div>
-
                                             <div class="emp-role">
                                                 {{
-                                                    record.department
+                                                    record.employee.email
                                                 }}
                                             </div>
-
                                         </div>
-
                                     </div>
-
                                 </td>
 
 
                                 <td class="money">
-                                    {{
-                                        getPayrollLabel(
-                                            record.payroll_id
-                                        )
-                                    }}
+                                    {{ getPayrollLabel(record.payroll_id) }}
                                 </td>
-
-
                                 <td class="money allowance">
                                     {{
                                         formatCurrency(
@@ -514,11 +497,7 @@ page in
 
                 </div>
 
-
-                <!-- HISTORY PAGINATION -->
-                <div v-if="
-                    filteredContributionHistories.length
-                " class="pagination-bar">
+                <div v-if="filteredContributionHistories.length" class="pagination-bar">
 
                     <div class="pagination-info">
 
@@ -548,10 +527,7 @@ page in
                         </button>
 
 
-                        <button v-for="
-page in
-    pageNumbersHistories
-                        " :key="page" class="page-btn" :class="{
+                        <button v-for="page in pageNumbersHistories" :key="page" class="page-btn" :class="{
                             active:
                                 page ===
                                 historiesCurrentPage
@@ -810,33 +786,7 @@ const payrollOptions =
 const contributionRecords =
     ref([])
 
-const contributionHistories =
-    ref([])
-
-
-/* =====================================================
-   STATUS FILTERS
-===================================================== */
-
-const statusFilters = [
-    {
-        key: 'all',
-        label: 'All'
-    },
-    {
-        key: 'Pending',
-        label: 'Pending'
-    },
-    {
-        key: 'Posted',
-        label: 'Posted'
-    }
-]
-
-
-/* =====================================================
-   RECORDS FILTERS
-===================================================== */
+const contributionHistories = ref([])
 
 const recordsSearchQuery =
     ref('')
@@ -1402,26 +1352,22 @@ const deleteContribution = async (record) => {
 
 }
 
-function getPayrollLabel(
-    payrollId
-) {
-
+function getPayrollLabel(payrollId) {
     if (!payrollId) {
         return '—'
     }
 
-    const payroll =
-        payrollOptions.value
-            .find(
-                item =>
-                    Number(item.id) ===
-                    Number(payrollId)
-            )
+    const payroll = payrollOptions.value.find(
+        item => Number(item.id) === Number(payrollId)
+    )
+
+    const year = new Date().getFullYear()
+
+    const formattedId = String(payrollId).padStart(4, '0')
 
     return payroll
         ? payroll.label
-        : `Payroll #${payrollId}`
-
+        : `VIP-${year}${formattedId}`
 }
 
 function formatDate(date) {
@@ -1615,11 +1561,6 @@ const listEmployee =
 
     }
 
-
-/* =====================================================
-   LOAD SSS HISTORIES
-===================================================== */
-
 const listHistories =
     async data => {
 
@@ -1667,11 +1608,6 @@ const listRecords =
         }
 
     }
-
-
-/* =====================================================
-   ON MOUNTED
-===================================================== */
 
 onMounted(
     async () => {

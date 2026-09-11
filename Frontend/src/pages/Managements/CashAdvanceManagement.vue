@@ -148,55 +148,35 @@
                         <div class="stat-delta stat-delta--red">
                             {{ cashAdvanceData.length }} requests on file
                         </div>
-
                     </div>
-
                 </div>
-
             </div>
 
-
-            <!-- REQUEST LIST -->
             <div class="panel">
-
                 <div class="section-header">
-
                     <div>
-
                         <div class="section-title">
                             Cash advance requests
                         </div>
-
                         <div class="panel-sub">
                             Review employee requests and process payments
                         </div>
-
                     </div>
-
                 </div>
 
-
-                <!-- SEARCH / FILTER -->
                 <div class="toolbar">
-
                     <div class="search-box">
-
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <circle cx="11" cy="11" r="7" />
                             <path d="m20 20-4-4" />
                         </svg>
-
                         <input v-model="searchQuery" type="text" placeholder="Search employee..." />
-
                     </div>
 
-
                     <div class="filter-row">
-
                         <button v-for="filter in statusFilters" :key="filter.value" class="filter-pill" :class="{ active: activeFilter === filter.value }" @click="activeFilter = filter.value">
                             {{ filter.label }}
                         </button>
-
                     </div>
 
                 </div>
@@ -266,10 +246,10 @@
                                         <button v-if="request.status === 'Pending'" class="btn-mini btn-mini-review" @click="openReviewModal(request)">
                                             Review
                                         </button>
-                                        <button v-if="request.status === 'Approved'" class="btn-mini btn-mini-pay" @click="openPaymentModal(request)">
+                                        <!-- <button v-if="request.status === 'Approved'" class="btn-mini btn-mini-pay" @click="openPaymentModal(request)">
                                             Mark as Paid
-                                        </button>
-                                        <button v-if="request.status === 'Deducted/Paid' || request.status === 'Rejected'" class="btn-mini btn-mini-view" @click="openViewModal(request)">
+                                        </button> -->
+                                        <button v-if="request.status === 'Deducted/Paid' || request.status === 'Rejected' || request.status === 'Approved'" class="btn-mini btn-mini-view" @click="openViewModal(request)">
                                             View
                                         </button>
                                     </div>

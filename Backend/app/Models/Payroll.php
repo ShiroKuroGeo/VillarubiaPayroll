@@ -14,7 +14,8 @@ use Illuminate\Database\Eloquent\Model;
     'total_deductions',
     'net_pay',
     'status',
-    'payment_date'
+    'payment_date',
+    'payment_method'
 ])]
 class Payroll extends Model
 {

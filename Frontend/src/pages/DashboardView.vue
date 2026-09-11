@@ -19,47 +19,34 @@
                     <span class="dot"></span>
                     <span>{{ liveClock }}</span>
                 </div>
-
-                <button class="btn btn-outline-ledger btn-sm" @click="exportCsv">
-                    Export
-                </button>
-
-                <button class="btn btn-ink btn-sm" :disabled="payrollRunning" @click="runPayroll">
-                    {{ payrollRunning ? 'Running…' : (payrollJustRan ? 'Payroll run ✓' : 'Generate Payroll') }}
-                </button>
+                <input v-model="start" @change="changeDate" type="date" class="date-chip" />
+                -
+                <input v-model="end" @change="changeDate" type="date" class="date-chip" />
             </div>
         </div>
 
         <div class="content">
 
-            <!-- Stat cards -->
             <div class="row g-3 mb-4">
-
-                <!-- Total Employees -->
-                <div class="col-6 col-lg-3">
+                <div class="col-6 col-lg-3" v-for="value in overviewCard" :key="value">
                     <div class="punch-card">
-                        <div class="stamp green">STAFF</div>
-
+                        <div class="stamp green">{{ value.stamp }}</div>
                         <div class="stat-label">
-                            Total Employees
+                            {{ value.label }}
                         </div>
-
                         <div class="stat-period">
-                            August 17–22, 2026
+                            {{ value.date }}
                         </div>
-
                         <div class="stat-value">
-                            {{ totalEmployees }}
+                            {{ value.count }}
                         </div>
-
                         <div class="stat-delta text-success">
-                            ▲ 6 new this month
+                            {{ value.sub }}
                         </div>
                     </div>
                 </div>
 
-                <!-- Total Salary Paid -->
-                <div class="col-6 col-lg-3">
+                <!-- <div class="col-6 col-lg-3">
                     <div class="punch-card">
                         <div class="stamp green">PAID</div>
 
@@ -81,7 +68,6 @@
                     </div>
                 </div>
 
-                <!-- Cash Advance -->
                 <div class="col-6 col-lg-3">
                     <div class="punch-card">
                         <div class="stamp gold">C.A.</div>
@@ -104,7 +90,6 @@
                     </div>
                 </div>
 
-                <!-- Attendance Today -->
                 <div class="col-6 col-lg-3">
                     <div class="punch-card">
                         <div class="stamp green">TODAY</div>
@@ -125,7 +110,7 @@
                             {{ attendanceRate }}% attendance rate
                         </div>
                     </div>
-                </div>
+                </div> -->
 
             </div>
 
@@ -198,8 +183,7 @@
                             </div>
 
                             <div class="d-flex gap-2 flex-wrap">
-                                <button v-for="f in statusFilters" :key="f.key" class="filter-pill"
-                                    :class="{ active: statusFilter === f.key }" @click="statusFilter = f.key">
+                                <button v-for="f in statusFilters" :key="f.key" class="filter-pill" :class="{ active: statusFilter === f.key }" @click="statusFilter = f.key">
                                     {{ f.label }}
                                 </button>
                             </div>
@@ -247,8 +231,7 @@
                                         </td>
 
                                         <td>
-                                            <span class="badge-status" :class="badgeClass(p.status)"
-                                                @click="cycleStatus(p)">
+                                            <span class="badge-status" :class="badgeClass(p.status)" @click="cycleStatus(p)">
                                                 {{ p.status.toUpperCase() }}
                                             </span>
                                         </td>
@@ -266,62 +249,55 @@
 
                 <!-- Recent Cash Advance -->
                 <!-- Recent Cash Advance -->
-<div class="col-lg-5">
+                <div class="col-lg-5">
 
-    <div class="section-title">
-        Recent Cash Advance
-    </div>
-
-    <div class="cash-advance-list">
-
-        <div
-            class="cash-advance-item"
-            v-for="ca in recentCashAdvances"
-            :key="ca.id"
-        >
-
-            <div class="d-flex align-items-center gap-2">
-
-                <div class="avatar-sm">
-                    {{ ca.initials }}
-                </div>
-
-                <div class="cash-advance-person">
-                    <div class="emp-name">
-                        {{ ca.name }}
+                    <div class="section-title">
+                        Recent Cash Advance
                     </div>
 
-                    <div class="emp-role">
-                        {{ ca.role }} · {{ ca.date }}
+                    <div class="cash-advance-list">
+
+                        <div class="cash-advance-item" v-for="ca in recentCashAdvances" :key="ca.id">
+
+                            <div class="d-flex align-items-center gap-2">
+
+                                <div class="avatar-sm">
+                                    {{ ca.initials }}
+                                </div>
+
+                                <div class="cash-advance-person">
+                                    <div class="emp-name">
+                                        {{ ca.name }}
+                                    </div>
+
+                                    <div class="emp-role">
+                                        {{ ca.role }} · {{ ca.date }}
+                                    </div>
+                                </div>
+
+                            </div>
+
+                            <div class="cash-advance-info">
+
+                                <div class="cash-advance-purpose">
+                                    {{ ca.purpose }}
+                                </div>
+
+                                <div class="cash-advance-amount">
+                                    {{ peso(ca.amount) }}
+                                </div>
+
+                                <span class="badge-status" :class="caStatusClass(ca.status)">
+                                    {{ ca.status.toUpperCase() }}
+                                </span>
+
+                            </div>
+
+                        </div>
+
                     </div>
+
                 </div>
-
-            </div>
-
-            <div class="cash-advance-info">
-
-                <div class="cash-advance-purpose">
-                    {{ ca.purpose }}
-                </div>
-
-                <div class="cash-advance-amount">
-                    {{ peso(ca.amount) }}
-                </div>
-
-                <span
-                    class="badge-status"
-                    :class="caStatusClass(ca.status)"
-                >
-                    {{ ca.status.toUpperCase() }}
-                </span>
-
-            </div>
-
-        </div>
-
-    </div>
-
-</div>
 
 
             </div>
@@ -333,6 +309,7 @@
 <script setup>
 import { computed, nextTick, onMounted, onBeforeUnmount, ref } from 'vue'
 import Chart from 'chart.js/auto'
+import { useOverviewStore } from '@/stores/useOverview';
 
 defineOptions({
     name: 'AdminMain',
@@ -350,22 +327,22 @@ const props = defineProps({
     },
 })
 
-const emit = defineEmits(['toggle-sidebar'])
+const start = ref(null);
+const end = ref(null);
 
-// ─── State ──────────────────────────────────────────────
+const overviewStore = useOverviewStore();
+
+const emit = defineEmits(['toggle-sidebar'])
 
 const liveClock = ref('--:--:--')
 
 let clockTimer = null
 
-// Dashboard values
 const totalEmployees = ref(248)
 
 const totalSalaryPaidThisWeek = ref(1860000)
 
 const totalCashAdvanceThisWeek = ref(86450)
-
-// ─── Punch Log ─────────────────────────────────────────
 
 const punchLog = ref([
     {
@@ -429,7 +406,7 @@ const punchLog = ref([
     },
 ])
 
-// ─── Recent Cash Advances ──────────────────────────────
+const overviewCard = ref([]);
 
 const recentCashAdvances = ref([
     {
@@ -477,8 +454,6 @@ const recentCashAdvances = ref([
     },
 ])
 
-// ─── Five Week Salary Data ─────────────────────────────
-
 const weeklySalary = ref([
     {
         label: 'JULY 27–AUGUST 1',
@@ -506,8 +481,6 @@ const weeklySalary = ref([
     },
 ])
 
-// ─── Filters ───────────────────────────────────────────
-
 const statusFilters = [
     { key: 'all', label: 'All' },
     { key: 'present', label: 'Present' },
@@ -523,15 +496,11 @@ const payrollJustRan = ref(false)
 
 let payrollJustRanTimer = null
 
-// ─── Charts ─────────────────────────────────────────────
-
 const attendanceChart = ref(null)
 const salaryChart = ref(null)
 
 const attendanceCanvas = ref(null)
 const salaryCanvas = ref(null)
-
-// ─── Computed ───────────────────────────────────────────
 
 const filteredLog = computed(() => {
     return statusFilter.value === 'all'
@@ -567,8 +536,6 @@ const attendanceRate = computed(() => {
         100
     ).toFixed(1)
 })
-
-// ─── Methods ────────────────────────────────────────────
 
 function tickClock() {
     liveClock.value = new Date().toLocaleTimeString(
@@ -735,10 +702,6 @@ function renderCharts() {
 
     Chart.defaults.color = slate
 
-    // ─────────────────────────────────────────────
-    // Weekly Attendance Chart
-    // ─────────────────────────────────────────────
-
     if (attendanceCanvas.value) {
         attendanceChart.value =
             new Chart(
@@ -853,9 +816,6 @@ function renderCharts() {
                 }
             )
     }
-    // ─────────────────────────────────────────────
-    // Five Week Total Salary Paid - Doughnut
-    // ─────────────────────────────────────────────
 
     if (salaryCanvas.value) {
         salaryChart.value = new Chart(
@@ -930,7 +890,17 @@ function renderCharts() {
 
 }
 
-// ─── Lifecycle ──────────────────────────────────────────
+const changeDate = async () => {
+    getOverviewCard({
+        'start_date': start.value,
+        'end_date': end.value,
+    })
+}
+
+const getOverviewCard = async (data) => {
+    const overviewResult = await overviewStore.cardOverview(data);
+    overviewCard.value = overviewResult;
+}
 
 onMounted(() => {
     tickClock()
@@ -943,6 +913,10 @@ onMounted(() => {
 
     nextTick(() => {
         renderCharts()
+        getOverviewCard({
+            'start_date': start.value,
+            'end_date': end.value,
+        })
     })
 })
 
@@ -1540,5 +1514,40 @@ onBeforeUnmount(() => {
     width: 100%;
     height: 260px;
     max-height: 260px;
+}
+
+.date-chip {
+
+    font-family:
+        'IBM Plex Mono',
+        monospace;
+
+    border:
+        1px solid var(--line, #DCD8CB);
+
+    background:
+        var(--paper-2, #FBFAF6);
+
+    color:
+        var(--ink, #1C2B4A);
+
+    border-radius:
+        8px;
+
+    padding:
+        .45rem .7rem;
+
+    font-size:
+        .8rem;
+
+    outline:
+        none;
+}
+
+
+.date-chip:focus {
+
+    border-color:
+        var(--gold, #C79A3D);
 }
 </style>

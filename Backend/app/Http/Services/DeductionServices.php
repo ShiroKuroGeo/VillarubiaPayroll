@@ -97,7 +97,7 @@ class DeductionServices
         }
 
         try {
-            $query = Deduction::with(['employee', 'payroll']);
+            $query = Deduction::with(['employee', 'payroll', 'employee.job']);
 
             if (!empty($validation['employee_id'])) {
                 $query->where('employee_id', $validation['employee_id']);
@@ -106,7 +106,40 @@ class DeductionServices
             $deductions = $query->orderByDesc('created_at')
                 ->paginate($validation['per_page'] ?? 15);
 
-            return response_return('Successfully retrieved deductions.', $deductions->toArray(), 200);
+            $data = $deductions->map(function ($deduction) {
+                $initials = strtoupper(
+                    substr($deduction->employee->first_name ?? '', 0, 1)
+                        . substr($deduction->employee->last_name ?? '', 0, 1)
+                ) ?: '—';
+                return [
+                    'id'   => $deduction->id,
+                    'employeeId' => $deduction->employee->id,
+                    'employeeName'   => $deduction->employee->last_name . ', ' . $deduction->employee->first_name,
+                    'initials'   => $initials,
+                    'department'   => $deduction->employee->job->label,
+                    'status'   => $deduction->employee->status,
+                    'image'   => $deduction->employee->image,
+                    'sss'   => $deduction->sss_deduction,
+                    'ca'   => $deduction->ca_deduction,
+                    'payroll_date' => $deduction->payroll->payout_date,
+                    'otherDeductions' => collect(
+                        $deduction->other_deduction ?? []
+                    )
+                        ->map(function ($amount, $key) {
+                            return [
+                                'key' => $key,
+                                'label' => ucwords(
+                                    str_replace('_', ' ', $key)
+                                ),
+                                'amount' => (float) $amount,
+                            ];
+                        })
+                        ->values()
+                        ->toArray(),
+                ];
+            });
+
+            return response_return('Successfully retrieved deductions.', $data->toArray(), 200);
         } catch (\Throwable $th) {
             return response_return('Error occurred in retrieving deductions.', [], 500);
         }

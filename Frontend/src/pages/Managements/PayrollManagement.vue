@@ -9,7 +9,6 @@
                         <path d="M3 12h18M3 6h18M3 18h18" />
                     </svg>
                 </button>
-
                 <div>
 
                     <div class="eyebrow">
@@ -37,11 +36,6 @@
 
                 </div>
 
-
-                <button class="btn btn-outline-ledger btn-sm" @click="exportCsv">
-                    Export
-                </button>
-
             </div>
 
         </div>
@@ -51,30 +45,118 @@
 
                 <div class="generate-card">
 
-                    <div class="stamp gold">
-                        PAYROLL
+                    <!-- LEFT COLUMN: intro + action -->
+                    <div class="generate-main">
+
+                        <div class="stamp gold">PAYROLL</div>
+
+                        <div class="generate-title">It's payroll day</div>
+
+                        <div class="generate-sub">
+                            Generate this week's payroll to view and release employee payouts.
+                        </div>
+
+                        <div class="warning-header">
+                            <div class="warning-icon">⚠</div>
+                            <div>
+                                <h2>Generate Weekly Payroll</h2>
+                                <p>Payroll can only be generated on Saturday.</p>
+                            </div>
+                        </div>
+
+                        <div v-if="generateError" class="generate-error">
+                            {{ generateError }}
+                        </div>
+
+                        <button class="generate-btn" :disabled="generating" @click="handleGeneratePayroll">
+                            {{ generating ? 'Generating…' : 'Generate Payroll' }}
+                        </button>
+
                     </div>
 
-                    <div class="generate-title">
-                        It's payroll day
-                    </div>
+                    <!-- RIGHT COLUMN: checklist, always visible, fills remaining space -->
+                    <div class="generate-checklist">
 
-                    <div class="generate-sub">
-                        Generate this week's payroll to view and release employee payouts.
-                    </div>
+                        <div class="checklist-heading">Before you continue, review the checklist</div>
 
-                    <div v-if="generateError" class="generate-error">
-                        {{ generateError }}
-                    </div>
+                        <div class="checklist-grid">
 
-                    <button class="generate-btn" :disabled="generating" @click="handleGeneratePayroll">
-                        {{ generating ? 'Generating…' : 'Generate Payroll' }}
-                    </button>
+                            <div class="warning-section">
+                                <h3>🕒 Attendance</h3>
+                                <ul>
+                                    <li>Attendance for the current payroll week has been imported from the biometric system.</li>
+                                    <li>All attendance records are correct and up to date.</li>
+                                    <li>No employees with missing <strong>Time In</strong> / <strong>Time Out</strong>.</li>
+                                    <li>Check <strong>Late</strong>, <strong>Half Day</strong>, and <strong>Absent</strong> statuses.</li>
+                                </ul>
+                            </div>
+
+                            <div class="warning-section">
+                                <h3>📄 SSS Contribution</h3>
+                                <ul>
+                                    <li>Each employee's <strong>SSS Contribution</strong> is correct.</li>
+                                </ul>
+                            </div>
+
+                            <div class="warning-section">
+                                <h3>💰 Cash Advances</h3>
+                                <ul>
+                                    <li>All Cash Advances to be deducted this payroll are already <strong>Approved</strong>.</li>
+                                </ul>
+                            </div>
+
+                            <div class="warning-section">
+                                <h3>👤 Employee Status</h3>
+                                <ul>
+                                    <li><strong>Separated or Terminated</strong> employees have updated status.</li>
+                                </ul>
+                            </div>
+
+                            <div class="warning-section settings-span">
+                                <h3>⚙️ Payroll Settings</h3>
+                                <div class="settings-list">
+                                    <div class="setting-item">
+                                        <strong>Work Start Time</strong>
+                                        <span>Determines lateness.</span>
+                                    </div>
+                                    <div class="setting-item">
+                                        <strong>Grace Period</strong>
+                                        <span>Default 15 min before shift start.</span>
+                                    </div>
+                                    <div class="setting-item">
+                                        <strong>Late Deduction (Per Min)</strong>
+                                        <span>Used for late deductions.</span>
+                                    </div>
+                                    <div class="setting-item">
+                                        <strong>Overtime Premium Rate</strong>
+                                        <span>Applied after scheduled shift end.</span>
+                                    </div>
+                                    <div class="setting-item">
+                                        <strong>Overtime Multiplier</strong>
+                                        <span>For special days, e.g. Sunday. <code>1.3</code> = 30% premium.</span>
+                                    </div>
+                                    <div class="setting-item">
+                                        <strong>Company Name</strong>
+                                        <span>Used on the generated payslip.</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="deduction-notice settings-span">
+                                <div class="notice-icon">ℹ</div>
+                                <div>
+                                    <strong>Important</strong>
+                                    <p>Generating payroll will create and link the corresponding deductions automatically.</p>
+                                </div>
+                            </div>
+
+                        </div>
+
+                    </div>
 
                 </div>
 
             </div>
-
             <template v-else>
 
                 <div class="period-bar">
@@ -87,7 +169,7 @@
                         <span class="period-tag">
                             {{ paidCount }} of {{ activeEmployeeCount }} paid
                         </span>
-                        <button class="add-btn" :disabled="!pendingCount" @click="markAllPaid">
+                        <button class="add-btn" @click="markAllPaid">
                             Mark all as paid
                         </button>
                     </div>
@@ -229,9 +311,6 @@
 
                     </div>
 
-
-                    <!-- FILTERS -->
-
                     <div class="filter-row">
 
                         <button v-for="filter in statusFilters" :key="filter.key" class="filter-pill" :class="{
@@ -241,13 +320,7 @@
                         </button>
 
                     </div>
-
-
-                    <!-- TABLE -->
-
                     <div class="table-responsive">
-
-
                         <table class="table-ledger salary-table" v-if="filteredPayrollData.length">
                             <thead>
                                 <tr>
@@ -275,7 +348,7 @@
                                     <td>
                                         <div class="d-flex align-items-center gap-2">
                                             <div class="avatar-sm">
-                                                <img v-if="employee.image" :src="employee.image" :alt="employee.employeeName" />
+                                                <img v-if="employee.image" :src="storageImage(employee.image)" :alt="employee.employeeName" />
                                                 <span v-else>
                                                     {{ employee.initials }}
                                                 </span>
@@ -365,16 +438,16 @@
                                 Payment Method
                             </label>
                             <select v-model="payForm.paymentMethod" class="form-control">
-                                <option value="bank_transfer">
+                                <option value="Bank Transfer">
                                     Bank Transfer
                                 </option>
-                                <option value="cash">
+                                <option value="Cash">
                                     Cash
                                 </option>
-                                <option value="check">
+                                <option value="Check">
                                     Check
                                 </option>
-                                <option value="gcash">
+                                <option value="GCash">
                                     GCash
                                 </option>
                             </select>
@@ -385,12 +458,6 @@
                             </label>
                             <input v-model="payForm.paidDate" type="date" class="form-control" />
                         </div>
-                    </div>
-                    <div class="form-group">
-                        <label>
-                            Reference / Notes
-                        </label>
-                        <input v-model="payForm.reference" type="text" class="form-control" placeholder="Optional reference number or note" />
                     </div>
                     <div class="salary-preview">
                         <div>
@@ -423,8 +490,9 @@
 
 <script setup>
 import { usePayrollStore } from '@/stores/usePayroll'
+import { storageImage } from '@/utils/image'
+import { showConfirm } from '@/utils/Swals'
 import { computed, onMounted, onBeforeUnmount, ref } from 'vue'
-
 defineOptions({
     name: 'PayrollPage'
 })
@@ -452,7 +520,7 @@ function tickClock() {
         )
 }
 
-const isSaturday = computed(() => now.value.getDay() === 6)
+const isSaturday = computed(() => now.value.getDay() === 5)
 const payrollGenerated = ref(false)
 const generating = ref(false)
 const generateError = ref('')
@@ -461,12 +529,15 @@ const showGenerateOnly = computed(() => isSaturday.value && !payrollGenerated.va
 async function checkPayrollGenerated(data) {
     try {
         const response = await payrollStore.payrollList({ ...data });
-
-        console.log(response)
-        if (!response.ok) {
+        if (response.data.data.length === 0) {
+            payrollGenerated.value = false
             return
         }
-        const result = await response.json()
+
+        const result = await response.data
+
+        payrollData.value = response.data.data;
+
         payrollGenerated.value = Boolean(result?.data?.length)
     } catch (err) {
         console.error('Failed to check existing payroll', err)
@@ -479,8 +550,10 @@ async function handleGeneratePayroll() {
 
     try {
         await payrollStore.generatePayroll();
-
-        payrollGenerated.value = true
+        await checkPayrollGenerated({
+            "per_page": 100
+        })
+        // payrollGenerated.value = true
     } catch (err) {
         generateError.value = err.message || 'Something went wrong while generating payroll.'
     } finally {
@@ -500,150 +573,24 @@ const todayLabel =
         }
     )
 
-
 const payPeriod = ref('')
-const payrollData = ref([
-
-    {
-        id: 1,
-        employeeId: 1,
-        employeeName: 'Jonas Diaz',
-        initials: 'JD',
-        department: 'Warehouse',
-        basicSalary: 760,
-        salaryType: 'weekly',
-        totalAttendance: 7,
-        deductions: 1500,
-        status: 'active',
-        image: null,
-
-        paid: false,
-        paidDate: null,
-        paymentMethod: null,
-        reference: ''
-    },
-
-    {
-        id: 2,
-        employeeId: 2,
-        employeeName: 'Carla Santos',
-        initials: 'CS',
-        department: 'Accounting',
-        basicSalary: 760,
-        salaryType: 'weekly',
-        totalAttendance: 6,
-        deductions: 1800,
-        status: 'active',
-        image: null,
-
-        paid: false,
-        paidDate: null,
-        paymentMethod: null,
-        reference: ''
-    },
-
-    {
-        id: 3,
-        employeeId: 3,
-        employeeName: 'Ramon Tan',
-        initials: 'RT',
-        department: 'Logistics',
-        basicSalary: 760,
-        salaryType: 'weekly',
-        totalAttendance: 7,
-        deductions: 1200,
-        status: 'active',
-        image: null,
-
-        paid: false,
-        paidDate: null,
-        paymentMethod: null,
-        reference: ''
-    },
-
-    {
-        id: 4,
-        employeeId: 4,
-        employeeName: 'Paulo Lim',
-        initials: 'PL',
-        department: 'Customer Care',
-        basicSalary: 760,
-        salaryType: 'monthly',
-        totalAttendance: 7,
-        deductions: 1400,
-        status: 'active',
-        image: null,
-
-        paid: false,
-        paidDate: null,
-        paymentMethod: null,
-        reference: ''
-    },
-
-    {
-        id: 5,
-        employeeId: 5,
-        employeeName: 'Nadia Ang',
-        initials: 'NA',
-        department: 'Marketing',
-        basicSalary: 760,
-        salaryType: 'monthly',
-        totalAttendance: 7,
-        deductions: 1600,
-        status: 'active',
-        image: null,
-
-        paid: false,
-        paidDate: null,
-        paymentMethod: null,
-        reference: ''
-    },
-
-    {
-        id: 6,
-        employeeId: 6,
-        employeeName: 'Erik Villar',
-        initials: 'EV',
-        department: 'Warehouse',
-        basicSalary: 760,
-        salaryType: 'monthly',
-        totalAttendance: 7,
-        deductions: 1300,
-        status: 'active',
-        image: null,
-        paid: false,
-        paidDate: null,
-        paymentMethod: null,
-        reference: ''
-    }
-
-])
-
-
+const payrollData = ref([]);
 const searchQuery = ref('')
-
 const paymentFilter = ref('all')
-
-
 const statusFilters = [
-
     {
         key: 'all',
         label: 'All'
     },
-
     {
         key: 'paid',
         label: 'Paid'
     },
-
     {
         key: 'pending',
         label: 'Pending'
     }
-
 ]
-
 
 const filteredPayrollData = computed(() => {
 
@@ -652,16 +599,14 @@ const filteredPayrollData = computed(() => {
             .trim()
             .toLowerCase()
 
-
     return payrollData.value
 
         .filter(
             employee =>
-                employee.status === 'active'
+                employee.status !== 'Separated/Terminated'
         )
 
         .filter(employee => {
-
             const matchesSearch =
                 !search ||
                 employee.employeeName
@@ -671,24 +616,19 @@ const filteredPayrollData = computed(() => {
                     .toLowerCase()
                     .includes(search)
 
-
             const matchesPayment =
                 paymentFilter.value === 'all' ||
                 (paymentFilter.value === 'paid' && employee.paid) ||
                 (paymentFilter.value === 'pending' && !employee.paid)
 
-
             return matchesSearch && matchesPayment
-
         })
-
 })
 
 const activeEmployees = computed(() => {
 
     return payrollData.value.filter(
-        employee =>
-            employee.status === 'active'
+        employee => employee.status !== 'Separated/Terminated'
     )
 
 })
@@ -731,11 +671,7 @@ const totalNetPayroll = computed(() => {
 const totalPaidAmount = computed(() => {
 
     return activeEmployees.value
-
-        .filter(
-            employee => employee.paid
-        )
-
+        .filter(employee => employee.paid)
         .reduce(
             (total, employee) =>
                 total + calculateNet(employee),
@@ -746,9 +682,7 @@ const totalPaidAmount = computed(() => {
 
 
 const totalPendingAmount = computed(() => {
-
     return totalNetPayroll.value - totalPaidAmount.value
-
 })
 
 const showModal = ref(false)
@@ -787,23 +721,15 @@ const payForm = ref(
 function openPayModal(employee) {
 
     payForm.value = {
-
         id: employee.id,
-
         employeeName: employee.employeeName,
-
         salaryType: employee.salaryType,
-
         amount: calculateNet(employee),
-
-        paymentMethod: 'bank_transfer',
-
+        paymentMethod: 'Bank Transfer',
         paidDate: new Date()
             .toISOString()
             .slice(0, 10),
-
         reference: ''
-
     }
 
     showModal.value = true
@@ -817,130 +743,61 @@ function closeModal() {
 
 }
 
-
-function confirmPayment() {
-
-    const index =
-        payrollData.value.findIndex(
-            employee =>
-                employee.id === payForm.value.id
-        )
-
-
-    if (index === -1) {
-        return
+const confirmPayment = async () => {
+    const data = {
+        'payroll_id': payForm.value.id,
+        'payment_date': payForm.value.paidDate,
+        'payment_method': payForm.value.paymentMethod,
+        'status': 'Paid',
     }
 
+    await payrollStore.updatePayroll(data);
 
-    payrollData.value[index] = {
-
-        ...payrollData.value[index],
-
-        paid: true,
-
-        paidDate: payForm.value.paidDate,
-
-        paymentMethod: payForm.value.paymentMethod,
-
-        reference: payForm.value.reference
-
-    }
-
+    await checkPayrollGenerated({
+        "per_page": 100
+    })
 
     closeModal()
-
 }
 
 
-function unmarkPaid(employee) {
+const unmarkPaid = async (employee) => {
 
-    const confirmed =
-        window.confirm(
-            `Undo payment for ${employee.employeeName}? This will mark them as pending again.`
-        )
-
-
-    if (!confirmed) {
-        return
+    const data = {
+        'payroll_id': employee.id,
+        'payment_date': employee.paidDate,
+        'payment_method': employee.paymentMethod,
+        'status': 'Draft',
     }
 
+    const isConfirmed = await showConfirm('Undo Payroll', `Undo payment for ${employee.employeeName}? This will mark them as pending again.`, 'Yes, Undo');
 
-    const index =
-        payrollData.value.findIndex(
-            item =>
-                item.id === employee.id
-        )
+    if (isConfirmed) {
+        await payrollStore.updatePayroll(data);
+    }
+
+    await checkPayrollGenerated({
+        "per_page": 100
+    })
+
+    closeModal()
+}
 
 
-    if (index !== -1) {
+const markAllPaid = async () => {
+    if (pendingCount.value !== 0) {
+        const isConfirmed = await showConfirm('Confirmation', 'There are still unpaid status. Are you sure want to continue', 'Yes, Continue');
 
-        payrollData.value[index] = {
-
-            ...payrollData.value[index],
-
-            paid: false,
-
-            paidDate: null,
-
-            paymentMethod: null,
-
-            reference: ''
-
+        if (isConfirmed) {
+            await payrollStore.exportPayslips();
         }
-
+    } else {
+        await payrollStore.exportPayslips();
     }
 
-}
-
-
-function markAllPaid() {
-
-    const today =
-        new Date()
-            .toISOString()
-            .slice(0, 10)
-
-
-    const confirmed =
-        window.confirm(
-            `Mark all ${pendingCount.value} pending employees as paid via bank transfer today?`
-        )
-
-
-    if (!confirmed) {
-        return
-    }
-
-
-    payrollData.value =
-        payrollData.value.map(employee => {
-
-            if (
-                employee.status === 'active' &&
-                !employee.paid
-            ) {
-
-                return {
-
-                    ...employee,
-
-                    paid: true,
-
-                    paidDate: today,
-
-                    paymentMethod: 'bank_transfer',
-
-                    reference: 'Bulk payout'
-
-                }
-
-            }
-
-
-            return employee
-
-        })
-
+    await checkPayrollGenerated({
+        "per_page": 100
+    })
 }
 
 function calculateNet(employee) {
@@ -991,30 +848,6 @@ function formatSalaryType(type) {
 
 }
 
-
-function formatMethod(method) {
-
-    const labels = {
-
-        bank_transfer: 'Bank Transfer',
-
-        cash: 'Cash',
-
-        check: 'Check',
-
-        gcash: 'GCash'
-
-    }
-
-
-    return (
-        labels[method] ||
-        '—'
-    )
-
-}
-
-
 function formatDate(dateString) {
 
     if (!dateString) {
@@ -1034,93 +867,7 @@ function formatDate(dateString) {
 
 }
 
-function exportCsv() {
-
-    const rows = [
-
-        [
-            'Employee',
-            'Department',
-            'Salary Type',
-            'Net Salary',
-            'Payment Status',
-            'Paid On',
-            'Payment Method',
-            'Reference'
-        ]
-
-    ]
-
-
-    filteredPayrollData.value.forEach(employee => {
-
-        rows.push([
-
-            employee.employeeName,
-
-            employee.department,
-
-            formatSalaryType(
-                employee.salaryType
-            ),
-
-            calculateNet(employee),
-
-            employee.paid ? 'PAID' : 'PENDING',
-
-            employee.paidDate || '',
-
-            formatMethod(employee.paymentMethod),
-
-            employee.reference || ''
-
-        ])
-
-    })
-
-
-    const csv =
-        rows
-            .map(row =>
-                row
-                    .map(cell =>
-                        `"${String(cell ?? '').replace(/"/g, '""')}"`
-                    )
-                    .join(',')
-            )
-            .join('\n')
-
-
-    const blob =
-        new Blob(
-            [csv],
-            {
-                type: 'text/csv;charset=utf-8;'
-            }
-        )
-
-    const url =
-        URL.createObjectURL(blob)
-
-    const a =
-        document.createElement('a')
-
-    a.href = url
-
-    a.download =
-        'payroll.csv'
-
-    document.body.appendChild(a)
-
-    a.click()
-
-    document.body.removeChild(a)
-
-    URL.revokeObjectURL(url)
-
-}
-
-onMounted(() => {
+onMounted(async () => {
     tickClock()
     clockTimer =
         setInterval(
@@ -1128,14 +875,11 @@ onMounted(() => {
             1000
         )
 
-    checkPayrollGenerated({
+    // if (isSaturday.value) {
+    await checkPayrollGenerated({
         "per_page": 100
     })
-    if (isSaturday.value) {
-        checkPayrollGenerated({
-            "per_page": 100
-        })
-    }
+    // }
 
 })
 
@@ -1469,84 +1213,6 @@ onBeforeUnmount(() => {
 
 
 /* =====================================================
-   SATURDAY GENERATE GATE
-===================================================== */
-
-.generate-gate {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 50vh;
-    padding: 2rem 1rem;
-}
-
-
-.generate-card {
-    position: relative;
-    background: var(--paper-2, #FBFAF6);
-    border: 1px solid var(--line, #DCD8CB);
-    border-radius: 12px;
-    padding: 2.4rem 2.2rem 2rem;
-    max-width: 420px;
-    width: 100%;
-    text-align: center;
-}
-
-
-.generate-title {
-    font-family: 'Fraunces', serif;
-    font-weight: 600;
-    font-size: 1.4rem;
-    color: var(--ink, #1C2B4A);
-    margin-top: .6rem;
-}
-
-
-.generate-sub {
-    font-size: .82rem;
-    color: var(--slate, #6B7280);
-    margin-top: .5rem;
-    line-height: 1.5;
-}
-
-
-.generate-error {
-    margin-top: 1rem;
-    font-size: .78rem;
-    color: #C0392B;
-    background: #FBEAEA;
-    border: 1px solid #F0C4C4;
-    border-radius: 6px;
-    padding: .5rem .7rem;
-}
-
-
-.generate-btn {
-    margin-top: 1.4rem;
-    border: 1px solid var(--ink, #1C2B4A);
-    background: var(--ink, #1C2B4A);
-    color: #F3DFA6;
-    border-radius: 6px;
-    padding: .6rem 1.4rem;
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: .8rem;
-    font-weight: 600;
-    cursor: pointer;
-}
-
-
-.generate-btn:hover:not(:disabled) {
-    background: #28395E;
-}
-
-
-.generate-btn:disabled {
-    opacity: .6;
-    cursor: not-allowed;
-}
-
-
-/* =====================================================
    SEARCH / FILTERS / ADD BUTTON
 ===================================================== */
 
@@ -1836,7 +1502,7 @@ onBeforeUnmount(() => {
     align-items: center;
     justify-content: center;
     padding: 1rem;
-    z-index: 9999;
+    z-index: 9;
 }
 
 
@@ -2200,5 +1866,293 @@ onBeforeUnmount(() => {
         flex: 1;
     }
 
+}
+
+.generate-gate {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    padding: 0;
+    margin: 0;
+}
+
+.generate-card {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: grid;
+    grid-template-columns: minmax(260px, 340px) 1fr;
+    gap: 0;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+}
+
+/* ===== LEFT: intro + button ===== */
+.generate-main {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    padding: 2rem 1.75rem;
+    border-right: 1px solid #eef2f6;
+    background: #fbfaf6;
+}
+
+.stamp {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: 2px dashed var(--gold, #C79A3D);
+    color: var(--gold-dark, #9C7726);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: .58rem;
+    font-weight: 600;
+    transform: rotate(-8deg);
+}
+
+.generate-title {
+    margin-top: .5rem;
+    font-family: 'Fraunces', serif;
+    font-weight: 600;
+    font-size: 1.35rem;
+    color: #1e293b;
+}
+
+.generate-sub {
+    margin-top: .4rem;
+    color: #64748b;
+    font-size: .85rem;
+    line-height: 1.5;
+}
+
+.generate-main .warning-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px;
+    margin-top: 1.5rem;
+    border: 1px solid #fed7aa;
+    border-radius: 10px;
+    background: #fff7ed;
+}
+
+.warning-icon {
+    width: 36px;
+    height: 36px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    color: #c2410c;
+    background: #ffedd5;
+    border-radius: 50%;
+}
+
+.generate-main .warning-header h2 {
+    margin: 0;
+    font-size: .9rem;
+    font-weight: 700;
+    color: #1e293b;
+}
+
+.generate-main .warning-header p {
+    margin: 2px 0 0;
+    font-size: .72rem;
+    color: #9a3412;
+}
+
+.generate-error {
+    margin-top: 1rem;
+    padding: 10px 14px;
+    color: #b91c1c;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 8px;
+    font-size: .8rem;
+}
+
+.generate-btn {
+    margin-top: auto;
+    padding-top: 1.5rem;
+}
+
+.generate-btn {
+    width: 100%;
+    padding: 12px 18px;
+    border: none;
+    border-radius: 8px;
+    background: #16a34a;
+    color: #fff;
+    font-size: .85rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: .2s;
+}
+
+.generate-btn:hover:not(:disabled) {
+    background: #15803d;
+    transform: translateY(-1px);
+}
+
+.generate-btn:disabled {
+    opacity: .6;
+    cursor: not-allowed;
+}
+
+/* ===== RIGHT: checklist, fills remaining width/height ===== */
+.generate-checklist {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    padding: 1.5rem 1.75rem;
+    overflow-y: auto;
+}
+
+.checklist-heading {
+    font-size: .8rem;
+    font-weight: 700;
+    color: #9a3412;
+    margin-bottom: 1rem;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+}
+
+.checklist-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem 2rem;
+    text-align: left;
+}
+
+.settings-span {
+    grid-column: 1 / -1;
+}
+
+.warning-section h3 {
+    margin: 0 0 8px;
+    font-size: .82rem;
+    font-weight: 700;
+    color: #1e293b;
+}
+
+.warning-section ul {
+    margin: 0;
+    padding-left: 18px;
+}
+
+.warning-section li {
+    margin-bottom: 5px;
+    font-size: .78rem;
+    line-height: 1.5;
+    color: #475569;
+}
+
+.warning-section strong {
+    color: #1e293b;
+}
+
+.settings-list {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+}
+
+.setting-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 8px 10px;
+    background: #f8fafc;
+    border: 1px solid #eef2f6;
+    border-radius: 8px;
+}
+
+.setting-item strong {
+    font-size: .74rem;
+    color: #334155;
+}
+
+.setting-item span {
+    font-size: .68rem;
+    line-height: 1.4;
+    color: #64748b;
+}
+
+.setting-item code {
+    padding: 1px 5px;
+    border-radius: 4px;
+    background: #ccfbf1;
+    color: #0f766e;
+    font-weight: 700;
+}
+
+.deduction-notice {
+    display: flex;
+    gap: 10px;
+    padding: 12px;
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    border-radius: 8px;
+}
+
+.notice-icon {
+    width: 24px;
+    height: 24px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: #dbeafe;
+    color: #1d4ed8;
+    font-weight: 700;
+    font-size: .75rem;
+}
+
+.deduction-notice strong {
+    color: #1e40af;
+    font-size: .78rem;
+}
+
+.deduction-notice p {
+    margin: 3px 0 0;
+    font-size: .74rem;
+    line-height: 1.5;
+    color: #475569;
+}
+
+@media (max-width: 800px) {
+    .generate-card {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto 1fr;
+    }
+
+    .generate-main {
+        border-right: none;
+        border-bottom: 1px solid #eef2f6;
+    }
+
+    .checklist-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .settings-list {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+@media (max-width: 480px) {
+    .settings-list {
+        grid-template-columns: 1fr;
+    }
 }
 </style>

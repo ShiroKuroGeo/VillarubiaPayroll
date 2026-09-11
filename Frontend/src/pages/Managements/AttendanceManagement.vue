@@ -23,10 +23,12 @@
                         {{ liveClock }}
                     </span>
                 </div>
-                <input v-model="selectedDate" type="date" class="date-chip" />
-                <button class="btn btn-outline-ledger btn-sm" @click="exportCsv">
+                <input v-model="startDate" type="date" class="date-chip" />
+                -
+                <input v-model="endDate" type="date" class="date-chip" />
+                <!-- <button class="btn btn-outline-ledger btn-sm" @click="exportCsv">
                     Export
-                </button>
+                </button> -->
             </div>
         </div>
         <div class="content">
@@ -129,45 +131,30 @@
 
                         <div class="salary-overview">
 
-
                             <div class="salary-overview-main">
-
                                 <div class="overview-label">
                                     ATTENDANCE RATE
                                 </div>
-
                                 <div class="overview-value">
                                     {{ attendanceRate }}%
                                 </div>
-
                                 <div class="overview-sub">
-                                    {{ presentCount + lateCount }} of {{ totalEmployeeCount }} employees checked in
+                                    {{ presentCount + lateCount }} of {{ totalEmployeeCount }} employees
                                 </div>
-
                             </div>
 
-
                             <div class="salary-breakdown">
-
                                 <div class="breakdown-item">
-
                                     <span class="breakdown-dot green"></span>
-
                                     <div>
-
                                         <div class="breakdown-label">
                                             On Time
                                         </div>
-
                                         <div class="breakdown-value">
                                             {{ onTimeCount }} employees
                                         </div>
-
                                     </div>
-
                                 </div>
-
-
                                 <div class="breakdown-item">
 
                                     <span class="breakdown-dot gold"></span>
@@ -711,28 +698,71 @@ const formatDate = (date) => {
     );
 };
 
-const selectedDate = ref(
-    new Date().toISOString().split('T')[0]
+const today = new Date()
+
+const startDate = ref(
+    new Date(
+        today.getFullYear(),
+        today.getMonth(),
+        today.getDate() - today.getDay()
+    )
+        .toISOString()
+        .split('T')[0]
+)
+
+const endDate = ref(
+    new Date(
+        today.getFullYear(),
+        today.getMonth(),
+        today.getDate() - today.getDay() + 6
+    )
+        .toISOString()
+        .split('T')[0]
 )
 
 const formattedSelectedDate = computed(() => {
 
-    if (!selectedDate.value) {
+    if (!startDate.value && !endDate.value) {
         return ''
     }
 
-    const date = new Date(
-        `${selectedDate.value}T00:00:00`
-    )
+    const formatDate = (dateString) => {
 
-    return date.toLocaleDateString(
-        'en-US',
-        {
-            month: 'short',
-            day: 'numeric',
-            year: 'numeric'
+        if (!dateString) {
+            return ''
         }
-    )
+
+        const date = new Date(
+            `${dateString}T00:00:00`
+        )
+
+        return date.toLocaleDateString(
+            'en-US',
+            {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric'
+            }
+        )
+    }
+
+    // Only start date
+    if (startDate.value && !endDate.value) {
+        return formatDate(startDate.value)
+    }
+
+    // Only end date
+    if (!startDate.value && endDate.value) {
+        return formatDate(endDate.value)
+    }
+
+    // Same date
+    if (startDate.value === endDate.value) {
+        return formatDate(startDate.value)
+    }
+
+    // Date range
+    return `${formatDate(startDate.value)} - ${formatDate(endDate.value)}`
 })
 
 const handleBiometricFile = (event) => {
@@ -760,22 +790,22 @@ const statusFilters = [
     },
 
     {
-        key: 'present',
+        key: 'Present',
         label: 'Present'
     },
 
     {
-        key: 'late',
+        key: 'Late',
         label: 'Late'
     },
 
     {
-        key: 'leave',
+        key: 'On Leave',
         label: 'On Leave'
     },
 
     {
-        key: 'absent',
+        key: 'Absent',
         label: 'Absent'
     }
 
@@ -785,10 +815,21 @@ const statusFilters = [
 const recordsForSelectedDate = computed(() => {
 
     return attendanceData.value.filter(
-        record =>
-            record.date === selectedDate.value
-    )
+        record => {
 
+            if (
+                !startDate.value ||
+                !endDate.value
+            ) {
+                return true
+            }
+
+            return (
+                record.date >= startDate.value &&
+                record.date <= endDate.value
+            )
+        }
+    )
 })
 
 
@@ -885,7 +926,13 @@ const pageNumbers = computed(() => {
 })
 
 watch(
-    [selectedDate, searchQuery, statusFilter, pageSize],
+    [
+        startDate,
+        endDate,
+        searchQuery,
+        statusFilter,
+        pageSize,
+    ],
     () => {
         currentPage.value = 1
     }
@@ -1027,14 +1074,12 @@ const attendanceForm = ref(
 
 
 function createEmptyForm() {
-
     return {
-
         id: null,
 
         employeeId: '',
 
-        date: selectedDate.value,
+        date: startDate.value || '',
 
         timeIn: '',
 
@@ -1042,12 +1087,10 @@ function createEmptyForm() {
 
         overtimeHours: 0,
 
-        status: 'present',
+        status: 'Present',
 
         notes: ''
-
     }
-
 }
 
 
@@ -1218,97 +1261,6 @@ const formatTime = (time) => {
     );
 };
 
-function exportCsv() {
-
-    const rows = [
-
-        [
-            'Employee',
-            'Phone Number',
-            'Date',
-            'Time In',
-            'Time Out',
-            'Hours Worked',
-            'Overtime',
-            'Status',
-            'Notes'
-        ]
-
-    ]
-
-
-    filteredAttendanceData.value.forEach(record => {
-
-        rows.push([
-
-            record.employeeName,
-
-            record.phoneNumber,
-
-            record.date,
-
-            record.timeIn,
-
-            record.timeOut,
-
-            hoursWorked(record),
-
-            record.overtimeHours,
-
-            formatStatus(record.status),
-
-            record.notes
-
-        ])
-
-    })
-
-
-    const csv =
-        rows
-            .map(row =>
-                row
-                    .map(cell =>
-                        `"${String(cell ?? '').replace(/"/g, '""')}"`
-                    )
-                    .join(',')
-            )
-            .join('\n')
-
-
-    const blob =
-        new Blob(
-            [csv],
-            {
-                type: 'text/csv;charset=utf-8;'
-            }
-        )
-
-
-    const url =
-        URL.createObjectURL(blob)
-
-
-    const a =
-        document.createElement('a')
-
-
-    a.href = url
-
-    a.download =
-        `attendance-${selectedDate.value}.csv`
-
-
-    document.body.appendChild(a)
-
-    a.click()
-
-    document.body.removeChild(a)
-
-
-    URL.revokeObjectURL(url)
-
-}
 
 const getAttendance = async () => {
     const lists = await attendanceStore.attendances();
