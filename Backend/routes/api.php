@@ -125,5 +125,7 @@ Route::middleware('auth:sanctum')->group(function () {
         ->prefix('overview')
         ->group(function(){
             Route::post('card_overview', 'cardOverview');
+            Route::post('weekly_attendance', 'weeklyAttendance');
+            Route::get('five_paid', 'fiveWeeksSalaryPaid');
         });
 });

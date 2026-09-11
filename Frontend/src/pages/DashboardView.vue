@@ -45,79 +45,8 @@
                         </div>
                     </div>
                 </div>
-
-                <!-- <div class="col-6 col-lg-3">
-                    <div class="punch-card">
-                        <div class="stamp green">PAID</div>
-
-                        <div class="stat-label">
-                            Total Salary Submitted / Paid
-                        </div>
-
-                        <div class="stat-period">
-                            August 17–22, 2026
-                        </div>
-
-                        <div class="stat-value font-mono stat-value--sm">
-                            {{ peso(totalSalaryPaidThisWeek) }}
-                        </div>
-
-                        <div class="stat-delta text-success">
-                            Salary processed this week
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-6 col-lg-3">
-                    <div class="punch-card">
-                        <div class="stamp gold">C.A.</div>
-
-                        <div class="stat-label">
-                            Total C.A. This Week
-                        </div>
-
-                        <div class="stat-period">
-                            August 17–22, 2026
-                        </div>
-
-                        <div class="stat-value font-mono stat-value--sm">
-                            {{ peso(totalCashAdvanceThisWeek) }}
-                        </div>
-
-                        <div class="stat-delta stat-delta--gold">
-                            Cash advances released
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-6 col-lg-3">
-                    <div class="punch-card">
-                        <div class="stamp green">TODAY</div>
-
-                        <div class="stat-label">
-                            Total Attendance Today
-                        </div>
-
-                        <div class="stat-period">
-                            August 29, 2026
-                        </div>
-
-                        <div class="stat-value">
-                            {{ presentCount }}
-                        </div>
-
-                        <div class="stat-delta stat-delta--slate">
-                            {{ attendanceRate }}% attendance rate
-                        </div>
-                    </div>
-                </div> -->
-
             </div>
-
-            <!-- Charts -->
             <div class="row g-3 mb-4">
-
-                <!-- Weekly Attendance -->
                 <div class="col-lg-7">
                     <div class="panel h-100">
                         <div class="d-flex justify-content-between align-items-start mb-2">
@@ -125,22 +54,17 @@
                                 <div class="panel-title">
                                     Weekly attendance
                                 </div>
-
                                 <div class="panel-sub">
                                     Total attendance, August 17–22, 2026
                                 </div>
                             </div>
-
                             <span class="chip">
                                 This week
                             </span>
                         </div>
-
                         <canvas ref="attendanceCanvas" height="130"></canvas>
                     </div>
                 </div>
-
-                <!-- 5 Week Salary -->
                 <div class="col-lg-5">
                     <div class="panel h-100">
 
@@ -160,154 +84,21 @@
                             </span>
                         </div>
 
-                        <div class="salary-chart-wrapper">
+                        <div class="salary-chart-wrapper" v-if="!noResultFiveWeekSalaryPaid">
                             <canvas ref="salaryCanvas"></canvas>
                         </div>
-
+                        <div style="text-align: center; margin-top: 25%" v-else>
+                            <h4>There is no payroll <br> generate yet.</h4>
+                        </div>
                     </div>
                 </div>
-
             </div>
-
-            <!-- Attendance + Recent Cash Advance -->
-            <div class="row g-3">
-
-                <!-- Today's Punch Log -->
-                <div class="col-lg-7">
-                    <div class="panel h-100">
-
-                        <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-
-                            <div class="section-title mb-0">
-                                Today's punch log
-                            </div>
-
-                            <div class="d-flex gap-2 flex-wrap">
-                                <button v-for="f in statusFilters" :key="f.key" class="filter-pill" :class="{ active: statusFilter === f.key }" @click="statusFilter = f.key">
-                                    {{ f.label }}
-                                </button>
-                            </div>
-
-                        </div>
-
-                        <div class="table-responsive">
-
-                            <table class="table table-ledger" v-if="filteredLog.length">
-                                <thead>
-                                    <tr>
-                                        <th>Employee</th>
-                                        <th>Clock in</th>
-                                        <th>Clock out</th>
-                                        <th>Status</th>
-                                    </tr>
-                                </thead>
-
-                                <tbody>
-                                    <tr v-for="p in filteredLog" :key="p.id">
-                                        <td class="d-flex align-items-center gap-2">
-
-                                            <div class="avatar-sm">
-                                                {{ p.initials }}
-                                            </div>
-
-                                            <div>
-                                                <div class="emp-name">
-                                                    {{ p.name }}
-                                                </div>
-
-                                                <div class="emp-role">
-                                                    {{ p.role }}
-                                                </div>
-                                            </div>
-
-                                        </td>
-
-                                        <td class="mono-time">
-                                            {{ p.clockIn || '—' }}
-                                        </td>
-
-                                        <td class="mono-time">
-                                            {{ p.clockOut || '—' }}
-                                        </td>
-
-                                        <td>
-                                            <span class="badge-status" :class="badgeClass(p.status)" @click="cycleStatus(p)">
-                                                {{ p.status.toUpperCase() }}
-                                            </span>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-
-                            <div class="empty-state" v-else>
-                                No punches match this filter.
-                            </div>
-
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Recent Cash Advance -->
-                <!-- Recent Cash Advance -->
-                <div class="col-lg-5">
-
-                    <div class="section-title">
-                        Recent Cash Advance
-                    </div>
-
-                    <div class="cash-advance-list">
-
-                        <div class="cash-advance-item" v-for="ca in recentCashAdvances" :key="ca.id">
-
-                            <div class="d-flex align-items-center gap-2">
-
-                                <div class="avatar-sm">
-                                    {{ ca.initials }}
-                                </div>
-
-                                <div class="cash-advance-person">
-                                    <div class="emp-name">
-                                        {{ ca.name }}
-                                    </div>
-
-                                    <div class="emp-role">
-                                        {{ ca.role }} · {{ ca.date }}
-                                    </div>
-                                </div>
-
-                            </div>
-
-                            <div class="cash-advance-info">
-
-                                <div class="cash-advance-purpose">
-                                    {{ ca.purpose }}
-                                </div>
-
-                                <div class="cash-advance-amount">
-                                    {{ peso(ca.amount) }}
-                                </div>
-
-                                <span class="badge-status" :class="caStatusClass(ca.status)">
-                                    {{ ca.status.toUpperCase() }}
-                                </span>
-
-                            </div>
-
-                        </div>
-
-                    </div>
-
-                </div>
-
-
-            </div>
-
         </div>
     </div>
 </template>
 
 <script setup>
-import { computed, nextTick, onMounted, onBeforeUnmount, ref } from 'vue'
+import { nextTick, onMounted, onBeforeUnmount, ref } from 'vue'
 import Chart from 'chart.js/auto'
 import { useOverviewStore } from '@/stores/useOverview';
 
@@ -338,204 +129,18 @@ const liveClock = ref('--:--:--')
 
 let clockTimer = null
 
-const totalEmployees = ref(248)
-
-const totalSalaryPaidThisWeek = ref(1860000)
-
-const totalCashAdvanceThisWeek = ref(86450)
-
-const punchLog = ref([
-    {
-        id: 1,
-        initials: 'JD',
-        name: 'Jonas Diaz',
-        role: 'Warehouse',
-        clockIn: '08:01 AM',
-        clockOut: null,
-        status: 'present',
-    },
-
-    {
-        id: 2,
-        initials: 'CS',
-        name: 'Carla Santos',
-        role: 'Accounting',
-        clockIn: '09:14 AM',
-        clockOut: null,
-        status: 'late',
-    },
-
-    {
-        id: 3,
-        initials: 'RT',
-        name: 'Ramon Tan',
-        role: 'Logistics',
-        clockIn: null,
-        clockOut: null,
-        status: 'absent',
-    },
-
-    {
-        id: 4,
-        initials: 'PL',
-        name: 'Paulo Lim',
-        role: 'Customer Care',
-        clockIn: '07:52 AM',
-        clockOut: '05:03 PM',
-        status: 'present',
-    },
-
-    {
-        id: 5,
-        initials: 'NA',
-        name: 'Nadia Ang',
-        role: 'Marketing',
-        clockIn: null,
-        clockOut: null,
-        status: 'leave',
-    },
-
-    {
-        id: 6,
-        initials: 'EV',
-        name: 'Erik Villar',
-        role: 'Warehouse',
-        clockIn: '08:08 AM',
-        clockOut: null,
-        status: 'present',
-    },
-])
-
 const overviewCard = ref([]);
-
-const recentCashAdvances = ref([
-    {
-        id: 1,
-        initials: 'JD',
-        name: 'Jonas Diaz',
-        role: 'Warehouse',
-        amount: 5000,
-        purpose: 'Emergency expense',
-        date: 'Aug 29, 2026',
-        status: 'approved',
-    },
-
-    {
-        id: 2,
-        initials: 'CS',
-        name: 'Carla Santos',
-        role: 'Accounting',
-        amount: 3500,
-        purpose: 'Medical expense',
-        date: 'Aug 28, 2026',
-        status: 'approved',
-    },
-
-    {
-        id: 3,
-        initials: 'RT',
-        name: 'Ramon Tan',
-        role: 'Logistics',
-        amount: 8000,
-        purpose: 'Family expense',
-        date: 'Aug 27, 2026',
-        status: 'pending',
-    },
-
-    {
-        id: 4,
-        initials: 'PL',
-        name: 'Paulo Lim',
-        role: 'Customer Care',
-        amount: 2500,
-        purpose: 'Transportation',
-        date: 'Aug 26, 2026',
-        status: 'paid',
-    },
-])
-
-const weeklySalary = ref([
-    {
-        label: 'JULY 27–AUGUST 1',
-        totalSalary: 31585,
-    },
-
-    {
-        label: 'AUGUST 3–8',
-        totalSalary: 33085,
-    },
-
-    {
-        label: 'AUGUST 10–15',
-        totalSalary: 36085,
-    },
-
-    {
-        label: 'AUGUST 17–22',
-        totalSalary: 36585,
-    },
-
-    {
-        label: 'AUGUST 24–29',
-        totalSalary: 33585,
-    },
-])
-
-const statusFilters = [
-    { key: 'all', label: 'All' },
-    { key: 'present', label: 'Present' },
-    { key: 'late', label: 'Late' },
-    { key: 'absent', label: 'Absent' },
-    { key: 'leave', label: 'On leave' },
-]
-
-const statusFilter = ref('all')
-
-const payrollRunning = ref(false)
-const payrollJustRan = ref(false)
+const weekly = ref([]);
+const weeklySalary = ref([]);
 
 let payrollJustRanTimer = null
 
 const attendanceChart = ref(null)
 const salaryChart = ref(null)
+const noResultFiveWeekSalaryPaid = ref(false);
 
 const attendanceCanvas = ref(null)
 const salaryCanvas = ref(null)
-
-const filteredLog = computed(() => {
-    return statusFilter.value === 'all'
-        ? punchLog.value
-        : punchLog.value.filter(
-            p => p.status === statusFilter.value
-        )
-})
-
-const presentCount = computed(() => {
-    return punchLog.value.filter(
-        p =>
-            p.status === 'present' ||
-            p.status === 'late'
-    ).length
-})
-
-const lateCount = computed(() => {
-    return punchLog.value.filter(
-        p => p.status === 'late'
-    ).length
-})
-
-const attendanceRate = computed(() => {
-    const present = punchLog.value.filter(
-        p =>
-            p.status === 'present' ||
-            p.status === 'late'
-    ).length
-
-    return (
-        (present / punchLog.value.length) *
-        100
-    ).toFixed(1)
-})
 
 function tickClock() {
     liveClock.value = new Date().toLocaleTimeString(
@@ -546,42 +151,6 @@ function tickClock() {
     )
 }
 
-function cycleStatus(person) {
-    const cycle = [
-        'present',
-        'late',
-        'absent',
-        'leave',
-    ]
-
-    const currentIndex = cycle.indexOf(
-        person.status
-    )
-
-    person.status =
-        cycle[
-        (currentIndex + 1) % cycle.length
-        ]
-}
-
-function badgeClass(status) {
-    return {
-        present: 'badge-present',
-        late: 'badge-late',
-        absent: 'badge-absent',
-        leave: 'badge-leave',
-    }[status]
-}
-
-function caStatusClass(status) {
-    return {
-        approved: 'badge-present',
-        paid: 'badge-present',
-        pending: 'badge-late',
-        rejected: 'badge-absent',
-    }[status]
-}
-
 function peso(n) {
     return (
         '₱' +
@@ -590,304 +159,6 @@ function peso(n) {
             maximumFractionDigits: 2,
         })
     )
-}
-
-const runPayroll = async () => {
-    if (payrollRunning.value) return
-
-
-
-    payrollRunning.value = true
-    payrollJustRan.value = false
-
-    setTimeout(() => {
-        payrollRunning.value = false
-        payrollJustRan.value = true
-
-        payrollJustRanTimer = setTimeout(() => {
-            payrollJustRan.value = false
-        }, 2500)
-    }, 1200)
-}
-
-function exportCsv() {
-    const rows = [
-        [
-            'Employee',
-            'Role',
-            'Clock In',
-            'Clock Out',
-            'Status',
-        ],
-    ]
-
-    punchLog.value.forEach(p => {
-        rows.push([
-            p.name,
-            p.role,
-            p.clockIn || '',
-            p.clockOut || '',
-            p.status,
-        ])
-    })
-
-    const csv = rows
-        .map(row =>
-            row
-                .map(cell => `"${cell}"`)
-                .join(',')
-        )
-        .join('\n')
-
-    const blob = new Blob(
-        [csv],
-        {
-            type: 'text/csv',
-        }
-    )
-
-    const url =
-        URL.createObjectURL(blob)
-
-    const a =
-        document.createElement('a')
-
-    a.href = url
-    a.download = 'punch-log.csv'
-    a.click()
-
-    URL.revokeObjectURL(url)
-}
-
-// ─── Charts ─────────────────────────────────────────────
-
-function renderCharts() {
-    const style =
-        getComputedStyle(
-            document.documentElement
-        )
-
-    const ink =
-        style
-            .getPropertyValue('--ink-2')
-            .trim() ||
-        '#28395E'
-
-    const gold =
-        style
-            .getPropertyValue('--gold')
-            .trim() ||
-        '#C79A3D'
-
-    const green =
-        style
-            .getPropertyValue('--green')
-            .trim() ||
-        '#2F8F5B'
-
-    const slate =
-        style
-            .getPropertyValue('--slate')
-            .trim() ||
-        '#6B7280'
-
-    const line =
-        style
-            .getPropertyValue('--line')
-            .trim() ||
-        '#DCD8CB'
-
-    Chart.defaults.font.family =
-        "'Inter', sans-serif"
-
-    Chart.defaults.color = slate
-
-    if (attendanceCanvas.value) {
-        attendanceChart.value =
-            new Chart(
-                attendanceCanvas.value,
-                {
-                    type: 'line',
-
-                    data: {
-                        labels: [
-                            'Mon',
-                            'Tue',
-                            'Wed',
-                            'Thu',
-                            'Fri',
-                            'Sat',
-                        ],
-
-                        datasets: [
-                            {
-                                label: 'Present',
-
-                                data: [
-                                    230,
-                                    227,
-                                    233,
-                                    221,
-                                    218,
-                                    190,
-                                ],
-
-                                borderColor: ink,
-
-                                backgroundColor:
-                                    'rgba(40,57,94,0.08)',
-
-                                fill: true,
-
-                                tension: 0.35,
-
-                                borderWidth: 2.5,
-
-                                pointRadius: 3,
-                            },
-
-                            {
-                                label: 'On leave',
-
-                                data: [
-                                    10,
-                                    12,
-                                    8,
-                                    15,
-                                    18,
-                                    9,
-                                ],
-
-                                borderColor: gold,
-
-                                backgroundColor:
-                                    'rgba(199,154,61,0.08)',
-
-                                fill: true,
-
-                                tension: 0.35,
-
-                                borderWidth: 2.5,
-
-                                pointRadius: 3,
-                            },
-                        ],
-                    },
-
-                    options: {
-                        responsive: true,
-
-                        plugins: {
-                            legend: {
-                                position: 'bottom',
-
-                                labels: {
-                                    usePointStyle: true,
-                                    boxWidth: 8,
-                                    padding: 16,
-                                },
-                            },
-                        },
-
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-
-                                grid: {
-                                    color: line,
-                                },
-
-                                border: {
-                                    display: false,
-                                },
-                            },
-
-                            x: {
-                                grid: {
-                                    display: false,
-                                },
-
-                                border: {
-                                    display: false,
-                                },
-                            },
-                        },
-                    },
-                }
-            )
-    }
-
-    if (salaryCanvas.value) {
-        salaryChart.value = new Chart(
-            salaryCanvas.value,
-            {
-                type: 'doughnut',
-
-                data: {
-                    labels: weeklySalary.value.map(
-                        week => week.label
-                    ),
-
-                    datasets: [
-                        {
-                            data: weeklySalary.value.map(
-                                week => week.totalSalary
-                            ),
-
-                            backgroundColor: [
-                                ink,
-                                '#52678F',
-                                '#7C8BAA',
-                                gold,
-                                green,
-                            ],
-
-                            borderColor: '#FBFAF6',
-                            borderWidth: 3,
-                        },
-                    ],
-                },
-
-                options: {
-                    responsive: true,
-
-                    maintainAspectRatio: false,
-
-                    cutout: '12%',
-
-                    plugins: {
-                        legend: {
-                            position: 'bottom',
-
-                            labels: {
-                                usePointStyle: true,
-                                boxWidth: 8,
-                                padding: 12,
-
-                                font: {
-                                    size: 10,
-                                },
-                            },
-                        },
-
-                        tooltip: {
-                            callbacks: {
-                                label: context => {
-                                    const value = context.raw
-
-                                    return (
-                                        ' ' +
-                                        peso(value)
-                                    )
-                                },
-                            },
-                        },
-                    },
-                },
-            }
-        )
-    }
-
 }
 
 const changeDate = async () => {
@@ -902,7 +173,103 @@ const getOverviewCard = async (data) => {
     overviewCard.value = overviewResult;
 }
 
-onMounted(() => {
+function buildAttendanceDatasets(rawDatasets) {
+    return (rawDatasets || []).map(ds => ({
+        label: ds.label,
+        data: ds.data,
+        backgroundColor: ds.backgroundColor,
+        borderRadius: 4,
+        maxBarThickness: 28,
+    }))
+}
+
+function renderCharts() {
+    const style = getComputedStyle(document.documentElement)
+    const gold = style.getPropertyValue('--gold').trim() || '#C79A3D'
+    const green = style.getPropertyValue('--green').trim() || '#2F8F5B'
+    const slate = style.getPropertyValue('--slate').trim() || '#6B7280'
+    const line = style.getPropertyValue('--line').trim() || '#DCD8CB'
+
+    Chart.defaults.font.family = "'Inter', sans-serif"
+    Chart.defaults.color = slate
+
+    const weeklyData = weekly.value || {}   // ← guard
+
+    if (attendanceCanvas.value) {
+        attendanceChart.value = new Chart(attendanceCanvas.value, {
+            type: 'bar',
+            data: {
+                labels: weeklyData.labels || [],
+                datasets: buildAttendanceDatasets(weeklyData.datasets),
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { usePointStyle: true, boxWidth: 8, padding: 16 },
+                    },
+                },
+                scales: {
+                    x: { stacked: true, grid: { display: false }, border: { display: false } },
+                    y: { stacked: true, beginAtZero: true, grid: { color: line }, border: { display: false } },
+                },
+            },
+        })
+    }
+
+    if (salaryCanvas.value) {
+        const weeklySalaryData = weeklySalary.value || []   // ← guard
+        salaryChart.value = new Chart(salaryCanvas.value, {
+            type: 'doughnut',
+            data: {
+                labels: weeklySalaryData.map(week => week.label),
+                datasets: [{
+                    data: weeklySalaryData.map(week => week.totalSalary),
+                    backgroundColor: [style.getPropertyValue('--ink-2').trim() || '#28395E', '#52678F', '#7C8BAA', gold, green],
+                    borderColor: '#FBFAF6',
+                    borderWidth: 3,
+                }],
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '12%',
+                plugins: {
+                    legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 8, padding: 12, font: { size: 10 } } },
+                    tooltip: { callbacks: { label: context => ' ' + peso(context.raw) } },
+                },
+            },
+        })
+    }
+}
+
+const weeklyAttendance = async (data) => {
+    const response = await overviewStore.weeklyAttendance(data)
+    weekly.value = response || { labels: [], datasets: [] } 
+
+    if (attendanceChart.value && weekly.value) {
+        attendanceChart.value.data.labels = weekly.value.labels || []
+        attendanceChart.value.data.datasets = buildAttendanceDatasets(weekly.value.datasets)
+        attendanceChart.value.update()
+    }
+}
+
+const fiveWeeksSalaryPaid = async () => {
+    const result = await overviewStore.fiveWeeksSalaryPaid()
+    
+    const safeResult = result || [] 
+    noResultFiveWeekSalaryPaid.value = safeResult.reduce((sum, ar) => sum + ar.totalSalary, 0) === 0
+    weeklySalary.value = safeResult
+
+    if (salaryChart.value) {
+        salaryChart.value.data.labels = weeklySalary.value.map(week => week.label)
+        salaryChart.value.data.datasets[0].data = weeklySalary.value.map(week => week.totalSalary)
+        salaryChart.value.update()
+    }
+}
+
+onMounted(async () => {
     tickClock()
 
     clockTimer =
@@ -911,13 +278,18 @@ onMounted(() => {
             1000
         )
 
-    nextTick(() => {
-        renderCharts()
-        getOverviewCard({
+    await nextTick(async () => {
+        await getOverviewCard({
             'start_date': start.value,
             'end_date': end.value,
         })
+        await weeklyAttendance({
+            'start_date': start.value,
+            'end_date': end.value,
+        })
+        await fiveWeeksSalaryPaid();
     })
+    renderCharts();
 })
 
 onBeforeUnmount(() => {

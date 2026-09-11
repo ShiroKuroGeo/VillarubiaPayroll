@@ -544,6 +544,8 @@ function openAddModal() {
         date_hired: ''
     })
 
+    imagePreview.value = null;
+
     showModal.value = true
 
 }
@@ -583,6 +585,8 @@ const saveEmployee = async () => {
             "search": null,
             "per_page": perPage.value
         });
+
+
     }
     closeModal()
 }

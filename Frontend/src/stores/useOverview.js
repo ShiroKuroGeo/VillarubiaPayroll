@@ -23,7 +23,49 @@ export const useOverviewStore = defineStore('useOverview', () => {
         }
     }
 
+    const weeklyAttendance = async (data) => {
+        try {
+            const overview = await api.post('overview/weekly_attendance', data);
+
+            return overview.data.data;
+        } catch (err) {
+            const status = err.response?.status || 500;
+
+            const message =
+                err.response?.data?.message ||
+                err.response?.data?.error ||
+                err.message ||
+                'An unexpected error occurred.';
+
+            showStatusAlert(status, message);
+
+            return status;
+        }
+    }
+
+    const fiveWeeksSalaryPaid = async () => {
+        try {
+            const overview = await api.get('overview/five_paid');
+
+            return overview.data.data;
+        } catch (err) {
+            const status = err.response?.status || 500;
+
+            const message =
+                err.response?.data?.message ||
+                err.response?.data?.error ||
+                err.message ||
+                'An unexpected error occurred.';
+
+            showStatusAlert(status, message);
+
+            return status;
+        }
+    }
+
     return {
-        cardOverview
+        cardOverview,
+        weeklyAttendance,
+        fiveWeeksSalaryPaid
     }
 });
