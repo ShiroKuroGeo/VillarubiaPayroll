@@ -13,8 +13,8 @@ use App\Models\CashAdvance;
 use App\Models\SSSContribution;
 use App\Models\Deduction;
 use App\Models\Maintenance;
-use Illuminate\Cache\Repository;
 use Illuminate\Support\Facades\DB;
+use App\Services\BiometricAttendanceImportService;
 
 class PayrollServices
 {
@@ -24,14 +24,15 @@ class PayrollServices
     {
         $today = Carbon::now();
 
-        if (!$today->isSaturday()) {
-            throw new \Exception(
-                'Payroll can only be generated on Saturday.',
-                422
-            );
-        }
+        // if (!$today->isSaturday()) {
+        //     throw new \Exception(
+        //         'Payroll can only be generated on Saturday.',
+        //         422
+        //     );
+        // }
 
-        $cutoffEnd = $today->copy()->startOfDay();
+        // $cutoffEnd = $today->copy()->startOfDay();
+        $cutoffEnd = Carbon::parse('2026-09-12')->startOfDay();
 
         $cutoffStart = $cutoffEnd
             ->copy()
@@ -287,22 +288,22 @@ class PayrollServices
                     $dayRate = $dayRate / 2;
                 }
 
-                if ($isSunday) {
-                    $dayRate = $dayRate * $sundayPremiumRate;
-                }
+                // if ($isSunday) {
+                //     $dayRate = $dayRate * $sundayPremiumRate;
+                // }
 
                 $gross += $dayRate;
 
                 $overtimeHours = (float) ($attendance->overtime_hours ?? 0);
 
                 if ($overtimeHours > 0) {
-                    $maintenance = Maintenance::where('name', 'Overtime Premium Rate')->first();
+                    $maintenance = Maintenance::where('name', 'Overtime Rate (Per Hour)')->first();
                     $hourlyRate = (float) $maintenance->value;
 
-                    if ($isSunday) {
+                    // if ($isSunday) {
 
-                        $hourlyRate = $hourlyRate * $sundayPremiumRate;
-                    }
+                    //     $hourlyRate = $hourlyRate * $sundayPremiumRate;
+                    // }
 
                     $gross += $overtimeHours * $hourlyRate;
                 }
@@ -492,16 +493,11 @@ class PayrollServices
         }
 
         try {
+            // $cutoffStart = Carbon::now()->startOfWeek(Carbon::SUNDAY)->toDateString();
+            // $cutoffEnd = Carbon::now()->endOfWeek(Carbon::SATURDAY)->toDateString();
 
-            $today = Carbon::now();
-
-            $cutoffStart = Carbon::now()->startOfWeek(Carbon::SUNDAY)->toDateString();
-            // $today->copy()->startOfDay();
-            $cutoffEnd = Carbon::now()->endOfWeek(Carbon::SATURDAY)->toDateString();
-            // $cutoffEnd
-            //     ->copy()
-            //     ->subDays(6)
-            //     ->startOfDay();
+            $cutoffStart = Carbon::parse('2026-09-12')->startOfWeek(Carbon::SUNDAY)->toDateString();
+            $cutoffEnd = Carbon::parse('2026-09-12')->endOfWeek(Carbon::SATURDAY)->toDateString();
 
             $query = Payroll::with(['employee', 'employee.activeSalary', 'deductions'])->where('cutoff_start', $cutoffStart)->where('cutoff_end', $cutoffEnd);
 
@@ -583,19 +579,7 @@ class PayrollServices
                     "paid" => $payroll->status === 'Paid',
                     "paidDate" => $payroll->payment_date,
                     "paymentMethod" => $payroll->payment_method,
-                    'reference' => 'VIP-' . now()->year . str_pad($payroll->id, 4, '0', STR_PAD_LEFT),
-
-                    // 'earnings' => [
-                    //     "sundayPremium" => $earningsBreakdown['sunday_premium'],
-                    //     "overtime" => $earningsBreakdown['overtime_pay'],
-                    // ],
-
-                    // 'deductions' => [
-                    //     'sss' => (float) ($deduction->sss_deduction ?? 0),
-                    //     'cashAdvance' => (float) ($deduction->ca_deduction ?? 0),
-                    //     'late' => (float) ($deduction->other_deduction['late_deduction'] ?? 0),
-                    // ],
-
+                    'reference' => 'VIP-' . now()->year . str_pad($payroll->id, 4, '0', STR_PAD_LEFT)
                 ];
             });
 
@@ -639,18 +623,19 @@ class PayrollServices
                     $baseDayRate = $baseDayRate / 2;
                 }
 
-                if ($isSunday) {
-                    $sundayPremium += $baseDayRate * ($sundayPremiumRate - 1);
-                }
+                // if ($isSunday) {
+                //     $sundayPremium += $baseDayRate * ($sundayPremiumRate - 1);
+                // }
 
                 if ($overtimeHours > 0) {
-                    $maintenance = Maintenance::where('name', 'Overtime Premium Rate')->first();
-                    $hourlyRate = (float) $maintenance->value;
-                    $overtimePay += $overtimeHours * $hourlyRate;
+                    $maintenance = Maintenance::where('name', 'Overtime Rate (Per Hour)')->first();
+                    $hourlyRate = (float) $maintenance->value ?? 1.3;
+                    $netPayOvertime = ($baseDayRate * $hourlyRate) / 8;
+                    $overtimePay += $overtimeHours * $netPayOvertime;
                 }
             } elseif ($salary->salary_type === 'Hourly') {
-                $maintenance = Maintenance::where('name', 'Overtime Premium Rate')->first();
-                $hourlyRate = (float) $maintenance->value;
+                $maintenance = Maintenance::where('name', 'Overtime Rate (Per Hour)')->first();
+                $hourlyRate = (float) $maintenance->value ?? 1.3;
 
 
                 $baseHourlyRate = (float) $salary->basic_salary;

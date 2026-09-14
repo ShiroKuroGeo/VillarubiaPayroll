@@ -82,35 +82,7 @@ class SalaryServices
             return response_return('Error occurred in updating salary.', [], 500);
         }
     }
-
-    // public function getSalaries(Request $request)
-    // {
-    //     try {
-    //         $employeeSalary = Employee::with('activeSalary', 'job')
-    //             ->orderByDesc('date_hired')
-    //             ->get();
-
-    //         $data = $employeeSalary->map(function($employeeSalary){
-    //             return [
-    //                 'id' => $employeeSalary->activeSalary->id,
-    //                 'employeeId' => $employeeSalary->id,
-    //                 'employeeName' => $employeeSalary->last_name . ', '. $employeeSalary->first_name,
-    //                 'location' => $employeeSalary->location,
-    //                 'phoneNumber' => $employeeSalary->job->label,
-    //                 'basicSalary' => $employeeSalary->activeSalary->basic_salary,
-    //                 'salaryType' => $employeeSalary->activeSalary->salary_type,
-    //                 'effectiveDate' => $employeeSalary->activeSalary->effective_date,
-    //                 'status' => $employeeSalary->activeSalary->is_active,
-    //                 'image' => $employeeSalary->image,
-    //             ];
-    //         });
-
-    //         return response_return('Successfully retrieved salary history.', $data->toArray(), 200);
-    //     } catch (\Throwable $th) {
-    //         return response_return($th->getMessage(), [], 500);
-    //     }
-    // }
-
+    
     public function getSalaries(Request $request)
     {
         try {

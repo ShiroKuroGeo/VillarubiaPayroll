@@ -39,13 +39,11 @@
             </div>
 
         </div>
-
         <div class="content">
             <div v-if="showGenerateOnly" class="generate-gate">
 
                 <div class="generate-card">
 
-                    <!-- LEFT COLUMN: intro + action -->
                     <div class="generate-main">
 
                         <div class="stamp gold">PAYROLL</div>
@@ -74,7 +72,6 @@
 
                     </div>
 
-                    <!-- RIGHT COLUMN: checklist, always visible, fills remaining space -->
                     <div class="generate-checklist">
 
                         <div class="checklist-heading">Before you continue, review the checklist</div>
@@ -410,7 +407,6 @@
                 </div>
 
             </template>
-
         </div>
 
         <div v-if="showModal" class="modal-backdrop" @click.self="closeModal">

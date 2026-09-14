@@ -445,9 +445,18 @@ class AttendanceServices
 
         $spreadsheet = IOFactory::load($file->getPathname());
 
-        $worksheet = $spreadsheet->getSheet(2);
+        $punches = [];
 
-        $rows = $worksheet->toArray(null, true, true, false);
+        foreach ($spreadsheet->getAllSheets() as $sheet) {
+
+            $rows = $sheet->toArray(null, true, true, false);
+
+            $sheetPunches = $this->parseDeliAttendanceReport($rows);
+
+            if (!empty($sheetPunches)) {
+                $punches = array_merge($punches, $sheetPunches);
+            }
+        }
 
         $imported = 0;
         $duplicates = 0;
@@ -477,8 +486,6 @@ class AttendanceServices
         DB::beginTransaction();
 
         try {
-            $punches = $this->parseDeliAttendanceReport($rows);
-
             $groupedPunches = collect($punches)
                 ->groupBy(function ($punch) {
 
@@ -576,15 +583,6 @@ class AttendanceServices
                     );
                 }
             }
-
-            // foreach ($affectedAttendances as $attendanceData) {
-            //     $this->processAttendance(
-            //         $attendanceData['employee_id'],
-            //         $attendanceData['date'],
-            //         $workStartTime,
-            //         $workEndTime
-            //     );
-            // }
 
             DB::commit();
 
@@ -1030,13 +1028,6 @@ class AttendanceServices
 
         $remarks = 'Generated from biometric logs';
 
-
-        /*
-|--------------------------------------------------------------------------
-| Missing punches
-|--------------------------------------------------------------------------
-*/
-
         if ($timeIn && !$timeOut) {
 
             $remarks =
@@ -1046,13 +1037,6 @@ class AttendanceServices
             $remarks =
                 'Generated from biometric logs - Missing Time In';
         }
-
-
-        /*
-|--------------------------------------------------------------------------
-| Late
-|--------------------------------------------------------------------------
-*/
 
         $lateHours = 0;
 
@@ -1081,61 +1065,21 @@ class AttendanceServices
                 ' minute(s)';
         }
 
-
-        /*
-|--------------------------------------------------------------------------
-| Worked hours
-|--------------------------------------------------------------------------
-*/
-
         $workedMinutes = 0;
 
         if ($timeIn && $timeOut) {
-
-            $workedMinutes =
-                $timeIn->diffInMinutes(
-                    $timeOut
-                );
+            $workedMinutes = $timeIn->diffInMinutes($timeOut);
         }
 
+        $hoursWorked = round($workedMinutes / 60, 2);
 
-        $hoursWorked = round(
-            $workedMinutes / 60,
-            2
-        );
-
-
-        /*
-|--------------------------------------------------------------------------
-| Expected working time
-|--------------------------------------------------------------------------
-*/
-
-        $expectedMinutes =
-            $scheduledStartTime->diffInMinutes(
-                $scheduledEndTime
-            );
-
-
-        /*
-|--------------------------------------------------------------------------
-| Half Day
-|--------------------------------------------------------------------------
-*/
+        $halfDayThresholdMinutes = 6 * 60; 
 
         if (
-            $timeIn &&
-            $timeOut &&
-            $workedMinutes > 0 &&
-            $workedMinutes <= (
-                $expectedMinutes / 2
-            )
+            $timeIn && $timeOut && $workedMinutes > 0 && $workedMinutes < $halfDayThresholdMinutes
         ) {
-
             $status = 'Half Day';
-
-            $remarks =
-                'Generated from biometric logs - Half Day';
+            $remarks = 'Generated from biometric logs - Half Day';
         }
 
         $undertimeHours = 0;
@@ -1162,7 +1106,6 @@ class AttendanceServices
             $remarks .=
                 ' - Early Leave';
         }
-
 
         $overtimeHours = 0;
 
