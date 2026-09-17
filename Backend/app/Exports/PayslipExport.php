@@ -243,6 +243,7 @@ class PayslipExport
         $deductionRows = [
             'SSS' => $deductions['sss'] ?? 0,
             'Cash Advance' => $deductions['cashAdvance'] ?? 0,
+            'CA Balance' => $p['cashAdvanceBalance'] ?? 0,
             'Late' => $deductions['late'] ?? 0,
         ];
 

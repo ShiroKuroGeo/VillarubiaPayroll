@@ -1,15 +1,15 @@
 <?php
-
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 
-
 #[Fillable([
     'employee_id',
     'payroll_id',
     'amount',
+    'installment_amount',
+    'installment_count',
     'requested_date',
     'reason',
     'status'
@@ -24,5 +24,10 @@ class CashAdvance extends Model
 
     public function payroll(){
         return $this->belongsTo(Payroll::class, 'payroll_id');
+    }
+
+    public function deductions()
+    {
+        return $this->hasMany(CashAdvanceDeduction::class);
     }
 }

@@ -67,8 +67,12 @@ class PayslipController extends Controller
     {
         try {
 
-            $cutoffStart = Carbon::now()->startOfWeek(Carbon::SUNDAY)->toDateString();
-            $cutoffEnd = Carbon::now()->endOfWeek(Carbon::SATURDAY)->toDateString();
+            // $cutoffStart = Carbon::now()->startOfWeek(Carbon::SUNDAY)->toDateString();
+            // $cutoffEnd = Carbon::now()->endOfWeek(Carbon::SATURDAY)->toDateString();
+
+
+            $cutoffStart = Carbon::create(2026, 9, 6)->toDateString();
+            $cutoffEnd = Carbon::create(2026, 9, 12)->toDateString();
 
             $payrolls = Payroll::with([
                 'employee',
@@ -114,9 +118,6 @@ class PayslipController extends Controller
         }
     }
 
-    /**
-     * Shared response builder used by getPayslip().
-     */
     private function buildPayslipResponse($payrolls)
     {
         if ($payrolls->isEmpty()) {
@@ -136,37 +137,16 @@ class PayslipController extends Controller
         );
     }
 
-    /**
-     * Turns a collection of Payroll models into the flat payslip array
-     * shape used by both the JSON endpoint and the Excel export.
-     */
     private function transformPayrolls($payrolls)
     {
-        /*
-        |--------------------------------------------------------------------------
-        | Get Employee IDs
-        |--------------------------------------------------------------------------
-        */
 
         $employeeIds = $payrolls
             ->pluck('employee_id')
             ->unique()
             ->values();
 
-        /*
-        |--------------------------------------------------------------------------
-        | Get Cutoff Range
-        |--------------------------------------------------------------------------
-        */
-
         $minCutoffStart = $payrolls->min('cutoff_start');
         $maxCutoffEnd = $payrolls->max('cutoff_end');
-
-        /*
-        |--------------------------------------------------------------------------
-        | Get Attendance
-        |--------------------------------------------------------------------------
-        */
 
         $attendancesByEmployee = collect();
 
@@ -182,38 +162,31 @@ class PayslipController extends Controller
                 ->groupBy('employee_id');
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | Sunday Premium Rate
-        |--------------------------------------------------------------------------
-        */
-
         $sundayPremiumRate = (float) (
             Maintenance::where('name', 'Overtime Multiplier')->value('value')
             ?? 1.30
         );
 
-        /*
-        |--------------------------------------------------------------------------
-        | Transform Payroll Data
-        |--------------------------------------------------------------------------
-        */
+        $cashAdvancesByEmployee = collect();
+
+        if ($employeeIds->isNotEmpty()) {
+            $cashAdvancesByEmployee = CashAdvance::whereIn('employee_id', $employeeIds)
+                ->where('status', 'Approved')
+                ->get()
+                ->groupBy('employee_id');
+        }
 
         return $payrolls->map(
             fn($payroll) => $this->transformSinglePayroll(
                 $payroll,
                 $attendancesByEmployee,
-                $sundayPremiumRate
+                $sundayPremiumRate,
+                $cashAdvancesByEmployee
             )
         );
     }
 
-    /**
-     * Transforms one Payroll model into the payslip array shape.
-     * (Logic unchanged from the original getPayslip() closure — just
-     * extracted so exportPayslips() can reuse it.)
-     */
-    private function transformSinglePayroll($payroll, $attendancesByEmployee, $sundayPremiumRate)
+    private function transformSinglePayroll($payroll, $attendancesByEmployee, $sundayPremiumRate, $cashAdvancesByEmployee)
     {
         $employee = $payroll->employee;
         $salary = $employee?->activeSalary;
@@ -253,70 +226,51 @@ class PayslipController extends Controller
             $deduction = $payroll->deductions;
         }
 
-        // Human-readable pay period, e.g. "Sep 6 - 12, 2026",
-        // built straight from this payroll's own cutoff dates.
         $period = $this->formatPeriod($payroll->cutoff_start, $payroll->cutoff_end);
 
+        $employeeCashAdvances = $cashAdvancesByEmployee->get($payroll->employee_id, collect());
+
+        $remainingCashAdvanceBalance = round(
+            $employeeCashAdvances->sum('installment_amount') * $employeeCashAdvances->sum('installment_count'),
+            2
+        );
+
         return [
-
             'id' => $payroll->id,
-
             'employeeId' => $employee?->id,
-
             'employeeName' => $employee
                 ? $employee->last_name . ', ' . $employee->first_name
                 : 'Unknown Employee',
-
             'initials' => $initials,
-
             'address' => $employee?->location,
-
             'image' => $employee?->image,
-
             'salaryType' => $salary?->salary_type,
-
             'grossPay' => (float) $payroll->gross_pay,
-
             'period' => $period,
-
             'cutoffStart' => $payroll->cutoff_start,
-
             'cutoffEnd' => $payroll->cutoff_end,
-
             'earnings' => [
                 'basicSalary' => (float) ($salary?->basic_salary ?? 0),
                 'sundayPremium' => (float) $earningsBreakdown['sunday_premium'],
                 'overtime' => (float) $earningsBreakdown['overtime_pay'],
                 'totalAttendance' => $earningsBreakdown['total_attendance'],
             ],
-
             'deductions' => [
                 'sss' => (float) ($deduction?->sss_deduction ?? 0),
                 'cashAdvance' => (float) ($deduction?->ca_deduction ?? 0),
                 'late' => (float) ($deduction?->other_deduction['late_deduction'] ?? 0),
             ],
-
             'totalDeductions' => (float) $payroll->total_deductions,
-
             'netPay' => (float) $payroll->net_pay,
-
+            'cashAdvanceBalance' => $remainingCashAdvanceBalance,
             'status' => $payroll->status,
-
             'paid' => $payroll->status === 'Paid',
-
             'paidDate' => $payroll->payment_date,
-
             'paymentMethod' => $payroll->payment_method,
-
             'reference' => 'VIP-' . now()->year . str_pad($payroll->id, 4, '0', STR_PAD_LEFT),
-
         ];
     }
 
-    /**
-     * Formats two dates into a readable range, e.g. "Sep 6 - 12, 2026".
-     * Falls back to '-' if either date is missing.
-     */
     private function formatPeriod($start, $end): string
     {
         if (!$start || !$end) {
@@ -365,12 +319,12 @@ class PayslipController extends Controller
                 }
 
                 if ($overtimeHours > 0) {
-                    $maintenance = Maintenance::where('name', 'Overtime Premium Rate')->first();
+                    $maintenance = Maintenance::where('name', 'Overtime Rate (Per Hour)')->first();
                     $hourlyRate = (float) $maintenance->value;
                     $overtimePay += $overtimeHours * $hourlyRate;
                 }
             } elseif ($salary->salary_type === 'Hourly') {
-                $maintenance = Maintenance::where('name', 'Overtime Premium Rate')->first();
+                $maintenance = Maintenance::where('name', 'Overtime Rate (Per Hour)')->first();
                 $hourlyRate = (float) $maintenance->value;
 
                 $baseHourlyRate = (float) $salary->basic_salary;

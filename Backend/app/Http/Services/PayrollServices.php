@@ -18,8 +18,6 @@ use App\Services\BiometricAttendanceImportService;
 
 class PayrollServices
 {
-
-
     public function generatePayroll(): array
     {
         $today = Carbon::now();
@@ -101,6 +99,7 @@ class PayrollServices
                 $salary = Salary::where('employee_id', $employee->id)
                     ->where('is_active', true)
                     ->first();
+
                 if (!$salary) {
                     $result['skipped'][] = [
                         'employee_id' => $employee->id,
@@ -143,9 +142,25 @@ class PayrollServices
                 $cashAdvances = CashAdvance::where('employee_id', $employee->id)
                     ->where('status', 'Approved')
                     ->whereNull('payroll_id')
+                    ->where('installment_count', '>', 0)
                     ->get();
 
-                $caTotal = round($cashAdvances->sum('amount'), 2);
+                $caDeductionsPlan = [];
+                $caTotal = 0;
+
+                foreach ($cashAdvances as $ca) {
+                    $deductAmount = round((float) $ca->installment_amount, 2);
+                    if ($deductAmount <= 0) {
+                        continue;
+                    }
+                    $caDeductionsPlan[] = [
+                        'cash_advance' => $ca,
+                        'amount' => $deductAmount,
+                    ];
+                    $caTotal += $deductAmount;
+                }
+
+                $caTotal = round($caTotal, 2);
 
                 $sssEntries = SssContribution::where('employee_id', $employee->id)
                     ->where('status', 'Pending')
@@ -184,13 +199,16 @@ class PayrollServices
                     'net_pay' => $netPay,
                 ]);
 
+                foreach ($caDeductionsPlan as $plan) {
+                    $ca = $plan['cash_advance'];
+                    $remainingCount = max($ca->installment_count - 1, 0);
+                    $isFinal = $remainingCount === 0;
 
-                if ($cashAdvances->isNotEmpty()) {
-                    CashAdvance::whereIn('id', $cashAdvances->pluck('id'))
-                        ->update([
-                            'payroll_id' => $payroll->id,
-                            'status' => 'Deducted/Paid',
-                        ]);
+                    $ca->update([
+                        'installment_count' => $remainingCount,
+                        'status' => $isFinal ? 'Deducted/Paid' : 'Approved',
+                        'payroll_id' => $isFinal ? $payroll->id : null,
+                    ]);
                 }
 
                 foreach ($sssEntries as $sssEntry) {
@@ -499,91 +517,102 @@ class PayrollServices
             $cutoffStart = Carbon::parse('2026-09-12')->startOfWeek(Carbon::SUNDAY)->toDateString();
             $cutoffEnd = Carbon::parse('2026-09-12')->endOfWeek(Carbon::SATURDAY)->toDateString();
 
-            $query = Payroll::with(['employee', 'employee.activeSalary', 'deductions'])->where('cutoff_start', $cutoffStart)->where('cutoff_end', $cutoffEnd);
+            // $query = Payroll::with(['employee', 'employee.activeSalary', 'deductions'])->where('cutoff_start', $cutoffStart)->where('cutoff_end', $cutoffEnd);
+            $payrolls = Payroll::with([
+                'employee',
+                'employee.activeSalary',
+                'deductions'
+            ])
+                ->where('cutoff_start', $cutoffStart)
+                ->where('cutoff_end', $cutoffEnd)
+                ->orderByDesc('cutoff_start')
+                ->get();
 
-            if (!empty($validation['employee_id'])) {
-                $query->where('employee_id', $validation['employee_id']);
-            }
+            $payslips = $this->transformPayrolls($payrolls)->toArray();
 
-            if (!empty($validation['status'])) {
-                $query->where('status', $validation['status']);
-            }
+            // if (!empty($validation['employee_id'])) {
+            //     $query->where('employee_id', $validation['employee_id']);
+            // }
 
-            $payrolls = $query->orderByDesc('cutoff_start')
-                ->paginate($validation['per_page'] ?? 100);
+            // if (!empty($validation['status'])) {
+            //     $query->where('status', $validation['status']);
+            // }
 
-            $pageItems = $payrolls->getCollection();
+            // $payrolls = $query->orderByDesc('cutoff_start')
+            //     ->paginate($validation['per_page'] ?? 100);
 
-            $employeeIds = $pageItems->pluck('employee_id')->unique()->values();
-            $minCutoffStart = $pageItems->min('cutoff_start');
-            $maxCutoffEnd = $pageItems->max('cutoff_end');
+            // $pageItems = $payrolls->getCollection();
 
-            $attendancesByEmployee = collect();
+            // $employeeIds = $pageItems->pluck('employee_id')->unique()->values();
+            // $minCutoffStart = $pageItems->min('cutoff_start');
+            // $maxCutoffEnd = $pageItems->max('cutoff_end');
 
-            if ($employeeIds->isNotEmpty() && $minCutoffStart && $maxCutoffEnd) {
-                $attendancesByEmployee = Attendance::whereIn('employee_id', $employeeIds)
-                    ->whereBetween('date', [$minCutoffStart, $maxCutoffEnd])
-                    ->orderBy('date')
-                    ->get()
-                    ->groupBy('employee_id');
-            }
+            // $attendancesByEmployee = collect();
 
-            $sundayPremiumRate = (float) (
-                Maintenance::where('name', 'Overtime Multiplier')->value('value') ?? 1.30
-            );
+            // if ($employeeIds->isNotEmpty() && $minCutoffStart && $maxCutoffEnd) {
+            //     $attendancesByEmployee = Attendance::whereIn('employee_id', $employeeIds)
+            //         ->whereBetween('date', [$minCutoffStart, $maxCutoffEnd])
+            //         ->orderBy('date')
+            //         ->get()
+            //         ->groupBy('employee_id');
+            // }
 
-            $payrolls->through(function ($payroll) use ($attendancesByEmployee, $sundayPremiumRate) {
+            // $sundayPremiumRate = (float) (
+            //     Maintenance::where('name', 'Overtime Multiplier')->value('value') ?? 1.30
+            // );
 
-                $employee = $payroll->employee;
-                $salary = $employee?->activeSalary;
+            // $payrolls->through(function ($payroll) use ($attendancesByEmployee, $sundayPremiumRate) {
 
-                $initials = strtoupper(
-                    substr($employee->first_name ?? '', 0, 1)
-                        . substr($employee->last_name ?? '', 0, 1)
-                ) ?: '—';
+            //     $employee = $payroll->employee;
+            //     $salary = $employee?->activeSalary;
 
-                $earningsBreakdown = ['sunday_premium' => 0.0, 'overtime_pay' => 0.0];
+            //     $initials = strtoupper(
+            //         substr($employee->first_name ?? '', 0, 1)
+            //             . substr($employee->last_name ?? '', 0, 1)
+            //     ) ?: '—';
 
-                if ($salary) {
+            //     $earningsBreakdown = ['sunday_premium' => 0.0, 'overtime_pay' => 0.0];
 
-                    $attendances = ($attendancesByEmployee->get($employee->id) ?? collect())
-                        ->filter(
-                            fn($a) =>
-                            $a->date >= $payroll->cutoff_start
-                                && $a->date <= $payroll->cutoff_end
-                        );
+            //     if ($salary) {
 
-                    $earningsBreakdown = $this->computeEarningsBreakdown(
-                        $salary,
-                        $attendances,
-                        $sundayPremiumRate
-                    );
-                }
+            //         $attendances = ($attendancesByEmployee->get($employee->id) ?? collect())
+            //             ->filter(
+            //                 fn($a) =>
+            //                 $a->date >= $payroll->cutoff_start
+            //                     && $a->date <= $payroll->cutoff_end
+            //             );
 
-                $deduction = $payroll->deductions instanceof \Illuminate\Support\Collection
-                    ? $payroll->deductions->first()
-                    : $payroll->deductions;
+            //         $earningsBreakdown = $this->computeEarningsBreakdown(
+            //             $salary,
+            //             $attendances,
+            //             $sundayPremiumRate
+            //         );
+            //     }
 
-                return [
-                    "id" => $payroll->id,
-                    "employeeId" => $employee->id,
-                    "employeeName" => $employee->last_name . ', ' . $employee->first_name,
-                    "initials" => $initials,
-                    "department" => $employee->location,
-                    "basicSalary" => (float) ($salary->basic_salary ?? 0),
-                    "salaryType" => $salary->salary_type ?? null,
-                    "totalAttendance" => $earningsBreakdown['total_attendance'],
-                    "deductions" => (float) $payroll->total_deductions,
-                    "status" => $payroll->status,
-                    "image" => $employee->image,
-                    "paid" => $payroll->status === 'Paid',
-                    "paidDate" => $payroll->payment_date,
-                    "paymentMethod" => $payroll->payment_method,
-                    'reference' => 'VIP-' . now()->year . str_pad($payroll->id, 4, '0', STR_PAD_LEFT)
-                ];
-            });
+            //     $deduction = $payroll->deductions instanceof \Illuminate\Support\Collection
+            //         ? $payroll->deductions->first()
+            //         : $payroll->deductions;
 
-            return response_return('Successfully retrieved payrolls.', $payrolls->toArray(), 200);
+            //     return [
+            //         "id" => $payroll->id,
+            //         "employeeId" => $employee->id,
+            //         "employeeName" => $employee->last_name . ', ' . $employee->first_name,
+            //         "initials" => $initials,
+            //         "department" => $employee->location,
+            //         "basicSalary" => (float) ($salary->basic_salary ?? 0),
+            //         "salaryType" => $salary->salary_type ?? null,
+            //         "totalAttendance" => $earningsBreakdown['total_attendance'],
+            //         "deductions" => (float) $payroll->total_deductions,
+            //         "status" => $payroll->status,
+            //         "image" => $employee->image,
+            //         "paid" => $payroll->status === 'Paid',
+            //         "paidDate" => $payroll->payment_date,
+            //         "paymentMethod" => $payroll->payment_method,
+            //         'reference' => 'VIP-' . now()->year . str_pad($payroll->id, 4, '0', STR_PAD_LEFT)
+            //     ];
+            // });
+
+            return response_return('Successfully retrieved payrolls.', $payslips, 200);
         } catch (\Throwable $th) {
 
             logger()->error('GET PAYROLLS ERROR', [
@@ -594,6 +623,157 @@ class PayrollServices
 
             return response_return($th->getMessage(), [], 500);
         }
+    }
+
+    private function transformPayrolls($payrolls)
+    {
+
+        $employeeIds = $payrolls
+            ->pluck('employee_id')
+            ->unique()
+            ->values();
+
+        $minCutoffStart = $payrolls->min('cutoff_start');
+        $maxCutoffEnd = $payrolls->max('cutoff_end');
+
+        $attendancesByEmployee = collect();
+
+        if (
+            $employeeIds->isNotEmpty()
+            && $minCutoffStart
+            && $maxCutoffEnd
+        ) {
+            $attendancesByEmployee = Attendance::whereIn('employee_id', $employeeIds)
+                ->whereBetween('date', [$minCutoffStart, $maxCutoffEnd])
+                ->orderBy('date')
+                ->get()
+                ->groupBy('employee_id');
+        }
+
+        $sundayPremiumRate = (float) (
+            Maintenance::where('name', 'Overtime Multiplier')->value('value')
+            ?? 1.30
+        );
+
+        $cashAdvancesByEmployee = collect();
+
+        if ($employeeIds->isNotEmpty()) {
+            $cashAdvancesByEmployee = CashAdvance::whereIn('employee_id', $employeeIds)
+                ->where('status', 'Approved')
+                ->get()
+                ->groupBy('employee_id');
+        }
+
+        return $payrolls->map(
+            fn($payroll) => $this->transformSinglePayroll(
+                $payroll,
+                $attendancesByEmployee,
+                $sundayPremiumRate,
+                $cashAdvancesByEmployee
+            )
+        );
+    }
+
+    private function transformSinglePayroll($payroll, $attendancesByEmployee, $sundayPremiumRate, $cashAdvancesByEmployee)
+    {
+        $employee = $payroll->employee;
+        $salary = $employee?->activeSalary;
+
+        $initials = strtoupper(
+            substr($employee->first_name ?? '', 0, 1)
+                . substr($employee->last_name ?? '', 0, 1)
+        ) ?: '—';
+
+        $earningsBreakdown = [
+            'sunday_premium' => 0.00,
+            'overtime_pay' => 0.00,
+            'total_attendance' => 0,
+        ];
+
+        if ($salary && $employee) {
+
+            $employeeAttendances = $attendancesByEmployee
+                ->get($employee->id, collect())
+                ->filter(function ($attendance) use ($payroll) {
+                    return $attendance->date >= $payroll->cutoff_start
+                        && $attendance->date <= $payroll->cutoff_end;
+                });
+
+            $earningsBreakdown = $this->computeEarningsBreakdown(
+                $salary,
+                $employeeAttendances,
+                $sundayPremiumRate
+            );
+        }
+
+        $deduction = null;
+
+        if ($payroll->deductions instanceof \Illuminate\Support\Collection) {
+            $deduction = $payroll->deductions->first();
+        } else {
+            $deduction = $payroll->deductions;
+        }
+
+        $period = $this->formatPeriod($payroll->cutoff_start, $payroll->cutoff_end);
+
+        $employeeCashAdvances = $cashAdvancesByEmployee->get($payroll->employee_id, collect());
+
+        $remainingCashAdvanceBalance = round(
+            $employeeCashAdvances->sum('installment_amount') * $employeeCashAdvances->sum('installment_count'),
+            2
+        );
+
+        return [
+
+            'id' => $payroll->id,
+            'employeeId' => $employee?->id,
+            'employeeName' => $employee
+                ? $employee->last_name . ', ' . $employee->first_name
+                : 'Unknown Employee',
+            'initials' => $initials,
+            'address' => $employee?->location,
+            'image' => $employee?->image,
+            'salaryType' => $salary?->salary_type,
+            'grossPay' => (float) $payroll->gross_pay,
+            'period' => $period,
+            'cutoffStart' => $payroll->cutoff_start,
+            'cutoffEnd' => $payroll->cutoff_end,
+            'earnings' => [
+                'basicSalary' => (float) ($salary?->basic_salary ?? 0),
+                'sundayPremium' => (float) $earningsBreakdown['sunday_premium'],
+                'overtime' => (float) $earningsBreakdown['overtime_pay'],
+                'totalAttendance' => $earningsBreakdown['total_attendance'],
+            ],
+            'deductions' => [
+                'sss' => (float) ($deduction?->sss_deduction ?? 0),
+                'cashAdvance' => (float) ($deduction?->ca_deduction ?? 0),
+                'late' => (float) ($deduction?->other_deduction['late_deduction'] ?? 0),
+            ],
+            'totalDeductions' => (float) $payroll->total_deductions,
+            'netPay' => (float) $payroll->net_pay,
+            'cashAdvanceBalance' => $remainingCashAdvanceBalance,
+            'status' => $payroll->employee->status,
+            'paid' => $payroll->status === 'Paid',
+            'paidDate' => $payroll->payment_date,
+            'paymentMethod' => $payroll->payment_method,
+            'reference' => 'VIP-' . now()->year . str_pad($payroll->id, 4, '0', STR_PAD_LEFT),
+        ];
+    }
+
+    private function formatPeriod($start, $end): string
+    {
+        if (!$start || !$end) {
+            return '-';
+        }
+
+        $startDate = Carbon::parse($start);
+        $endDate = Carbon::parse($end);
+
+        if ($startDate->isSameMonth($endDate) && $startDate->isSameYear($endDate)) {
+            return $startDate->format('M j') . ' - ' . $endDate->format('j, Y');
+        }
+
+        return $startDate->format('M j') . ' - ' . $endDate->format('M j, Y');
     }
 
     private function computeEarningsBreakdown(Salary $salary, $attendances, float $sundayPremiumRate): array

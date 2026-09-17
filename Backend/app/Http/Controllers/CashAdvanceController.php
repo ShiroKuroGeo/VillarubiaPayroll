@@ -38,4 +38,8 @@ class CashAdvanceController extends Controller
     {
         return $this->cashAdvanceServices->getCashAdvance($request);
     }
+
+    public function nextDeduction(Request $request){
+        return $this->cashAdvanceServices->nextDeduction($request);
+    }
 }

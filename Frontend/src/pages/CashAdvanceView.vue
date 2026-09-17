@@ -24,11 +24,31 @@
                             </div>
                             <div class="form-group full">
                                 <label> Amount </label>
-                                <input v-model="form.amount" type="number" min="1" max="3000" step="1" required placeholder="e.g. 3000" />
-                                <div v-if="form.amount > 3000" class="field-hint field-hint--error">
-                                    Amount exceeds the limit of cash advance {{ cashAdvanceLimit }}.
+                                <input v-model="form.amount" type="number" min="1" :max="cashAdvanceLimit" step="1" required placeholder="e.g. 3000" />
+                                <div v-if="form.amount > cashAdvanceLimit" class="field-hint field-hint--error">
+                                    Amount exceeds the limit of cash advance {{ formatCurrency(cashAdvanceLimit) }}.
                                 </div>
                             </div>
+
+                            <div class="form-group full">
+                                <label>
+                                    <span>Deduct over</span>
+                                </label>
+                                <div class="installment-row">
+                                    <input type="range" min="1" max="30" step="1" v-model.number="form.installment_count" />
+                                    <span class="installment-count-out">
+                                        {{ form.installment_count }} payroll{{ form.installment_count > 1 ? 's' : '' }}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div class="form-group full">
+                                <div class="preview-box">
+                                    <span>Per payroll deduction</span>
+                                    <strong>{{ formatCurrency(installmentAmount) }}</strong>
+                                </div>
+                            </div>
+
                             <div class="form-group full">
                                 <label>Reason</label>
                                 <textarea v-model="form.reason" rows="4" required placeholder="Briefly describe what this advance is for..."></textarea>
@@ -38,7 +58,7 @@
                             <button type="button" class="btn btn-secondary-ledger" @click="resetForm">
                                 Clear
                             </button>
-                            <button type="submit" class="btn btn-primary-ledger" :disabled="form.amount === 0 || form.amount > 3000 || form.employee_id === 0">
+                            <button type="submit" class="btn btn-primary-ledger" :disabled="form.amount === 0 || form.amount > cashAdvanceLimit || form.employee_id === 0">
                                 Submit Request
                             </button>
                         </div>
@@ -61,7 +81,11 @@
                     <div class="details-list">
                         <div class="detail-row">
                             <span>Amount</span>
-                            <strong>₱ {{ form.amount || 0 }}</strong>
+                            <strong>{{ formatCurrency(form.amount || 0) }}</strong>
+                        </div>
+                        <div class="detail-row">
+                            <span>Per payroll</span>
+                            <strong>{{ formatCurrency(lastSubmitted?.installment_amount || 0) }} &times; {{ lastSubmitted?.installment_count || 0 }}</strong>
                         </div>
                         <div class="detail-row">
                             <span>Submitted</span>
@@ -97,7 +121,8 @@ import { useCashAdvanceStore } from '@/stores/useCashAdvance';
 import { useEmployeeStore } from '@/stores/useEmployee';
 import {
     onMounted,
-    ref
+    ref,
+    computed
 } from 'vue'
 
 const employees = ref([]);
@@ -108,16 +133,31 @@ const today = new Date();
 const form = ref({
     employee_id: 0,
     amount: 0,
+    installment_amount: 0,
+    installment_count: 1,
     requested_date: today.toISOString(),
     reason: '',
 });
 
-const cashAdvanceLimit = ref(3000);
+const cashAdvanceLimit = ref(10000);
+
+const installmentAmount = computed(() => {
+    const amt = Number(form.value.amount) || 0
+    const count = Number(form.value.installment_count) || 1
+
+    if (amt <= 0 || count <= 0) {
+        return 0
+    }
+
+    return Math.ceil((amt / count) * 100) / 100
+})
 
 function resetForm() {
     Object.assign(form.value, {
         employee_id: 0,
         amount: null,
+        installment_amount: 0,
+        installment_count: 1,
         requested_date: today.toISOString(),
         reason: '',
     })
@@ -125,17 +165,26 @@ function resetForm() {
 
 const submitted = ref(false)
 const lastSubmitted = ref(null)
+
 const submitRequest = async () => {
 
     if (!form.value.amount) {
         return
     }
 
-    const createCashAdvance = await cashAdvanceStore.createCashAdvance({ ...form.value });
+    form.value.installment_amount = installmentAmount.value
 
-    if(createCashAdvance === 409){
+    const payload = { ...form.value }
+
+    const createCashAdvance = await cashAdvanceStore.createCashAdvance(payload)
+
+    if (createCashAdvance === 409) {
         submitted.value = false
     } else {
+        lastSubmitted.value = {
+            ...payload,
+            requestTime: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
+        }
         submitted.value = true
     }
 }
@@ -143,7 +192,7 @@ const submitRequest = async () => {
 const viewEmployee = (emp) => {
     const result = employees?.value.find(ar => ar.id === emp.employee_id);
 
-    return result.name
+    return result ? result.name : '—'
 }
 
 function startNewRequest() {
@@ -190,7 +239,6 @@ onMounted(() => {
 });
 </script>
 
-
 <style scoped>
 .main {
     display: flex;
@@ -200,11 +248,12 @@ onMounted(() => {
 
 .content {
     padding: 1.75rem;
+    width: 540px;
 }
 
 .form-wrap {
     width: 100%;
-    max-width: 640px;
+    max-width: 840px;
 }
 
 .panel {
@@ -299,6 +348,44 @@ onMounted(() => {
 
 .field-hint--error {
     color: var(--red, #C24D3B);
+}
+
+.installment-row {
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+}
+
+.installment-row input[type="range"] {
+    flex: 1;
+}
+
+.installment-count-out {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: .78rem;
+    font-weight: 600;
+    color: var(--ink, #1C2B4A);
+    min-width: 82px;
+    text-align: right;
+}
+
+.preview-box {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    background: var(--paper, #F2F1EA);
+    border-radius: 7px;
+    padding: .75rem .9rem;
+}
+
+.preview-box span {
+    font-size: .78rem;
+    color: var(--slate, #6B7280);
+}
+
+.preview-box strong {
+    font-size: 1.05rem;
+    color: var(--ink, #1C2B4A);
 }
 
 .form-footer {

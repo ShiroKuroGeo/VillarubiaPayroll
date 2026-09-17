@@ -68,7 +68,7 @@
                         </div>
 
                         <div class="stat-delta stat-delta--gold">
-                            {{ formatCurrency(pendingAmount) }} awaiting review
+                            {{ formatCurrency(pendingBalanace) }} awaiting review
                         </div>
 
                     </div>
@@ -94,64 +94,45 @@
                         </div>
 
                         <div class="stat-delta stat-delta--blue">
-                            {{ formatCurrency(approvedAmount) }} ready for payment
+                            {{ formatCurrency(approveBalance) }} ready for payment
                         </div>
 
                     </div>
 
                 </div>
-
-
-                <!-- Paid -->
                 <div class="col-6 col-lg-3">
-
                     <div class="punch-card">
-
                         <div class="stamp green">
                             PAID
                         </div>
-
                         <div class="stat-label">
                             Paid Requests
                         </div>
-
                         <div class="stat-value">
                             {{ paidCount }}
                         </div>
-
                         <div class="stat-delta text-success">
                             {{ formatCurrency(paidAmount) }} this month
                         </div>
-
                     </div>
-
                 </div>
-
-
-                <!-- Total -->
                 <div class="col-6 col-lg-3">
-
                     <div class="punch-card">
-
                         <div class="stamp red">
                             SUM
                         </div>
-
                         <div class="stat-label">
                             Total Cash Advanced
                         </div>
-
                         <div class="stat-value stat-value-money">
                             {{ formatCurrency(totalAdvanced) }}
                         </div>
-
                         <div class="stat-delta stat-delta--red">
                             {{ cashAdvanceData.length }} requests on file
                         </div>
                     </div>
                 </div>
             </div>
-
             <div class="panel">
                 <div class="section-header">
                     <div>
@@ -162,8 +143,12 @@
                             Review employee requests and process payments
                         </div>
                     </div>
+                    <div class="">
+                        <button class="btn-mini btn-mini-approve" @click="router.push({ name: 'cashAdvance' })">
+                            New CA
+                        </button>
+                    </div>
                 </div>
-
                 <div class="toolbar">
                     <div class="search-box">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -172,13 +157,11 @@
                         </svg>
                         <input v-model="searchQuery" type="text" placeholder="Search employee..." />
                     </div>
-
                     <div class="filter-row">
                         <button v-for="filter in statusFilters" :key="filter.value" class="filter-pill" :class="{ active: activeFilter === filter.value }" @click="activeFilter = filter.value">
                             {{ filter.label }}
                         </button>
                     </div>
-
                 </div>
                 <div class="table-responsive">
                     <table v-if="filteredRequests.length" class="table-ledger">
@@ -186,9 +169,8 @@
                             <tr>
                                 <th>Employee</th>
                                 <th>Department</th>
-                                <th>Amount</th>
+                                <th>Amount Installment.</th>
                                 <th>Request Date</th>
-                                <th>Reason</th>
                                 <th>Status</th>
                                 <th>Action</th>
                             </tr>
@@ -220,8 +202,11 @@
                                 </td>
                                 <td>
                                     <span class="money">
-                                        {{ formatCurrency(request.amount) }}
+                                        {{ formatCurrency(request.installment_amount) }}
                                     </span>
+                                    <div class="date-sub">
+                                        Total Balance: {{ formatCurrency(request.installment_amount * request.installment_count) }}
+                                    </div>
                                 </td>
                                 <td>
                                     <div class="date-text">
@@ -229,11 +214,6 @@
                                     </div>
                                     <div class="date-sub">
                                         {{ formatDateTime(request.created_at) }}
-                                    </div>
-                                </td>
-                                <td>
-                                    <div class="reason-text" :title="request.reason">
-                                        {{ request.reason }}
                                     </div>
                                 </td>
                                 <td>
@@ -246,9 +226,6 @@
                                         <button v-if="request.status === 'Pending'" class="btn-mini btn-mini-review" @click="openReviewModal(request)">
                                             Review
                                         </button>
-                                        <!-- <button v-if="request.status === 'Approved'" class="btn-mini btn-mini-pay" @click="openPaymentModal(request)">
-                                            Mark as Paid
-                                        </button> -->
                                         <button v-if="request.status === 'Deducted/Paid' || request.status === 'Rejected' || request.status === 'Approved'" class="btn-mini btn-mini-view" @click="openViewModal(request)">
                                             View
                                         </button>
@@ -306,10 +283,10 @@
                     <div class="request-grid">
                         <div class="request-info">
                             <div class="info-label">
-                                Requested Amount
+                                Requested Amount/Balance
                             </div>
                             <div class="info-value money">
-                                {{ formatCurrency(selectedRequest?.amount || 0) }}
+                                {{ formatCurrency(selectedRequest?.balance || 0) }}
                             </div>
                         </div>
                         <div class="request-info">
@@ -384,10 +361,10 @@
                             {{ selectedRequest.employee.last_name }}, {{ selectedRequest.employee.first_name }}
                         </div>
                         <div class="info-label mt-3">
-                            Approved Amount
+                            Approved Amount/Balance
                         </div>
                         <div class="payment-amount">
-                            {{ formatCurrency(selectedRequest?.amount || 0) }}
+                            {{ formatCurrency(selectedRequest?.balance || 0) }}
                         </div>
                         <div class="form-group full mt-3">
                             <label>
@@ -441,8 +418,14 @@
                     </div>
                     <div class="details-list">
                         <div class="detail-row">
-                            <span>Amount</span>
-                            <strong>{{ formatCurrency(selectedRequest?.amount || 0) }}</strong>
+                            <span>Balance</span>
+                            <strong>{{ formatCurrency(selectedRequest?.balance || 0) }}</strong>
+                        </div>
+                        <div class="detail-row">
+                            <span>Next Deduction</span>
+                            <div class="">
+                                <input type="number" class="form-control" v-model="selectedRequest.amount">
+                            </div>
                         </div>
                         <div class="detail-row">
                             <span>Request Date</span>
@@ -476,15 +459,17 @@
                     <button type="button" class="btn btn-secondary-ledger" @click="closeModals">
                         Close
                     </button>
+                    <button type="button" class="btn btn-mini-view" @click="setDeduction">
+                        Set Deduction
+                    </button>
                 </div>
             </div>
         </div>
     </div>
 </template>
 
-
 <script setup>
-
+import router from '@/router';
 import { useCashAdvanceStore } from '@/stores/useCashAdvance'
 import { storageImage } from '@/utils/image';
 import {
@@ -503,11 +488,8 @@ defineEmits([
 ])
 
 const cashAdvanceStore = useCashAdvanceStore();
-
 const liveClock = ref('--:--:--')
-
 let clockTimer = null
-
 function tickClock() {
 
     liveClock.value =
@@ -521,11 +503,8 @@ function tickClock() {
 }
 
 const cashAdvanceData = ref([]);
-
 const searchQuery = ref('')
-
 const activeFilter = ref('all')
-
 const statusFilters = [
     { label: 'All', value: 'all' },
     { label: 'Pending', value: 'Pending' },
@@ -579,12 +558,12 @@ const approvedCount = computed(() => approvedRequests.value.length)
 
 const paidCount = computed(() => paidRequests.value.length)
 
-const pendingAmount = computed(() =>
-    pendingRequests.value.reduce((total, request) => total + Number(request.amount || 0), 0)
+const pendingBalanace = computed(() =>
+    pendingRequests.value.reduce((total, request) => total + Number(request.balance || 0), 0)
 )
 
-const approvedAmount = computed(() =>
-    approvedRequests.value.reduce((total, request) => total + Number(request.amount || 0), 0)
+const approveBalance = computed(() =>
+    approvedRequests.value.reduce((total, request) => total + Number(request.balance || 0), 0)
 )
 
 const paidAmount = computed(() =>
@@ -612,13 +591,9 @@ const paymentReference = ref('')
 const paymentNotes = ref('')
 
 function openReviewModal(request) {
-
     selectedRequest.value = request
-
     adminNotes.value = request.adminNotes || ''
-
     showReviewModal.value = true
-
 }
 
 const approveRequest = async (selectedRequest) => {
@@ -703,6 +678,13 @@ function closeModals() {
 
     selectedRequest.value = null
 
+}
+
+const setDeduction = async () => {
+    await cashAdvanceStore.nextDeduction({
+        cash_advance_id: selectedRequest.value.id,
+        amount_deducted: selectedRequest.value.amount,
+    });
 }
 
 function formatStatus(status) {
@@ -1315,6 +1297,19 @@ onBeforeUnmount(() => {
 
 .btn-mini-review:hover {
     background: #EFE1BD;
+}
+
+.btn-mini-approve {
+    background: #5087fd;
+    color: white;
+    width: 90px;
+    border-color: #E7D9B5;
+}
+
+.btn-mini-approve:hover {
+    background: #bdd2ff;
+    color: rgb(56, 56, 56);
+    border-color: #a5a5a5;
 }
 
 .btn-mini-pay {

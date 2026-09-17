@@ -9,18 +9,16 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('cash_advances', function (Blueprint $table) {
-            $table->decimal('balances', 10, 2);
-            $table->decimal('installment_amount', 10, 2)
-                ->nullable()
-                ->after('amount');
+            $table->decimal('installment_amount', 10, 2)->nullable()->after('amount');
+            $table->decimal('installment_count', 10, 2)->nullable()->after('installment_amount');
         });
     }
 
     public function down(): void
     {
         Schema::table('cash_advances', function (Blueprint $table) {
-            $table->dropColumn('balances');
-            $table->dropColumn('installment_amount');
+            $table->dropColumn(['installment_amount', 'installment_count']);
         });
     }
+
 };

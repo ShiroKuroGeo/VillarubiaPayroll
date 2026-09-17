@@ -88,7 +88,28 @@ export const useCashAdvanceStore = defineStore('cashAdvanceStore', () => {
         }
     }
 
-    return { createCashAdvance, getCashAdvances, reviewCashAdvance, attachToPayroll }
+    const nextDeduction = async (data) => {
+        try {
+            const next_deduction = await api.post('cash_advance/next_deduction', data);
+
+            await showStatusAlert(next_deduction.status, next_deduction.data.message);
+            return next_deduction.data.data;
+        } catch (err) {
+            const status = err.response?.status || 500;
+
+            const message =
+                err.response?.data?.message ||
+                err.response?.data?.error ||
+                err.message ||
+                'An unexpected error occurred.';
+
+            showStatusAlert(status, message);
+
+            return message;
+        }
+    }
+
+    return { createCashAdvance, getCashAdvances, reviewCashAdvance, attachToPayroll, nextDeduction }
 
 
 });

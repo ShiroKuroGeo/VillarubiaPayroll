@@ -51,6 +51,7 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::post('create', 'requestCashAdvance');
             Route::post('review', 'reviewCashAdvance');
             Route::post('list', 'getCashAdvances');
+            Route::post('next_deduction', 'nextDeduction');
         });
 
     Route::controller(DeductionController::class)

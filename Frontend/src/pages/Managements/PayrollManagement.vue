@@ -171,7 +171,70 @@
                         </button>
                     </div>
                 </div>
+
                 <div class="row g-3 mb-3">
+                    <div class="col-4 col-md-4">
+                        <div class="punch-card">
+                            <div class="stamp green">STAFF</div>
+                            <div class="stat-label">Total Employees</div>
+                            <div class="stat-period">This pay period</div>
+                            <div class="stat-value">{{ activeEmployeeCount }}</div>
+                            <div class="stat-delta stat-delta--slate">Included in this payroll run</div>
+                        </div>
+                    </div>
+
+                    <div class="col-4 col-md-4">
+                        <div class="punch-card">
+                            <div class="stamp blue">BASIC</div>
+                            <div class="stat-label">Total Basic Salary</div>
+                            <div class="stat-period">This pay period</div>
+                            <div class="stat-value stat-value-money">{{ formatCurrency(totalBasicSalary) }}</div>
+                            <div class="stat-delta stat-delta--blue">Across all active employees</div>
+                        </div>
+                    </div>
+
+                    <div class="col-4 col-md-4">
+                        <div class="punch-card">
+                            <div class="stamp gold">NET</div>
+                            <div class="stat-label">Total Payroll</div>
+                            <div class="stat-period">This pay period</div>
+                            <div class="stat-value stat-value-money">{{ formatCurrency(totalNetPayroll) }}</div>
+                            <div class="stat-delta stat-delta--gold">Across all active employees</div>
+                        </div>
+                    </div>
+
+                    <div class="col-4 col-md-4">
+                        <div class="punch-card">
+                            <div class="stamp red">DEDUCT</div>
+                            <div class="stat-label">Total Deductions</div>
+                            <div class="stat-period">This pay period</div>
+                            <div class="stat-value stat-value-money">{{ formatCurrency(totalDeductions) }}</div>
+                            <div class="stat-delta" style="color:#C0392B;">Withheld from gross pay</div>
+                        </div>
+                    </div>
+
+                    <div class="col-4 col-md-4">
+                        <div class="punch-card">
+                            <div class="stamp green">PAID</div>
+                            <div class="stat-label">Total Paid</div>
+                            <div class="stat-period">This pay period</div>
+                            <div class="stat-value stat-value-money">{{ formatCurrency(totalPaidAmount) }}</div>
+                            <div class="stat-delta text-success">{{ paidCount }} employees paid</div>
+                        </div>
+                    </div>
+
+                    <div class="col-4 col-md-4">
+                        <div class="punch-card">
+                            <div class="stamp blue">DUE</div>
+                            <div class="stat-label">Total Pending</div>
+                            <div class="stat-period">This pay period</div>
+                            <div class="stat-value stat-value-money">{{ formatCurrency(totalPendingAmount) }}</div>
+                            <div class="stat-delta stat-delta--blue">{{ pendingCount }} employees pending</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- <div class="row g-3 mb-3">
                     <div class="col-6 col-lg-3">
                         <div class="punch-card">
                             <div class="stamp green">
@@ -272,7 +335,7 @@
 
                     </div>
 
-                </div>
+                </div> -->
 
                 <div class="panel">
 
@@ -371,13 +434,13 @@
                                         {{ employee.totalAttendance }}{{ employee.totalAttendance >= 1 ? ' days' : 'day' }}
                                     </td>
                                     <td class="money net-pay">
-                                        {{ formatCurrency(employee.totalAttendance * employee.basicSalary) }}
+                                        {{ formatCurrency(employee.grossPay) }}
                                     </td>
                                     <td class="money net-pay" style="color: #FF7F7F;">
-                                        {{ formatCurrency(employee.deductions) }}
+                                        {{ formatCurrency(employee.totalDeductions) }}
                                     </td>
                                     <td class="money net-pay">
-                                        {{ formatCurrency((employee.totalAttendance * employee.basicSalary) - employee.deductions) }}
+                                        {{ formatCurrency(employee.netPay) }}
                                     </td>
                                     <td>
                                         <span class="badge-status" :class="employee.paid ? 'badge-active' : 'badge-pending'">
@@ -405,7 +468,6 @@
                         </div>
                     </div>
                 </div>
-
             </template>
         </div>
 
@@ -525,20 +587,36 @@ const showGenerateOnly = computed(() => isSaturday.value && !payrollGenerated.va
 async function checkPayrollGenerated(data) {
     try {
         const response = await payrollStore.payrollList({ ...data });
-        if (response.data.data.length === 0) {
+        if (response.data.length === 0) {
             payrollGenerated.value = false
             return
         }
 
         const result = await response.data
 
-        payrollData.value = response.data.data;
+        payrollData.value = response.data
+
+        console.log(response.data)
 
         payrollGenerated.value = Boolean(result?.data?.length)
     } catch (err) {
         console.error('Failed to check existing payroll', err)
     }
 }
+
+const totalDeductions = computed(() => {
+    return activeEmployees.value.reduce(
+        (total, employee) => total + Number(employee.totalDeductions || 0),
+        0
+    )
+})
+
+const totalBasicSalary = computed(() => {
+    return activeEmployees.value.reduce(
+        (total, employee) => total + Number(employee.basicSalary || 0),
+        0
+    )
+})
 
 async function handleGeneratePayroll() {
     generating.value = true
@@ -728,6 +806,8 @@ function openPayModal(employee) {
         reference: ''
     }
 
+    console.log(employee)
+
     showModal.value = true
 
 }
@@ -799,9 +879,7 @@ const markAllPaid = async () => {
 function calculateNet(employee) {
 
     return (
-        (Number(employee.basicSalary || 0) *
-            Number(employee.totalAttendance || 0)) -
-        Number(employee.deductions || 0)
+        Number(employee.netPay || 0)
     )
 
 }

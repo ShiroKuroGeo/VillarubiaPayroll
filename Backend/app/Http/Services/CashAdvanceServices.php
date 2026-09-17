@@ -3,21 +3,20 @@
 namespace App\Http\Services;
 
 use App\Models\CashAdvance;
+use App\Models\CashAdvanceDeduction;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
 class CashAdvanceServices
 {
-    /**
-     * Employee (or whoever submits on their behalf) requests a cash advance.
-     * Always starts as Pending — only an admin can move it forward.
-     */
     public function requestCashAdvance(Request $request)
     {
         try {
             $validation = $request->validate([
                 'employee_id' => ['required', 'integer', 'exists:employees,id'],
                 'amount' => ['required', 'numeric', 'min:1'],
+                'installment_amount' => ['required', 'numeric', 'min:1'],
+                'installment_count' => ['required', 'numeric', 'min:1'],
                 'requested_date' => ['required', 'date'],
                 'reason' => ['nullable', 'string'],
             ]);
@@ -29,6 +28,8 @@ class CashAdvanceServices
             $createCashAdvance = CashAdvance::create([
                 'employee_id' => $validation['employee_id'],
                 'amount' => $validation['amount'],
+                'installment_amount' => $validation['installment_amount'],
+                'installment_count' => $validation['installment_count'],
                 'requested_date' => $validation['requested_date'],
                 'reason' => $validation['reason'] ?? null,
                 'status' => 'Pending',
@@ -44,11 +45,6 @@ class CashAdvanceServices
         }
     }
 
-    /**
-     * Admin action: approve or reject a pending request.
-     * Kept separate from a generic "update" so this can be locked down to
-     * admin-only routes without also exposing amount/date edits.
-     */
     public function reviewCashAdvance(Request $request)
     {
         try {
@@ -156,6 +152,46 @@ class CashAdvanceServices
             }
 
             return response_return('Successfully retrieved cash advance.', $cashAdvance->toArray(), 200);
+        } catch (\Throwable $th) {
+            return response_return('Error occurred in retrieving cash advance.', [], 500);
+        }
+    }
+
+    public function nextDeduction(Request $request)
+    {
+        try {
+            $validation = $request->validate([
+                'cash_advance_id' => ['required', 'integer', 'exists:cash_advances,id'],
+                'amount_deducted' => ['nullable', 'integer'],
+            ]);
+        } catch (\Throwable $th) {
+            return response_return('Error occurred in validating the request.', [], 422);
+        }
+
+        try {
+
+            $balance = CashAdvance::where('id', $validation['cash_advance_id'])->first();
+
+            if (!$balance) {
+                return response_return('Cash advance record was not found.', [], 409);
+            }
+
+            $message = '';
+
+            if ($validation['amount_deducted'] > $balance->balance) {
+                $validation['amount_deducted'] = $balance->balance;
+                $message = 'Amount to be deduction is higher than the balance. Automatically change to how much balance.';
+            }
+
+            $updateCashAdvance = $balance->update([
+                'installment_amount' => $validation['amount_deducted'],
+                'balance' => $balance->balance - $validation['amount_deducted'],
+            ]);
+
+            if (!$updateCashAdvance) {
+                return response_return('Updated cash advances for deductions is not recorded. Please try again.', [], 409);
+            }
+            return response_return($message ?? 'Updated cash advances for deductions is successfully updated.', [], 200);
         } catch (\Throwable $th) {
             return response_return('Error occurred in retrieving cash advance.', [], 500);
         }
