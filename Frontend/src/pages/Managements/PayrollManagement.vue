@@ -40,20 +40,14 @@
 
         </div>
         <div class="content">
-            <div v-if="showGenerateOnly" class="generate-gate">
-
+            <div v-if="!showGenerateOnly" class="generate-gate">
                 <div class="generate-card">
-
                     <div class="generate-main">
-
                         <div class="stamp gold">PAYROLL</div>
-
                         <div class="generate-title">It's payroll day</div>
-
                         <div class="generate-sub">
                             Generate this week's payroll to view and release employee payouts.
                         </div>
-
                         <div class="warning-header">
                             <div class="warning-icon">⚠</div>
                             <div>
@@ -61,17 +55,16 @@
                                 <p>Payroll can only be generated on Saturday.</p>
                             </div>
                         </div>
-
                         <div v-if="generateError" class="generate-error">
                             {{ generateError }}
                         </div>
-
-                        <button class="generate-btn" :disabled="generating" @click="handleGeneratePayroll">
+                        <button class="generate-btn" :disabled="generating" @click="loaderRef?.startLoading(
+                            () => generateModal = true,
+                            () => console.log('Loading cancelled by user')
+                        )">
                             {{ generating ? 'Generating…' : 'Generate Payroll' }}
                         </button>
-
                     </div>
-
                     <div class="generate-checklist">
 
                         <div class="checklist-heading">Before you continue, review the checklist</div>
@@ -150,12 +143,9 @@
                         </div>
 
                     </div>
-
                 </div>
-
             </div>
             <template v-else>
-
                 <div class="period-bar">
                     <div class="period-info">
                         <div class="period-label">
@@ -167,11 +157,14 @@
                             {{ paidCount }} of {{ activeEmployeeCount }} paid
                         </span>
                         <button class="add-btn" @click="markAllPaid">
-                            Mark all as paid
+                            Mark all as Paid
+                        </button>
+                    
+                        <button class="add-btn" @click="markAllPaid">
+                            Undo Generate
                         </button>
                     </div>
                 </div>
-
                 <div class="row g-3 mb-3">
                     <div class="col-4 col-md-4">
                         <div class="punch-card">
@@ -233,110 +226,6 @@
                         </div>
                     </div>
                 </div>
-
-                <!-- <div class="row g-3 mb-3">
-                    <div class="col-6 col-lg-3">
-                        <div class="punch-card">
-                            <div class="stamp green">
-                                STAFF
-                            </div>
-                            <div class="stat-label">
-                                Active Employees
-                            </div>
-                            <div class="stat-period">
-                                This pay period
-                            </div>
-                            <div class="stat-value">
-                                {{ activeEmployeeCount }}
-                            </div>
-                            <div class="stat-delta stat-delta--slate">
-                                Included in this payroll run
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-6 col-lg-3">
-                        <div class="punch-card">
-                            <div class="stamp gold">
-                                NET
-                            </div>
-                            <div class="stat-label">
-                                Total Payroll
-                            </div>
-
-                            <div class="stat-period">
-                                This pay period
-                            </div>
-
-                            <div class="stat-value stat-value-money">
-                                {{ formatCurrency(totalNetPayroll) }}
-                            </div>
-
-                            <div class="stat-delta stat-delta--gold">
-                                Across all active employees
-                            </div>
-
-                        </div>
-
-                    </div>
-
-                    <div class="col-6 col-lg-3">
-
-                        <div class="punch-card">
-
-                            <div class="stamp green">
-                                PAID
-                            </div>
-
-                            <div class="stat-label">
-                                Paid Out
-                            </div>
-
-                            <div class="stat-period">
-                                This pay period
-                            </div>
-
-                            <div class="stat-value stat-value-money">
-                                {{ formatCurrency(totalPaidAmount) }}
-                            </div>
-
-                            <div class="stat-delta text-success">
-                                {{ paidCount }} employees paid
-                            </div>
-
-                        </div>
-
-                    </div>
-
-                    <div class="col-6 col-lg-3">
-
-                        <div class="punch-card">
-
-                            <div class="stamp blue">
-                                DUE
-                            </div>
-
-                            <div class="stat-label">
-                                Still Pending
-                            </div>
-
-                            <div class="stat-period">
-                                This pay period
-                            </div>
-
-                            <div class="stat-value stat-value-money">
-                                {{ formatCurrency(totalPendingAmount) }}
-                            </div>
-
-                            <div class="stat-delta stat-delta--blue">
-                                {{ pendingCount }} employees pending
-                            </div>
-
-                        </div>
-
-                    </div>
-
-                </div> -->
-
                 <div class="panel">
 
                     <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
@@ -470,8 +359,8 @@
                 </div>
             </template>
         </div>
-
-        <div v-if="showModal" class="modal-backdrop" @click.self="closeModal">
+        <GenerateLoading ref="loaderRef" />
+        <div v-if="showModal" class="modal-backdrop">
             <div class="salary-modal">
                 <div class="modal-header">
                     <div>
@@ -547,6 +436,7 @@
 </template>
 
 <script setup>
+import GenerateLoading from '@/components/GenerateLoading.vue'
 import { usePayrollStore } from '@/stores/usePayroll'
 import { storageImage } from '@/utils/image'
 import { showConfirm } from '@/utils/Swals'
@@ -582,6 +472,8 @@ const isSaturday = computed(() => now.value.getDay() === 5)
 const payrollGenerated = ref(false)
 const generating = ref(false)
 const generateError = ref('')
+const generateModal = ref(false);
+const loaderRef = ref(null);
 const showGenerateOnly = computed(() => isSaturday.value && !payrollGenerated.value)
 
 async function checkPayrollGenerated(data) {
@@ -812,6 +704,11 @@ function openPayModal(employee) {
 
 }
 
+
+function closeModalGenerate() {
+    generateModal.value = false;
+
+}
 
 function closeModal() {
 

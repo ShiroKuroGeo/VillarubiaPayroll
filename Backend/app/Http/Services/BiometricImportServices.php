@@ -10,33 +10,10 @@ use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
-/**
- * Imports the biometric device's "Employee Attendance Table" export
- * (multiple sheets, several employee blocks per sheet) into the
- * `attendances` table.
- *
- * ASSUMPTIONS (verify against a real export and adjust as needed):
- *  - Sheets are skipped by POSITION, not name: index 0 ("!") and index 1
- *    ("!!") are legend/summary sheets and are ignored. Parsing starts at
- *    sheet index 2 (the sheet labelled "1,2,3" in the tab bar, i.e. the
- *    3rd sheet — matches "attendance starts at sheet 3").
- *  - Each data sheet contains up to 3 employee blocks laid out
- *    side-by-side, each anchored by a "User ID" label somewhere in the
- *    first few header rows.
- *  - Within a block, the Time Card section has 7 columns in this order:
- *      [Date] [Before Noon In] [Before Noon Out] [After Noon In]
- *      [After Noon Out] [Overtime In] [Overtime Out]
- *  - Date cells look like "07Mo", "12Sa" (day-of-month + weekday abbrev).
- *    The month/year is taken from the block's own "Date" header
- *    (e.g. "2026-09-01~2026-09-12"), not from the current date, so
- *    imports work even if run after the cutoff period.
- */
 class BiometricAttendanceImportService
 {
-    /** 0-based index of the first sheet that contains attendance data. */
     protected int $firstDataSheetIndex = 2;
 
-    /** Number of columns per employee block under the Time Card header. */
     protected int $blockWidth = 7;
 
     public function import(string $filePath): array
@@ -275,14 +252,6 @@ class BiometricAttendanceImportService
         return null;
     }
 
-    /**
-     * Reads the block's "Date" header, e.g. "2026-09-01~2026-09-12", and
-     * returns [year, month] of the cutoff START so day-only cells like
-     * "07Mo" can be resolved to a full date even if they roll into the
-     * next month.
-     *
-     * @return array{0:int,1:int}
-     */
     protected function extractCutoffYearMonth(Worksheet $sheet, int $startCol, int $endCol): array
     {
         $raw = $this->extractLabelValue($sheet, $startCol, $endCol, 1, 6, 'Date');

@@ -9,16 +9,6 @@ use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
 
-/**
- * Builds a single .xlsx file containing one payslip per employee,
- * stacked vertically and separated by a dashed line, each with a
- * signature line at the bottom.
- *
- * Usage:
- *   $export = new PayslipExport($payrollData, 'September 2026');
- *   return $export->download('payslips.xlsx');
- *   // or: $export->save(storage_path('app/payslips.xlsx'));
- */
 class PayslipExport
 {
     protected array $data;

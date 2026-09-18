@@ -22,15 +22,14 @@ class PayrollServices
     {
         $today = Carbon::now();
 
-        // if (!$today->isSaturday()) {
-        //     throw new \Exception(
-        //         'Payroll can only be generated on Saturday.',
-        //         422
-        //     );
-        // }
+        if (!$today->isSaturday()) {
+            throw new \Exception(
+                'Payroll can only be generated on Saturday.',
+                422
+            );
+        }
 
-        // $cutoffEnd = $today->copy()->startOfDay();
-        $cutoffEnd = Carbon::parse('2026-09-12')->startOfDay();
+        $cutoffEnd = $today->copy()->startOfDay();
 
         $cutoffStart = $cutoffEnd
             ->copy()
@@ -511,13 +510,9 @@ class PayrollServices
         }
 
         try {
-            // $cutoffStart = Carbon::now()->startOfWeek(Carbon::SUNDAY)->toDateString();
-            // $cutoffEnd = Carbon::now()->endOfWeek(Carbon::SATURDAY)->toDateString();
+            $cutoffStart = Carbon::now()->startOfWeek(Carbon::SUNDAY)->toDateString();
+            $cutoffEnd = Carbon::now()->endOfWeek(Carbon::SATURDAY)->toDateString();
 
-            $cutoffStart = Carbon::parse('2026-09-12')->startOfWeek(Carbon::SUNDAY)->toDateString();
-            $cutoffEnd = Carbon::parse('2026-09-12')->endOfWeek(Carbon::SATURDAY)->toDateString();
-
-            // $query = Payroll::with(['employee', 'employee.activeSalary', 'deductions'])->where('cutoff_start', $cutoffStart)->where('cutoff_end', $cutoffEnd);
             $payrolls = Payroll::with([
                 'employee',
                 'employee.activeSalary',
@@ -874,5 +869,22 @@ class PayrollServices
         }
 
         return null;
+    }
+
+    public function deletePayrolGenerated()
+    {
+        try {
+            $today = Carbon::now();
+
+            $cutoffEnd = $today->copy()->startOfDay();
+
+            $cutoffStart = $cutoffEnd->copy()->subDays(6)->startOfDay();
+
+            $checkAttendance = Payroll::whereBetween('date', [$cutoffStart, $cutoffEnd])->get();
+
+            return response_return('Deleting payroll is done.', $checkAttendance->toArray(), 500);
+        } catch (\Throwable $th) {
+            return response_return($th->getMessage(), [], 500);
+        }
     }
 }

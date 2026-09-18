@@ -92,6 +92,7 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::post('update', 'updateStatus');
             Route::post('list', 'getPayrolls');
             Route::post('review_payroll', 'getPayroll');
+            Route::post('delete_payroll', 'deletePayrolGenerated');
         });
 
     Route::controller(SalaryController::class)

@@ -29,4 +29,8 @@ class PayrollController extends Controller
         return $this->payrollServices->getPayroll($request);
     }
 
+    public function deletePayrolGenerated(){
+        return $this->payrollServices->deletePayrolGenerated();
+    }
+
 }
