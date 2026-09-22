@@ -197,7 +197,10 @@ class EmployeeServices
         }
 
         try {
-            $query = Employee::with('job');
+            // $query = Employee::withTrashed()->with('job');
+            $query = Employee::withTrashed()
+                ->with('job')
+                ->orderByRaw('deleted_at IS NOT NULL');
 
             if (!empty($validation['status'])) {
                 $query->where('status', $validation['status']);

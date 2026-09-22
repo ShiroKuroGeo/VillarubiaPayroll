@@ -159,7 +159,6 @@
                         <button class="add-btn" @click="markAllPaid">
                             Mark all as Paid
                         </button>
-                    
                         <button class="add-btn" @click="markAllPaid">
                             Undo Generate
                         </button>

@@ -10,11 +10,15 @@ use Illuminate\Database\Eloquent\Model;
     'date',
     'time_in',
     'time_out',
+    'before_noon_in',
+    'before_noon_out',
+    'after_noon_in',
+    'after_noon_out',
+    'overtime_in',
+    'overtime_out',
     'hours_worked',
     'overtime_hours',
     'status',
-    'late_hours',
-    'undertime_hours',
     'remarks',
 ])]
 class Attendance extends Model

@@ -151,7 +151,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <tr v-for="employee in filteredEmployees" :key="employee.id">
+                            <tr v-for="employee in filteredEmployees" :key="employee.id" :class="!!employee.deleted_at ? 'deleted_at' : ''">
                                 <td>
                                     <div class="employee-cell">
                                         <div class="avatar-sm">
@@ -189,11 +189,19 @@
                                 </td>
                                 <td>
                                     <span class="badge-status" :class="statusClass(employee.status)">
-                                        {{ employee.status.toUpperCase() }}
+                                        {{ !!employee.deleted_at ? 'DELETED' : employee.status.toUpperCase() }}
                                     </span>
                                 </td>
                                 <td>
-                                    <div class="action-group">
+                                    <div class="" v-if="!!employee.deleted_at">
+                                        <button class="icon-btn edit-btn" title="Edit employee" @click="restoreEmployee(employee)">
+                                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                <polyline points="1 4 1 10 7 10"></polyline>
+                                                <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                    <div class="action-group" v-else>
                                         <button class="icon-btn edit-btn" title="Edit employee" @click="openEditModal(employee)">
                                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                                 <path d="M12 20h9" />
@@ -228,7 +236,7 @@
             </div>
         </div>
 
-        <div v-if="showModal" class="modal-backdrop" @click.self="closeModal">
+        <!-- <div v-if="showModal" class="modal-backdrop" @click.self="closeModal">
             <div class="employee-modal">
                 <div class="modal-header">
                     <div>
@@ -342,6 +350,121 @@
                     </div>
                 </form>
             </div>
+        </div> -->
+
+        <div v-if="showModal" class="modal-backdrop" @click.self="closeModal">
+            <div class="emp-modal">
+                <div class="emp-modal__header">
+                    <div>
+                        <div class="emp-modal__title">
+                            {{ editingEmployee ? 'Edit employee' : 'Add employee' }}
+                        </div>
+                        <div class="emp-modal__sub">
+                            {{ editingEmployee ? 'Update employee information' : 'Create a new employee record' }}
+                        </div>
+                    </div>
+                    <button class="emp-modal__close" @click="closeModal" aria-label="Close">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                            <path d="M2 2L14 14M14 2L2 14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+                        </svg>
+                    </button>
+                </div>
+
+                <form @submit.prevent="saveEmployee">
+                    <div class="emp-modal__body">
+
+                        <!-- Photo -->
+                        <div class="photo-editor" v-if="!editingEmployee">
+                            <div class="photo-editor__avatar">
+                                <img v-if="imagePreview" :src="imagePreview" alt="Employee photo">
+                                <span v-else>{{ employeeInitials }}</span>
+
+                                <label class="photo-editor__edit" title="Upload photo">
+                                    <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
+                                        <path d="M2 14h2.5L12.5 6a1.8 1.8 0 000-2.5A1.8 1.8 0 0010 3.5L2 11.5V14z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" />
+                                    </svg>
+                                    <input type="file" accept="image/*" @change="handleImageUpload" hidden />
+                                </label>
+                            </div>
+
+                            <div class="photo-editor__meta">
+                                <div class="photo-editor__hint">JPG, PNG or WEBP · Max 2MB</div>
+                                <button v-if="form.image" type="button" class="photo-editor__remove" @click="removeEmployeeImage">
+                                    Remove photo
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Personal -->
+                        <div class="section">
+                            <div class="section__label">Personal</div>
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label>First name</label>
+                                    <input v-model="form.first_name" type="text" required placeholder="e.g. Jonas" />
+                                </div>
+                                <div class="form-group">
+                                    <label>Last name</label>
+                                    <input v-model="form.last_name" type="text" required placeholder="e.g. Diaz" />
+                                </div>
+                                <div class="form-group full">
+                                    <label>Email</label>
+                                    <input v-model="form.email" type="email" required placeholder="employee@example.com" />
+                                </div>
+                                <div class="form-group">
+                                    <label>Phone number</label>
+                                    <input v-model="form.phone_number" type="text" required placeholder="0912345678" />
+                                </div>
+                                <div class="form-group">
+                                    <label>Location</label>
+                                    <input v-model="form.location" type="text" required placeholder="Poblacion Cordova Cebu" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Employment -->
+                        <div class="section">
+                            <div class="section__label">Employment</div>
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label>Job type</label>
+                                    <select v-model="form.job_id" required>
+                                        <option value="0" disabled>Select job type</option>
+                                        <option v-for="job in jobTypesOption" :key="job.id" :value="job.id">
+                                            {{ job.label }}
+                                        </option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Date hired</label>
+                                    <input v-model="form.date_hired" type="date" required />
+                                </div>
+                                <div class="form-group full">
+                                    <label>Status</label>
+                                    <div class="status-select" :class="`is-${statusKey(form.status)}`">
+                                        <span class="status-select__dot" />
+                                        <select v-model="form.status" required>
+                                            <option v-for="s in statusOption" :key="s.value" :value="s.value">
+                                                {{ s.label }}
+                                            </option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <div class="emp-modal__footer">
+                        <button type="button" class="btn btn--ghost" @click="closeModal">
+                            Cancel
+                        </button>
+                        <button type="submit" class="btn btn--primary">
+                            {{ editingEmployee ? 'Save changes' : 'Create employee' }}
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 </template>
@@ -350,6 +473,7 @@
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import { useEmployeeStore } from '@/stores/useEmployee';
 import { storageImage } from '@/utils/image';
+import { showConfirm } from '@/utils/Swals';
 
 const employeeStore = useEmployeeStore();
 defineOptions({
@@ -478,7 +602,8 @@ const activeCount = computed(() => {
 
     return employees.value.filter(
         employee =>
-            employee.status !== 'Separated/Terminated'
+            employee.status !== 'Separated/Terminated' && 
+            !employee.deleted_at
     ).length
 
 })
@@ -493,6 +618,9 @@ const separatedTerminated = computed(() => {
 
 })
 
+const statusKey = async (status) => {
+    return (status || '').toString().toLowerCase().replace(/[\s_-]+/g, '');
+}
 
 const statusFulltime = computed(() => {
 
@@ -597,11 +725,27 @@ const listEmployee = async (data) => {
     employees.value = listEmployees.data.data;
 }
 
+const restoreEmployee = async (employee) => {
+    const confirmed = await showConfirm('Restore Employee', `Restore ${employee.last_name} ${employee.first_name} ?`, 'Yes, Please.')
+
+    if (!confirmed) {
+        return
+    }
+
+    await employeeStore.restoreEmployee({
+        'employee_id': employee.id
+    });
+
+    listEmployee({
+        status: null,
+        search: null,
+        per_page: perPage.value
+    });
+
+}
+
 const deleteEmployee = async (employee) => {
-    const confirmed =
-        window.confirm(
-            `Delete ${employee.last_name} ${employee.first_name} ? This action cannot be undone.`
-        )
+    const confirmed = await showConfirm('Remove Employee', `Delete ${employee.last_name} ${employee.first_name} ?.`, 'Yes, Remove.')
 
     if (!confirmed) {
         return
@@ -666,13 +810,9 @@ onMounted(async () => {
 
 })
 
-
 onBeforeUnmount(() => {
-
     clearInterval(clockTimer)
-
 })
-
 </script>
 
 
@@ -1105,6 +1245,18 @@ onBeforeUnmount(() => {
     margin-bottom: 1.2rem;
 }
 
+.section {
+    margin-bottom: 22px;
+}
+
+.section__label {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--accent);
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--line);
+}
 
 /* TOOLBAR */
 
@@ -1516,25 +1668,57 @@ onBeforeUnmount(() => {
 /* MODAL */
 
 .modal-backdrop {
-
     position: fixed;
-
     inset: 0;
-
-    background:
-        rgba(28, 43, 74, .42);
-
+    background: rgba(30, 27, 22, 0.45);
     display: flex;
-
     align-items: center;
-
     justify-content: center;
-
-    padding: 1rem;
-
     z-index: 1000;
 }
 
+.emp-modal__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    padding: 20px 24px 16px;
+    border-bottom: 1px solid var(--line);
+}
+
+
+.emp-modal__title {
+    font-size: 17px;
+    font-weight: 650;
+    letter-spacing: -0.01em;
+}
+
+.emp-modal__sub {
+    font-size: 13px;
+    color: var(--muted);
+    margin-top: 2px;
+}
+
+.emp-modal__close {
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.emp-modal__close:hover {
+    background: var(--canvas);
+    color: var(--ink);
+}
+
+.emp-modal__body {
+    padding: 20px 24px 4px;
+}
 
 .employee-modal {
 
@@ -1935,5 +2119,249 @@ form {
 .upload-help {
     color: var(--slate, #6B7280);
     font-size: .68rem;
+}
+
+.emp-modal {
+    --ink: #1e1b16;
+    --muted: #7a7469;
+    --paper: #ffffff;
+    --line: #e6e2da;
+    --canvas: #faf9f7;
+    --accent: #35577f;
+    --accent-tint: #e9f0f7;
+
+    --active: #2e7d53;
+    --inactive: #7a7469;
+    --onleave: #6c5b92;
+    --terminated: #b4423a;
+
+    font-family: 'Inter', -apple-system, 'Segoe UI', sans-serif;
+    color: var(--ink);
+    background: var(--paper);
+    width: min(660px, 92vw);
+    max-height: 95vh;
+    overflow-y: auto;
+    border-radius: 12px;
+    box-shadow: 0 24px 60px rgba(30, 27, 22, 0.22);
+}
+
+
+.form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px 12px;
+}
+
+.form-group.full {
+    grid-column: 1 / -1;
+}
+
+.form-group label {
+    display: block;
+    font-size: 12.5px;
+    font-weight: 500;
+    color: var(--muted);
+    margin-bottom: 5px;
+}
+
+.form-group input,
+.form-group select {
+    width: 100%;
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    padding: 9px 10px;
+    font-size: 14px;
+    font-family: inherit;
+    color: var(--ink);
+    background: var(--paper);
+    transition: border-color 0.15s;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(53, 87, 127, 0.12);
+}
+
+/* photo editor */
+.photo-editor {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 22px;
+    padding-bottom: 20px;
+    z-index: -10;
+    border-bottom: 1px solid var(--line);
+}
+
+.photo-editor__avatar {
+    position: relative;
+    width: 68px;
+    height: 68px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    background: var(--canvas);
+    border: 1px solid var(--line);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    font-weight: 650;
+    color: var(--muted);
+    /* overflow: hidden; */
+}
+
+.photo-editor__avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+}
+
+.photo-editor__edit {
+    position: absolute;
+    bottom: -2px;
+    right: -2px;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--ink);
+    color: var(--paper);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid var(--paper);
+    cursor: pointer;
+    z-index: 2;
+}
+
+.photo-editor__hint {
+    font-size: 12px;
+    color: var(--muted);
+}
+
+.photo-editor__remove {
+    border: none;
+    background: transparent;
+    color: var(--terminated);
+    font-size: 12.5px;
+    font-weight: 500;
+    padding: 0;
+    margin-top: 4px;
+    cursor: pointer;
+}
+
+.photo-editor__remove:hover {
+    text-decoration: underline;
+}
+
+/* status select */
+.status-select {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.status-select select {
+    padding-left: 28px;
+    font-weight: 550;
+}
+
+.status-select__dot {
+    position: absolute;
+    left: 11px;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    pointer-events: none;
+}
+
+.status-select.is-active .status-select__dot {
+    background: var(--active);
+}
+
+.status-select.is-active select {
+    color: var(--active);
+}
+
+.status-select.is-inactive .status-select__dot {
+    background: var(--inactive);
+}
+
+.status-select.is-inactive select {
+    color: var(--inactive);
+}
+
+.status-select.is-onleave .status-select__dot {
+    background: var(--onleave);
+}
+
+.status-select.is-onleave select {
+    color: var(--onleave);
+}
+
+.status-select.is-separatedterminated .status-select__dot,
+.status-select.is-terminated .status-select__dot {
+    background: var(--terminated);
+}
+
+.status-select.is-separatedterminated select,
+.status-select.is-terminated select {
+    color: var(--terminated);
+}
+
+/* footer */
+.emp-modal__footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 16px 24px 20px;
+    border-top: 1px solid var(--line);
+    margin-top: 4px;
+}
+
+.btn {
+    border-radius: 7px;
+    padding: 9px 18px;
+    font-size: 13.5px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid transparent;
+}
+
+.btn--ghost {
+    background: transparent;
+    border-color: var(--line);
+    color: var(--ink);
+}
+
+.btn--ghost:hover {
+    background: var(--canvas);
+}
+
+.btn--primary {
+    background: var(--ink);
+    color: var(--paper);
+}
+
+.btn--primary:hover {
+    background: #34302a;
+}
+
+@media (max-width: 480px) {
+    .form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .form-group.full {
+        grid-column: auto;
+    }
+}
+
+
+.deleted_at {
+    background-color: rgb(255, 182, 182);
+    color: #1e1b16;
 }
 </style>
