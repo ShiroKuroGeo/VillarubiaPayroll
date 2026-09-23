@@ -34,7 +34,7 @@ const loadingSteps = [
     'Checking SSS contribution deduction...',
 ];
 
-const totalDuration = 50;
+const totalDuration = 5;
 const stepDuration = totalDuration / loadingSteps.length;
 
 let stepTimeout = null;
@@ -92,7 +92,6 @@ function cancelLoading() {
     if (typeof onCancelCallback === 'function') onCancelCallback();
 }
 
-// safety: clear timers if component unmounts mid-loading
 onBeforeUnmount(() => {
     clearTimeout(stepTimeout);
     clearInterval(progressInterval);

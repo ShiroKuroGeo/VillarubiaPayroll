@@ -323,7 +323,7 @@
 import { useEmployeeStore } from '@/stores/useEmployee'
 import { useSalaryStore } from '@/stores/useSalary';
 import { storageImage } from '@/utils/image';
-import { showStatusAlert } from '@/utils/Swals';
+import { showConfirm, showStatusAlert } from '@/utils/Swals';
 
 import {
     computed,
@@ -432,6 +432,12 @@ const filteredSalaryData = computed(() => {
                 .includes(search) ||
             employee.location
                 .toLowerCase()
+                .includes(search) ||
+            employee.basicSalary
+                .toLowerCase()
+                .includes(search) ||
+            employee.salaryType
+                .toLowerCase()
                 .includes(search)
 
 
@@ -527,7 +533,7 @@ function createEmptyForm() {
     return {
         id: null,
         employeeId: '',
-        salaryType: 'Weekly',
+        salaryType: 'Daily',
         basicSalary: 0,
         effectiveDate: '2026-01-01',
         status: true
@@ -611,24 +617,20 @@ const saveSalary = async () => {
 
 }
 
-function deleteSalary(employee) {
-
-    const confirmed =
-        window.confirm(
-            `Delete salary record for ${employee.employeeName}?`
-        )
-
+const deleteSalary = async (employee) => {
+    const confirmed = await showConfirm('Delete Salary Confirmation', `Delete salary record for ${employee.employeeName}?`, 'Yes, Please.');
 
     if (!confirmed) {
-        return
+        return;
     }
+    salaryData.value = salaryData.value.filter(
+        item =>
+            item.id !== employee.id
+    )
 
-
-    salaryData.value =
-        salaryData.value.filter(
-            item =>
-                item.id !== employee.id
-        )
+    await salaryStore.deleteSalaryByEmployee({
+        'salary_id': employee.id
+    });
 
 }
 

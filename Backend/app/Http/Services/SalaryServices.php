@@ -23,9 +23,13 @@ class SalaryServices
         }
 
         try {
-            Salary::where('employee_id', $validation['employee_id'])
+            $existingSalary = Salary::where('employee_id', $validation['employee_id'])
                 ->where('is_active', true)
-                ->update(['is_active' => false]);
+                ->first();
+
+            if ($existingSalary) {
+                return response_return('There is a current salary active on this employee. Please check again.', [], 409);
+            }
 
             $createSalary = Salary::create([
                 'employee_id' => $validation['employee_id'],
@@ -82,7 +86,7 @@ class SalaryServices
             return response_return('Error occurred in updating salary.', [], 500);
         }
     }
-    
+
     public function getSalaries(Request $request)
     {
         try {
@@ -137,6 +141,31 @@ class SalaryServices
             return response_return('Successfully retrieved active salary.', $salary->toArray(), 200);
         } catch (\Throwable $th) {
             return response_return('Error occurred in retrieving active salary.', [], 500);
+        }
+    }
+
+    public function deleteSalaryEmployee(Request $request)
+    {
+        try {
+            $validation = $request->validate([
+                'salary_id' => ['required', 'integer', 'exists:salaries,id'],
+            ]);
+        } catch (\Throwable $th) {
+            return response_return('Error occurred in validating the request.', [], 422);
+        }
+
+        try {
+            $salary = Salary::where('id', $validation['salary_id'])
+                ->where('is_active', true)
+                ->delete();
+
+            if (!$salary) {
+                return response_return('No active salary found for this employee.', [], 409);
+            }
+
+            return response_return('Successfully deleted active salary.', [], 200);
+        } catch (\Throwable $th) {
+            return response_return('Error occurred in deleting active salary.', [], 500);
         }
     }
 }

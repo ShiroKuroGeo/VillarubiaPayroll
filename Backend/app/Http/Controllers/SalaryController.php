@@ -31,4 +31,8 @@ class SalaryController extends Controller
         return $this->salaryServices->getActiveSalary($request);
     }
 
+    public function salaryDelete(Request $request){
+        return $this->salaryServices->deleteSalaryEmployee($request);
+    }
+
 }

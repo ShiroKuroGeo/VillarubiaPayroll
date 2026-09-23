@@ -290,14 +290,14 @@
                 <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
                     <div>
                         <div class="section-title mb-0">
-                            Daily attendance log
+                            Daily Attendance Log
                         </div>
                         <div class="panel-sub">
                             Track employee check-ins, check-outs, and hours worked
                         </div>
                     </div>
 
-                    <div class="d-flex gap-2 flex-wrap">
+                    <div class="d-flex gap-2 flex-wrap align-items-center">
                         <div class="search-box">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <circle cx="11" cy="11" r="7" />
@@ -305,9 +305,22 @@
                             </svg>
                             <input v-model="searchQuery" type="text" placeholder="Search employee..." />
                         </div>
-                        <button class="add-btn" @click="openAddModal">
-                            + Import Biometrics
-                        </button>
+
+                        <div class="select-wrapper">
+                            <select v-model="searchQuery" class="custom-select" id="employee-search" name="employee-search">
+                                <option v-for="item in employeeNameList" :key="item.value" :value="item.value">
+                                    {{ item.label }}
+                                </option>
+                            </select>
+                            <span class="select-arrow"></span>
+                        </div>
+
+                        <!-- Action Button -->
+                        <div>
+                            <button class="add-btn" @click="openAddModal">
+                                + Import Biometrics
+                            </button>
+                        </div>
                     </div>
                 </div>
                 <div class="filter-row">
@@ -657,6 +670,7 @@
 <script setup>
 
 import { useAttendanceStore } from '@/stores/useAttendance';
+import { useEmployeeStore } from '@/stores/useEmployee';
 import { storageImage } from '@/utils/image';
 import { showConfirm } from '@/utils/Swals';
 import {
@@ -676,12 +690,14 @@ defineEmits([
     'toggle-sidebar'
 ])
 
+const attendanceStore = useAttendanceStore();
+const employeeStore = useEmployeeStore();
+
 const liveClock = ref('--:--:--')
 const selectedBiometricFile = ref(null);
 const importing = ref(false);
 let clockTimer = null
-
-const attendanceStore = useAttendanceStore();
+const employeeNameList = ref([]);
 
 function tickClock() {
     liveClock.value =
@@ -760,26 +776,22 @@ const formattedSelectedDate = computed(() => {
         )
     }
 
-    // Only start date
     if (startDate.value && !endDate.value) {
         return formatDate(startDate.value)
     }
 
-    // Only end date
     if (!startDate.value && endDate.value) {
         return formatDate(endDate.value)
     }
 
-    // Same date
     if (startDate.value === endDate.value) {
         return formatDate(startDate.value)
     }
 
-    // Date range
     return `${formatDate(startDate.value)} - ${formatDate(endDate.value)}`
 })
 
-const handleBiometricFile = (event) => {
+const handleBiometricFile = async (event) => {
     const file = event.target.files[0];
 
     if (!file) {
@@ -788,6 +800,8 @@ const handleBiometricFile = (event) => {
     }
 
     selectedBiometricFile.value = file;
+
+    await getAttendance();
 };
 
 const attendanceData = ref([])
@@ -824,7 +838,6 @@ const statusFilters = [
     }
 
 ]
-
 
 const recordsForSelectedDate = computed(() => {
 
@@ -1135,8 +1148,7 @@ function openAddModal() {
 
     editingAttendance.value = false
 
-    attendanceForm.value =
-        createEmptyForm()
+    attendanceForm.value = createEmptyForm()
 
     showModal.value = true
 
@@ -1191,7 +1203,8 @@ const saveBiometrics = async () => {
             after_noon_out: toHMS(attendanceForm.value.after_noon_out),
             overtime_in: toHMS(attendanceForm.value.overtime_in),
             overtime_out: toHMS(attendanceForm.value.overtime_out),
-        })
+        });
+        await getAttendance();
         closeModal()
     } else {
         const formData = new FormData();
@@ -1200,25 +1213,6 @@ const saveBiometrics = async () => {
         await getAttendance();
         closeModal()
     }
-}
-
-function deleteAttendance(record) {
-
-    const confirmed =
-        window.confirm(
-            `Delete attendance record for ${record.employeeName} on ${record.date}?`
-        )
-
-    if (!confirmed) {
-        return
-    }
-
-    attendanceData.value =
-        attendanceData.value.filter(
-            item =>
-                item.id !== record.id
-        )
-
 }
 
 function formatStatus(status) {
@@ -1314,6 +1308,23 @@ watch(
     }
 )
 
+const employeelists = async () => {
+    const employees = await employeeStore.allEmployees();
+
+    const mapping = employees.data.data.map(ar => ({
+        value: ar.name,
+        label: ar.name,
+    }));
+
+    employeeNameList.value = [
+        {
+            value: '',
+            label: 'All',
+        },
+        ...mapping
+    ]
+}
+
 onMounted(async () => {
 
     tickClock()
@@ -1324,6 +1335,7 @@ onMounted(async () => {
             1000
         )
     await getAttendance();
+    await employeelists();
 })
 
 onBeforeUnmount(() => {
@@ -2174,77 +2186,6 @@ onBeforeUnmount(() => {
 
     white-space:
         nowrap;
-}
-
-
-/* =====================================================
-   SEARCH
-===================================================== */
-
-.search-box {
-
-    display:
-        flex;
-
-    align-items:
-        center;
-
-    gap:
-        .45rem;
-
-    border:
-        1px solid var(--line, #DCD8CB);
-
-    border-radius:
-        6px;
-
-    background:
-        var(--paper-2, #FBFAF6);
-
-    padding:
-        .4rem .65rem;
-
-    min-width:
-        210px;
-}
-
-
-.search-box svg {
-
-    color:
-        var(--slate, #6B7280);
-
-    flex-shrink:
-        0;
-}
-
-
-.search-box input {
-
-    border:
-        none;
-
-    outline:
-        none;
-
-    background:
-        transparent;
-
-    width:
-        100%;
-
-    font-size:
-        .75rem;
-
-    color:
-        var(--ink, #1C2B4A);
-}
-
-
-.search-box input::placeholder {
-
-    color:
-        var(--slate, #6B7280);
 }
 
 
@@ -4247,5 +4188,105 @@ onBeforeUnmount(() => {
 .btn-clear-time:hover {
     background: #fecaca;
     color: #7f1d1d;
+}
+
+.search-box,
+.custom-select,
+.add-btn {
+    height: 40px;
+    font-size: 14px;
+    border-radius: 8px;
+    box-sizing: border-box;
+}
+
+.search-box {
+    position: relative;
+    display: flex;
+    align-items: center;
+    min-width: 220px;
+}
+
+.search-box svg {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #94a3b8;
+    pointer-events: none;
+}
+
+.search-box input {
+    width: 100%;
+    height: 100%;
+    padding: 0 12px 0 26px;
+    border-radius: 8px;
+    color: #1e293b;
+    outline: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.select-wrapper {
+    position: relative;
+    min-width: 180px;
+}
+
+.custom-select {
+    width: 100%;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-color: #ffffff;
+    border: 1px solid #cbd5e1;
+    padding: 0 36px 0 14px;
+    color: #1e293b;
+    cursor: pointer;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.custom-select:focus {
+    outline: none;
+    border-color: #6366f1;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+
+.select-arrow {
+    position: absolute;
+    top: 50%;
+    right: 14px;
+    transform: translateY(-50%);
+    width: 0;
+    height: 0;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-top: 5px solid #64748b;
+    pointer-events: none;
+    transition: transform 0.2s ease;
+}
+
+.select-wrapper:focus-within .select-arrow {
+    transform: translateY(-50%) rotate(180deg);
+}
+
+/* 3. Action Button */
+.add-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 16px;
+    background-color: #6366f1;
+    color: #ffffff;
+    border: none;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+    white-space: nowrap;
+}
+
+.add-btn:hover {
+    background-color: #4f46e5;
+}
+
+.add-btn:active {
+    transform: scale(0.98);
 }
 </style>

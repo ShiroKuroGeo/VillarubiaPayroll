@@ -131,5 +131,24 @@ export const usePayrollStore = defineStore('payrollStore', () => {
         }
     }
 
-    return { generatePayroll, payrollList, exportPayslips, updatePayroll }
+    const checkStatus = async () => {
+        try {
+            const response = await api.get('reportlogs/last_generate');
+            return response.data;
+        } catch (err) {
+            const status = err.response?.status || 500;
+
+            const message =
+                err.response?.data?.message ||
+                err.response?.data?.error ||
+                err.message ||
+                'An unexpected error occurred.';
+
+            showStatusAlert(status, message);
+
+            return status;
+        }
+    }
+
+    return { generatePayroll, payrollList, exportPayslips, updatePayroll, checkStatus }
 });

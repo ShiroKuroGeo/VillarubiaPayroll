@@ -11,6 +11,7 @@ use App\Http\Controllers\PayslipController;
 use App\Http\Controllers\SalaryController;
 use App\Http\Controllers\SSSController;
 use App\Http\Controllers\OverviewController;
+use App\Http\Controllers\ReportLogController;
 use App\Http\Controllers\UserController;
 use App\Http\Services\SSSServices;
 use Illuminate\Support\Facades\Route;
@@ -100,6 +101,7 @@ Route::middleware('auth:sanctum')->group(function () {
         ->group(function () {
             Route::post('create', 'createSalary');
             Route::post('update', 'updateSalary');
+            Route::post('delete', 'salaryDelete');
             Route::get('list', 'getSalaries');
             Route::post('review', 'getActiveSalary');
         });
@@ -129,5 +131,11 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::post('card_overview', 'cardOverview');
             Route::post('weekly_attendance', 'weeklyAttendance');
             Route::get('five_paid', 'fiveWeeksSalaryPaid');
+        });
+
+    Route::controller(ReportLogController::class)
+        ->prefix('reportlogs')
+        ->group(function(){
+            Route::get('last_generate', 'checkStatus');
         });
 });

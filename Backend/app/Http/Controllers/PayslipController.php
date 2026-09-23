@@ -56,13 +56,6 @@ class PayslipController extends Controller
         }
     }
 
-    /**
-     * GET /api/payroll/payslips/export
-     *
-     * Streams a single .xlsx file with one payslip per payroll record
-     * for the CURRENT weekly cutoff (Sunday start, Saturday end).
-     * No query params needed — the week is computed here.
-     */
     public function exportPayslips(Request $request)
     {
         try {
@@ -70,9 +63,8 @@ class PayslipController extends Controller
             // $cutoffStart = Carbon::now()->startOfWeek(Carbon::SUNDAY)->toDateString();
             // $cutoffEnd = Carbon::now()->endOfWeek(Carbon::SATURDAY)->toDateString();
 
-
-            $cutoffStart = Carbon::create(2026, 9, 6)->toDateString();
-            $cutoffEnd = Carbon::create(2026, 9, 12)->toDateString();
+            $cutoffStart = Carbon::create(2026, 9, 14)->toDateString();
+            $cutoffEnd = Carbon::create(2026, 9, 19)->toDateString();
 
             $payrolls = Payroll::with([
                 'employee',
@@ -95,6 +87,11 @@ class PayslipController extends Controller
             $payslips = $this->transformPayrolls($payrolls)->toArray();
 
             $company = Maintenance::where('name', 'Company Name')->first();
+
+            Payroll::whereNot('status', 'Paid')->update([
+                'status' => 'Paid',
+                'payment_date' => $cutoffEnd,
+            ]);
 
             $export = new PayslipExport($payslips, '', $company->value ?? 'Villarubia Company');
 
@@ -287,13 +284,27 @@ class PayslipController extends Controller
         return $startDate->format('M j') . ' - ' . $endDate->format('M j, Y');
     }
 
+
     private function computeEarningsBreakdown(Salary $salary, $attendances, float $sundayPremiumRate): array
     {
+        $basicPay = 0;
         $sundayPremium = 0;
         $overtimePay = 0;
         $totalAttendance = 0;
+        $overtimeHours = 0;
 
         $paidStatuses = ['Present', 'Late', 'Half Day'];
+
+        $overtimeHourlyRate = null;
+        $getOvertimeRate = function () use (&$overtimeHourlyRate) {
+            if ($overtimeHourlyRate === null) {
+                $overtimeHourlyRate = (float) (
+                    Maintenance::where('name', 'Overtime Rate (Per Hour)')->value('value') ?? 1.3
+                );
+            }
+
+            return $overtimeHourlyRate;
+        };
 
         foreach ($attendances as $attendance) {
 
@@ -303,43 +314,48 @@ class PayslipController extends Controller
 
             $isSunday = Carbon::parse($attendance->date)->isSunday();
             $overtimeHours = (float) ($attendance->overtime_hours ?? 0);
+            $isHalfDay = $attendance->status === 'Half Day';
 
-            $totalAttendance += $attendance->status === 'Half Day' ? 0.5 : 1;
+            $totalAttendance += $isHalfDay ? 0.5 : 1;
 
             if ($salary->salary_type === 'Daily') {
 
                 $baseDayRate = (float) $salary->basic_salary;
 
-                if ($attendance->status === 'Half Day') {
-                    $baseDayRate = $baseDayRate / 2;
+                if ($isHalfDay) {
+                    $baseDayRate /= 2;
                 }
+
+                $basicPay += $baseDayRate;
 
                 if ($isSunday) {
                     $sundayPremium += $baseDayRate * ($sundayPremiumRate - 1);
                 }
 
                 if ($overtimeHours > 0) {
-                    $maintenance = Maintenance::where('name', 'Overtime Rate (Per Hour)')->first();
-                    $hourlyRate = (float) $maintenance->value;
-                    $overtimePay += $overtimeHours * $hourlyRate;
+                    $overtimePay += $overtimeHours;
                 }
             } elseif ($salary->salary_type === 'Hourly') {
-                $maintenance = Maintenance::where('name', 'Overtime Rate (Per Hour)')->first();
-                $hourlyRate = (float) $maintenance->value;
 
                 $baseHourlyRate = (float) $salary->basic_salary;
                 $hoursWorked = (float) ($attendance->hours_worked ?? 0);
                 $regularHours = max($hoursWorked - $overtimeHours, 0);
 
+                $regularPay = $regularHours * $baseHourlyRate;
+                $basicPay += $regularPay;
+
                 if ($isSunday) {
-                    $sundayPremium += $regularHours * $baseHourlyRate * ($sundayPremiumRate - 1);
+                    $sundayPremium += $regularPay * ($sundayPremiumRate - 1);
                 }
 
-                $overtimePay += $overtimeHours * $baseHourlyRate;
+                if ($overtimeHours > 0) {
+                    $overtimePay += $overtimeHours * $getOvertimeRate();
+                }
             }
         }
 
         return [
+            'basic_pay' => round($basicPay, 2),
             'sunday_premium' => round($sundayPremium, 2),
             'overtime_pay' => round($overtimePay, 2),
             'total_attendance' => $totalAttendance,

@@ -86,6 +86,27 @@ export const useSalaryStore = defineStore('salaryStore', () => {
         }
     }
 
-    return { createSalary, updateSalary, listSalaries, reviewSalary }
+    const deleteSalaryByEmployee = async (data) => {
+        try {
+            const stmtDelete = await api.post('salary/delete', data);
+
+            await showStatusAlert(stmtDelete.status, stmtDelete.data.message);
+            return stmtDelete.data;
+        } catch (err) {
+            const status = err.response?.status || 500;
+
+            const message =
+                err.response?.data?.message ||
+                err.response?.data?.error ||
+                err.message ||
+                'An unexpected error occurred.';
+
+            showStatusAlert(status, message);
+
+            return message;
+        }
+    }
+
+    return { createSalary, updateSalary, listSalaries, reviewSalary, deleteSalaryByEmployee }
 
 });

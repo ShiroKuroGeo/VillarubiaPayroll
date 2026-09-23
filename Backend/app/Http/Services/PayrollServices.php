@@ -14,17 +14,11 @@ use App\Models\SSSContribution;
 use App\Models\Deduction;
 use App\Models\Maintenance;
 use Illuminate\Support\Facades\DB;
+use App\Http\Controllers\ReportLogController;
+use App\Models\ReportLogs;
 
 class PayrollServices
 {
-    /**
-     * Generate payroll for the current Saturday cutoff.
-     *
-     * Assumptions:
-     * - Daily salary = basic salary per 8-hour workday
-     * - Hourly salary = basic salary per hour
-     * - Overtime Rate (Per Hour) stores a multiplier such as 1.30
-     */
     public function generatePayroll(): array
     {
         $today = Carbon::now();
@@ -74,12 +68,6 @@ class PayrollServices
             ->whereNull('deleted_at')
             ->get();
 
-        /*
-        |--------------------------------------------------------------------------
-        | Maintenance settings
-        |--------------------------------------------------------------------------
-        */
-
         $gracePeriodMinutes = (float) (
             Maintenance::where('name', 'Grace Period')
             ->value('value') ?? 0
@@ -90,10 +78,6 @@ class PayrollServices
             ->value('value') ?? 0
         );
 
-        /*
-        | IMPORTANT:
-        | This value should be something like 1.30 for 130% overtime.
-        */
         $overtimeMultiplier = (float) (
             Maintenance::where('name', 'Overtime Rate (Per Hour)')
             ->value('value') ?? 1.30
@@ -121,12 +105,6 @@ class PayrollServices
 
             try {
 
-                /*
-                |--------------------------------------------------------------------------
-                | Check if payroll already exists
-                |--------------------------------------------------------------------------
-                */
-
                 $exists = Payroll::where('employee_id', $employee->id)
                     ->where(
                         'cutoff_start',
@@ -150,12 +128,6 @@ class PayrollServices
                     continue;
                 }
 
-                /*
-                |--------------------------------------------------------------------------
-                | Get active salary
-                |--------------------------------------------------------------------------
-                */
-
                 $salary = Salary::where('employee_id', $employee->id)
                     ->where('is_active', true)
                     ->first();
@@ -172,12 +144,6 @@ class PayrollServices
                     continue;
                 }
 
-                /*
-                |--------------------------------------------------------------------------
-                | Get attendance
-                |--------------------------------------------------------------------------
-                */
-
                 $attendances = Attendance::where(
                     'employee_id',
                     $employee->id
@@ -192,11 +158,6 @@ class PayrollServices
                     ->orderBy('date', 'asc')
                     ->get();
 
-                /*
-                |--------------------------------------------------------------------------
-                | Calculate gross
-                |--------------------------------------------------------------------------
-                */
 
                 $grossPay = $this->calculateGrossPay(
                     $salary,
@@ -204,12 +165,6 @@ class PayrollServices
                     $sundayPremiumRate,
                     $overtimeMultiplier
                 );
-
-                /*
-                |--------------------------------------------------------------------------
-                | Create payroll
-                |--------------------------------------------------------------------------
-                */
 
                 $payroll = Payroll::create([
                     'employee_id' => $employee->id,
@@ -224,12 +179,6 @@ class PayrollServices
 
                     'status' => 'Draft',
                 ]);
-
-                /*
-                |--------------------------------------------------------------------------
-                | Cash advances
-                |--------------------------------------------------------------------------
-                */
 
                 $cashAdvances = CashAdvance::where(
                     'employee_id',
@@ -264,12 +213,6 @@ class PayrollServices
 
                 $caTotal = round($caTotal, 2);
 
-                /*
-                |--------------------------------------------------------------------------
-                | SSS
-                |--------------------------------------------------------------------------
-                */
-
                 $sssEntries = SSSContribution::where(
                     'employee_id',
                     $employee->id
@@ -283,24 +226,12 @@ class PayrollServices
                     2
                 );
 
-                /*
-                |--------------------------------------------------------------------------
-                | Late deduction
-                |--------------------------------------------------------------------------
-                */
-
                 $lateDeduction = $this->calculateLateDeduction(
                     $attendances,
                     $workStartTime,
                     $gracePeriodMinutes,
                     $lateDeductionPerMinute
                 );
-
-                /*
-                |--------------------------------------------------------------------------
-                | Create deduction record
-                |--------------------------------------------------------------------------
-                */
 
                 Deduction::create([
                     'employee_id' => $employee->id,
@@ -319,24 +250,12 @@ class PayrollServices
                         $today->toDateString(),
                 ]);
 
-                /*
-                |--------------------------------------------------------------------------
-                | Calculate total deductions
-                |--------------------------------------------------------------------------
-                */
-
                 $totalDeductions = round(
                     $sssTotal
                         + $caTotal
                         + $lateDeduction,
                     2
                 );
-
-                /*
-                |--------------------------------------------------------------------------
-                | Calculate net pay
-                |--------------------------------------------------------------------------
-                */
 
                 $netPay = round(
                     max(
@@ -350,12 +269,6 @@ class PayrollServices
                     'total_deductions' => $totalDeductions,
                     'net_pay' => $netPay,
                 ]);
-
-                /*
-                |--------------------------------------------------------------------------
-                | Update cash advances
-                |--------------------------------------------------------------------------
-                */
 
                 foreach ($caDeductionsPlan as $plan) {
 
@@ -383,12 +296,6 @@ class PayrollServices
                     ]);
                 }
 
-                /*
-                |--------------------------------------------------------------------------
-                | Post SSS
-                |--------------------------------------------------------------------------
-                */
-
                 foreach ($sssEntries as $sssEntry) {
 
                     $sssEntry->update([
@@ -397,9 +304,6 @@ class PayrollServices
                         'date' => $cutoffEnd,
                     ]);
 
-                    /*
-                    | Create next pending contribution.
-                    */
                     $newEntry = $sssEntry->replicate();
 
                     $newEntry->payroll_id = null;
@@ -409,27 +313,17 @@ class PayrollServices
                     $newEntry->save();
                 }
 
-                /*
-                |--------------------------------------------------------------------------
-                | Commit
-                |--------------------------------------------------------------------------
-                */
-
                 DB::commit();
 
                 $result['generated'][] = [
                     'employee_id' => $employee->id,
                     'payroll_id' => $payroll->id,
-
                     'employee_name' =>
                     $employee->first_name .
                         ' ' .
                         $employee->last_name,
-
                     'gross_pay' => $payroll->gross_pay,
-
                     'deductions' => $totalDeductions,
-
                     'net_pay' => $netPay,
                 ];
             } catch (\Throwable $th) {
@@ -460,6 +354,11 @@ class PayrollServices
                 ];
             }
         }
+
+        ReportLogs::updateOrCreate([
+            "report_type" => 'saturday_payroll',
+            "last_generated" => Carbon::today()->toDateString(),
+        ]);
 
         return $result;
     }
@@ -939,15 +838,18 @@ class PayrollServices
 
         try {
 
-            $cutoffStart =
-                Carbon::now()
-                ->startOfWeek(Carbon::SUNDAY)
-                ->toDateString();
+            // $cutoffStart =
+            //     Carbon::now()
+            //     ->startOfWeek(Carbon::SUNDAY)
+            //     ->toDateString();
 
-            $cutoffEnd =
-                Carbon::now()
-                ->endOfWeek(Carbon::SATURDAY)
-                ->toDateString();
+            // $cutoffEnd =
+            //     Carbon::now()
+            //     ->endOfWeek(Carbon::SATURDAY)
+            //     ->toDateString();
+
+            $cutoffStart = \Carbon\Carbon::create(2026, 9, 14)->startOfDay();
+            $cutoffEnd   = \Carbon\Carbon::create(2026, 9, 19)->endOfDay();
 
             $query = Payroll::with([
                 'employee',

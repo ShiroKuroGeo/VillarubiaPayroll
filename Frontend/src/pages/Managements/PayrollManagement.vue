@@ -58,10 +58,7 @@
                         <div v-if="generateError" class="generate-error">
                             {{ generateError }}
                         </div>
-                        <button class="generate-btn" :disabled="generating" @click="loaderRef?.startLoading(
-                            () => generateModal = true,
-                            () => console.log('Loading cancelled by user')
-                        )">
+                        <button class="generate-btn" :disabled="generating" @click="triggerPayrollLoading">
                             {{ generating ? 'Generating…' : 'Generate Payroll' }}
                         </button>
                     </div>
@@ -467,13 +464,18 @@ function tickClock() {
         )
 }
 
-const isSaturday = computed(() => now.value.getDay() === 5)
+const getTodayString = () => new Date().toISOString().split('T')[0]
+
+const isSaturday = computed(() => now.value.getDay() === 6)
 const payrollGenerated = ref(false)
 const generating = ref(false)
 const generateError = ref('')
 const generateModal = ref(false);
 const loaderRef = ref(null);
 const showGenerateOnly = computed(() => isSaturday.value && !payrollGenerated.value)
+
+const hasGeneratedToday = computed(() => lastReportDate.value === getTodayString())
+const canGenerateReport = computed(() => isSaturday.value && !hasGeneratedToday.value)
 
 async function checkPayrollGenerated(data) {
     try {
@@ -524,6 +526,22 @@ async function handleGeneratePayroll() {
     } finally {
         generating.value = false
     }
+}
+
+const triggerPayrollLoading = () => {
+    loaderRef.value?.startLoading(
+        handleLoadingDone,
+        handleLoadingCancel
+    );
+}
+
+const handleLoadingDone = async () => {
+    generateModal.value = true;
+    await handleGeneratePayroll();
+}
+
+const handleLoadingCancel = () => {
+    generateModal.value = false;
 }
 
 
@@ -837,6 +855,12 @@ function formatDate(dateString) {
 
 }
 
+const checkStatus = async () => {
+    const response = await payrollStore.checkStatus();
+
+    console.log(response);
+}
+
 onMounted(async () => {
     tickClock()
     clockTimer =
@@ -845,11 +869,11 @@ onMounted(async () => {
             1000
         )
 
-    // if (isSaturday.value) {
     await checkPayrollGenerated({
         "per_page": 100
     })
-    // }
+
+    await checkStatus();
 
 })
 
