@@ -12,8 +12,11 @@ return new class extends Migration
             $table->id();
             $table->foreignId('cash_advance_id')->constrained()->cascadeOnDelete();
             $table->foreignId('payroll_id')->constrained()->cascadeOnDelete();
-            $table->decimal('amount_deducted', 10, 2);
-            $table->decimal('balance_after', 10, 2);
+            $table->foreignId('employee_id')->constrained()->cascadeOnDelete();
+            $table->decimal('amount', 10, 2);
+            $table->unsignedInteger('remaining_installments_after')->nullable();
+            $table->date('cutoff_start');
+            $table->date('cutoff_end');
             $table->timestamps();
         });
     }

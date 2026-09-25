@@ -33,4 +33,8 @@ class PayrollController extends Controller
         return $this->payrollServices->deletePayrolGenerated();
     }
 
+    public function undoGenerate(Request $request){
+        return $this->payrollServices->undoGenerate($request);
+    }
+
 }

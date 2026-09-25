@@ -40,7 +40,7 @@
 
         </div>
         <div class="content">
-            <div v-if="!showGenerateOnly" class="generate-gate">
+            <div v-if="showGenerateOnly" class="generate-gate">
                 <div class="generate-card">
                     <div class="generate-main">
                         <div class="stamp gold">PAYROLL</div>
@@ -60,6 +60,9 @@
                         </div>
                         <button class="generate-btn" :disabled="generating" @click="triggerPayrollLoading">
                             {{ generating ? 'Generating…' : 'Generate Payroll' }}
+                        </button>
+                        <button class="generate-btn2" @click="showGenerateOnly = !showGenerateOnly">
+                            Show Last Payroll
                         </button>
                     </div>
                     <div class="generate-checklist">
@@ -156,7 +159,7 @@
                         <button class="add-btn" @click="markAllPaid">
                             Mark all as Paid
                         </button>
-                        <button class="add-btn" @click="markAllPaid">
+                        <button class="add-btn" @click="undoGenerate">
                             Undo Generate
                         </button>
                     </div>
@@ -257,13 +260,11 @@
                     </div>
 
                     <div class="filter-row">
-
                         <button v-for="filter in statusFilters" :key="filter.key" class="filter-pill" :class="{
                             active: paymentFilter === filter.key
                         }" @click="paymentFilter = filter.key">
                             {{ filter.label }}
                         </button>
-
                     </div>
                     <div class="table-responsive">
                         <table class="table-ledger salary-table" v-if="filteredPayrollData.length">
@@ -313,10 +314,10 @@
                                         </div>
                                     </td>
                                     <td>
-                                        <span class="department">{{ formatCurrency(employee.basicSalary) }}</span>
+                                        <span class="department">{{ formatCurrency(employee.earnings.basicSalary) }}</span>
                                     </td>
                                     <td class="money net-pay">
-                                        {{ employee.totalAttendance }}{{ employee.totalAttendance >= 1 ? ' days' : 'day' }}
+                                        {{ employee.earnings.totalAttendance }} {{ employee.earnings.totalAttendance > 1 ? 'Days' : 'Day' }}
                                     </td>
                                     <td class="money net-pay">
                                         {{ formatCurrency(employee.grossPay) }}
@@ -435,7 +436,7 @@
 import GenerateLoading from '@/components/GenerateLoading.vue'
 import { usePayrollStore } from '@/stores/usePayroll'
 import { storageImage } from '@/utils/image'
-import { showConfirm } from '@/utils/Swals'
+import { showConfirm, showStatusAlert } from '@/utils/Swals'
 import { computed, onMounted, onBeforeUnmount, ref } from 'vue'
 defineOptions({
     name: 'PayrollPage'
@@ -472,7 +473,7 @@ const generating = ref(false)
 const generateError = ref('')
 const generateModal = ref(false);
 const loaderRef = ref(null);
-const showGenerateOnly = computed(() => isSaturday.value && !payrollGenerated.value)
+const showGenerateOnly = ref(false)
 
 const hasGeneratedToday = computed(() => lastReportDate.value === getTodayString())
 const canGenerateReport = computed(() => isSaturday.value && !hasGeneratedToday.value)
@@ -520,7 +521,6 @@ async function handleGeneratePayroll() {
         await checkPayrollGenerated({
             "per_page": 100
         })
-        // payrollGenerated.value = true
     } catch (err) {
         generateError.value = err.message || 'Something went wrong while generating payroll.'
     } finally {
@@ -529,6 +529,11 @@ async function handleGeneratePayroll() {
 }
 
 const triggerPayrollLoading = () => {
+    // if (!isSaturday.value) {
+    //     showStatusAlert('Saturday Payroll', 'You can only generate payroll in Saturday Afternoon.')
+    //     return
+    // }
+
     loaderRef.value?.startLoading(
         handleLoadingDone,
         handleLoadingCancel
@@ -543,7 +548,6 @@ const handleLoadingDone = async () => {
 const handleLoadingCancel = () => {
     generateModal.value = false;
 }
-
 
 const todayLabel =
     new Date().toLocaleDateString(
@@ -616,13 +620,11 @@ const activeEmployees = computed(() => {
 
 })
 
-
 const activeEmployeeCount = computed(() => {
 
     return activeEmployees.value.length
 
 })
-
 
 const paidCount = computed(() => {
 
@@ -632,13 +634,11 @@ const paidCount = computed(() => {
 
 })
 
-
 const pendingCount = computed(() => {
 
     return activeEmployeeCount.value - paidCount.value
 
 })
-
 
 const totalNetPayroll = computed(() => {
 
@@ -649,7 +649,6 @@ const totalNetPayroll = computed(() => {
     )
 
 })
-
 
 const totalPaidAmount = computed(() => {
 
@@ -676,30 +675,21 @@ function createEmptyPayForm() {
     return {
 
         id: null,
-
         employeeName: '',
-
         salaryType: 'monthly',
-
         amount: 0,
-
         paymentMethod: 'bank_transfer',
-
         paidDate: new Date()
             .toISOString()
             .slice(0, 10),
-
         reference: ''
-
     }
 
 }
 
-
 const payForm = ref(
     createEmptyPayForm()
 )
-
 
 function openPayModal(employee) {
 
@@ -718,12 +708,6 @@ function openPayModal(employee) {
     console.log(employee)
 
     showModal.value = true
-
-}
-
-
-function closeModalGenerate() {
-    generateModal.value = false;
 
 }
 
@@ -784,6 +768,25 @@ const markAllPaid = async () => {
     } else {
         await payrollStore.exportPayslips();
     }
+
+    await checkPayrollGenerated({
+        "per_page": 100
+    })
+}
+
+const undoGenerate = async () => {
+
+    const confirm = await showConfirm('Undoing Payroll', 'Are you sure want to undo the payroll', 'Yes. Please.');
+
+    if(!confirm) {
+        return;
+    }
+    
+    await payrollStore.undoGenerate({
+        'date': '2026-06-09'
+    });
+
+    showGenerateOnly.value = !showGenerateOnly.value
 
     await checkPayrollGenerated({
         "per_page": 100
@@ -857,8 +860,7 @@ function formatDate(dateString) {
 
 const checkStatus = async () => {
     const response = await payrollStore.checkStatus();
-
-    console.log(response);
+    showGenerateOnly.value = !response.alreadyGenerated;
 }
 
 onMounted(async () => {
@@ -1983,7 +1985,7 @@ onBeforeUnmount(() => {
     width: 100%;
     padding: 12px 18px;
     border: none;
-    border-radius: 8px;
+    border-radius: 3px;
     background: #16a34a;
     color: #fff;
     font-size: .85rem;
@@ -1994,6 +1996,33 @@ onBeforeUnmount(() => {
 
 .generate-btn:hover:not(:disabled) {
     background: #15803d;
+    transform: translateY(-1px);
+}
+
+.generate-btn:disabled {
+    opacity: .6;
+    cursor: not-allowed;
+}
+
+.generate-btn2 {
+    margin-top: 5px;
+}
+
+.generate-btn2 {
+    width: 100%;
+    padding: 12px 18px;
+    border: none;
+    border-radius: 3px;
+    background: #818583;
+    color: #fff;
+    font-size: .85rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: .2s;
+}
+
+.generate-btn2:hover:not(:disabled) {
+    background: #818583;
     transform: translateY(-1px);
 }
 

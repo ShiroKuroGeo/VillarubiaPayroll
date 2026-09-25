@@ -4,6 +4,7 @@ namespace App\Http\Services;
 
 use App\Models\Payroll;
 use App\Models\Salary;
+use App\Models\CashAdvanceDeduction;
 use App\Models\Attendance;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -16,6 +17,7 @@ use App\Models\Maintenance;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\ReportLogController;
 use App\Models\ReportLogs;
+use Symfony\Component\HttpKernel\Event\RequestEvent;
 
 class PayrollServices
 {
@@ -30,15 +32,15 @@ class PayrollServices
         //     );
         // }
 
-        $cutoffStart = \Carbon\Carbon::create(2026, 9, 14)->startOfDay();
-        $cutoffEnd   = \Carbon\Carbon::create(2026, 9, 19)->endOfDay();
-
         // $cutoffEnd = $today->copy()->startOfDay();
 
         // $cutoffStart = $cutoffEnd
         //     ->copy()
         //     ->subDays(6)
         //     ->startOfDay();
+
+        $cutoffStart = Carbon::create(2026, 9, 14)->startOfDay();
+        $cutoffEnd   = Carbon::create(2026, 9, 19)->endOfDay();
 
         $payoutDate = $cutoffEnd->copy();
 
@@ -180,24 +182,37 @@ class PayrollServices
                     'status' => 'Draft',
                 ]);
 
-                $cashAdvances = CashAdvance::where(
-                    'employee_id',
-                    $employee->id
-                )
+                $cashAdvances = CashAdvance::where('employee_id', $employee->id)
                     ->where('status', 'Approved')
-                    ->whereNull('payroll_id')
-                    ->where('installment_count', '>', 0)
+                    ->where(function ($query) use ($cutoffStart) {
+                        $query->where(function ($query) {
+                            $query->where('payment_type', 'Installment')
+                                ->where('installment_count', '>', 0);
+                        })->orWhere(function ($query) use ($cutoffStart) {
+                            $query->where('payment_type', 'Custom')
+                                ->where('target_cutoff_start', $cutoffStart->toDateString())
+                                ->where('balance', '>', 0);
+                        });
+                    })
                     ->get();
 
                 $caDeductionsPlan = [];
                 $caTotal = 0;
 
+
                 foreach ($cashAdvances as $ca) {
 
-                    $deductAmount = round(
-                        (float) $ca->installment_amount,
-                        2
-                    );
+                    if ($ca->payment_type === 'Custom') {
+                        // Deduct whatever was scheduled, capped so a data-entry mistake
+                        // (custom_amount > balance) can never overpay.
+                        $deductAmount = round(
+                            min((float) $ca->custom_amount, (float) $ca->balance),
+                            2
+                        );
+                    } else {
+                        // Installment - unchanged.
+                        $deductAmount = round((float) $ca->installment_amount, 2);
+                    }
 
                     if ($deductAmount <= 0) {
                         continue;
@@ -274,25 +289,40 @@ class PayrollServices
 
                     $ca = $plan['cash_advance'];
 
-                    $remainingCount = max(
-                        $ca->installment_count - 1,
-                        0
-                    );
+                    if ($ca->payment_type === 'Custom') {
 
-                    $isFinal = $remainingCount === 0;
+                        $remainingBalance = round((float) $ca->balance - $plan['amount'], 2);
+                        $isFinal = $remainingBalance <= 0;
 
-                    $ca->update([
-                        'installment_count' => $remainingCount,
+                        $ca->update([
+                            'balance' => max($remainingBalance, 0),
+                            'status' => $isFinal ? 'Deducted/Paid' : 'Approved',
+                            'payroll_id' => $isFinal ? $payroll->id : null,
 
-                        'status' =>
-                        $isFinal
-                            ? 'Deducted/Paid'
-                            : 'Approved',
+                            'target_cutoff_start' => null,
+                            'custom_amount' => null,
+                        ]);
+                    } else {
+                        $remainingCount = max($ca->installment_count - 1, 0);
+                        $isFinal = $remainingCount === 0;
 
-                        'payroll_id' =>
-                        $isFinal
-                            ? $payroll->id
-                            : null,
+                        $ca->update([
+                            'installment_count' => $remainingCount,
+                            'status' => $isFinal ? 'Deducted/Paid' : 'Approved',
+                            'payroll_id' => $isFinal ? $payroll->id : null,
+                        ]);
+                    }
+
+                    CashAdvanceDeduction::create([
+                        'cash_advance_id' => $ca->id,
+                        'payroll_id' => $payroll->id,
+                        'employee_id' => $employee->id,
+                        'amount' => $plan['amount'],
+                        'remaining_installments_after' => $ca->payment_type === 'Custom'
+                            ? null
+                            : $ca->installment_count,
+                        'cutoff_start' => $cutoffStart->toDateString(),
+                        'cutoff_end' => $cutoffEnd->toDateString(),
                     ]);
                 }
 
@@ -362,12 +392,6 @@ class PayrollServices
 
         return $result;
     }
-
-    /*
-|--------------------------------------------------------------------------
-| Calculate Gross Pay
-|--------------------------------------------------------------------------
-*/
 
     private function calculateGrossPay(
         Salary $salary,
@@ -594,14 +618,6 @@ class PayrollServices
         );
     }
 
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Late Deduction
-    |--------------------------------------------------------------------------
-    */
-
     private function calculateLateDeduction(
         $attendances,
         string $workStartTime,
@@ -666,12 +682,6 @@ class PayrollServices
             2
         );
     }
-
-    /*
-    |--------------------------------------------------------------------------
-    | Update Payroll Status
-    |--------------------------------------------------------------------------
-    */
 
     public function updateStatus(Request $request)
     {
@@ -792,12 +802,6 @@ class PayrollServices
             );
         }
     }
-
-    /*
-    |--------------------------------------------------------------------------
-    | Get Payrolls
-    |--------------------------------------------------------------------------
-    */
 
     public function getPayrolls(Request $request)
     {
@@ -925,12 +929,6 @@ class PayrollServices
         }
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Transform Payrolls
-    |--------------------------------------------------------------------------
-    */
-
     private function transformPayrolls($payrolls)
     {
         $employeeIds = $payrolls
@@ -1014,12 +1012,6 @@ class PayrollServices
         );
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Transform Single Payroll
-    |--------------------------------------------------------------------------
-    */
-
     private function transformSinglePayroll(
         $payroll,
         $attendancesByEmployee,
@@ -1086,12 +1078,6 @@ class PayrollServices
                 );
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | Deduction
-        |--------------------------------------------------------------------------
-        */
-
         $deduction = null;
 
         if (
@@ -1112,12 +1098,6 @@ class PayrollServices
                 $payroll->cutoff_start,
                 $payroll->cutoff_end
             );
-
-        /*
-        |--------------------------------------------------------------------------
-        | Cash advance balance
-        |--------------------------------------------------------------------------
-        */
 
         $employeeCashAdvances =
             $cashAdvancesByEmployee->get(
@@ -1254,12 +1234,6 @@ class PayrollServices
                 ),
         ];
     }
-
-    /*
-    |--------------------------------------------------------------------------
-    | Format Period
-    |--------------------------------------------------------------------------
-    */
 
     private function formatPeriod(
         $start,
@@ -1581,6 +1555,94 @@ class PayrollServices
 
             return response_return(
                 $th->getMessage(),
+                [],
+                500
+            );
+        }
+    }
+
+
+    public function undoGenerate(Request $request)
+    {
+        DB::beginTransaction();
+
+        try {
+            // $cutoffStart = Carbon::now()->startOfWeek(Carbon::SUNDAY)->toDateString();
+            // $cutoffEnd = Carbon::now()->endOfWeek(Carbon::SATURDAY)->toDateString();
+
+            $cutoffEnd = Carbon::create(2026, 9, 19)->toDateString();
+            $cutoffStart = Carbon::create(2026, 9, 14)->toDateString();
+
+            $payrolls = Payroll::where('cutoff_start', $cutoffStart)
+                ->where('cutoff_end', $cutoffEnd)
+                ->get();
+
+            if ($payrolls->isEmpty()) {
+                DB::rollBack();
+
+                return response_return(
+                    'No payroll found for this cutoff to undo.',
+                    [],
+                    404
+                );
+            }
+
+            $payrollIds = $payrolls->pluck('id');
+
+            $cashAdvances = CashAdvance::whereIn('payroll_id', $payrollIds)->get();
+
+            foreach ($cashAdvances as $ca) {
+                $ca->update([
+                    'installment_count' => $ca->installment_count + 1,
+                    'status' => 'Approved',
+                    'payroll_id' => null,
+                ]);
+            }
+
+            $sssPosted = SSSContribution::whereIn('payroll_id', $payrollIds)->get();
+
+            foreach ($sssPosted as $entry) {
+                SSSContribution::where('employee_id', $entry->employee_id)
+                    ->where('status', 'Pending')
+                    ->whereNull('payroll_id')
+                    ->where('amount', $entry->amount)
+                    ->where('id', '!=', $entry->id)
+                    ->latest('id')
+                    ->first()
+                    ?->delete();
+
+                $entry->update([
+                    'payroll_id' => null,
+                    'status' => 'Pending',
+                    'date' => null,
+                ]);
+            }
+
+            // Deductions and the payroll rows themselves were CREATED for this
+            // cutoff, not pre-existing records - safe to actually delete these.
+            Deduction::whereIn('payroll_id', $payrollIds)->delete();
+
+            Payroll::whereIn('id', $payrollIds)->delete();
+
+            ReportLogs::where('report_type', 'saturday_payroll')
+                ->where('last_generated', Carbon::today()->toDateString())
+                ->delete();
+
+            DB::commit();
+
+            return response_return('Successfully undid the generated payroll.', [], 200);
+        } catch (\Throwable $th) {
+
+            DB::rollBack();
+
+            logger()->error('UNDO PAYROLL ERROR', [
+                'message' => $th->getMessage(),
+                'file' => $th->getFile(),
+                'line' => $th->getLine(),
+            ]);
+
+            return response_return(
+                'Undoing report is unstable. Please call the IT Admin for this.',
                 [],
                 500
             );

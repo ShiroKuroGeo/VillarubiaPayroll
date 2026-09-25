@@ -94,6 +94,7 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::post('list', 'getPayrolls');
             Route::post('review_payroll', 'getPayroll');
             Route::post('delete_payroll', 'deletePayrolGenerated');
+            Route::post('undo_generate', 'undoGenerate');
         });
 
     Route::controller(SalaryController::class)

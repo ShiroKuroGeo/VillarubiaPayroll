@@ -15,7 +15,7 @@ class ReportLogController extends Controller
             $today = Carbon::today();
 
             $isSaturday = $today->isSaturday();
-            $lastLog = ReportLogs::where('report_type', 'saturday_report')->first();
+            $lastLog = ReportLogs::where('report_type', 'saturday_payroll')->orderBy('id', 'desc')->first();
             $alreadyGenerated = $lastLog && Carbon::parse($lastLog->last_generated)->isToday();
 
             return response()->json([
