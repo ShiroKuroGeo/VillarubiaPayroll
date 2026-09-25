@@ -203,14 +203,11 @@ class PayrollServices
                 foreach ($cashAdvances as $ca) {
 
                     if ($ca->payment_type === 'Custom') {
-                        // Deduct whatever was scheduled, capped so a data-entry mistake
-                        // (custom_amount > balance) can never overpay.
                         $deductAmount = round(
                             min((float) $ca->custom_amount, (float) $ca->balance),
                             2
                         );
                     } else {
-                        // Installment - unchanged.
                         $deductAmount = round((float) $ca->installment_amount, 2);
                     }
 
@@ -298,7 +295,6 @@ class PayrollServices
                             'balance' => max($remainingBalance, 0),
                             'status' => $isFinal ? 'Deducted/Paid' : 'Approved',
                             'payroll_id' => $isFinal ? $payroll->id : null,
-
                             'target_cutoff_start' => null,
                             'custom_amount' => null,
                         ]);
@@ -1589,15 +1585,35 @@ class PayrollServices
 
             $payrollIds = $payrolls->pluck('id');
 
-            $cashAdvances = CashAdvance::whereIn('payroll_id', $payrollIds)->get();
+            $caDeductions = CashAdvanceDeduction::whereIn('payroll_id', $payrollIds)
+                ->with('cashAdvance')
+                ->get();
 
-            foreach ($cashAdvances as $ca) {
-                $ca->update([
-                    'installment_count' => $ca->installment_count + 1,
-                    'status' => 'Approved',
-                    'payroll_id' => null,
-                ]);
+            foreach ($caDeductions as $cad) {
+                $ca = $cad->cashAdvance;
+
+                if (!$ca) {
+                    continue; 
+                }
+
+                if ($ca->payment_type === 'Custom') {
+                    $ca->update([
+                        'balance' => round($ca->balance + $cad->amount, 2),
+                        'status' => 'Approved',
+                        'payroll_id' => null,
+                        'custom_amount' => $cad->amount,
+                        'target_cutoff_start' => $cad->cutoff_start,
+                    ]);
+                } else {
+                    $ca->update([
+                        'installment_count' => $ca->installment_count + 1,
+                        'status' => 'Approved',
+                        'payroll_id' => null,
+                    ]);
+                }
             }
+
+            CashAdvanceDeduction::whereIn('payroll_id', $payrollIds)->delete();
 
             $sssPosted = SSSContribution::whereIn('payroll_id', $payrollIds)->get();
 

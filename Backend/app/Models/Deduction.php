@@ -24,7 +24,12 @@ class Deduction extends Model
 
     public function payroll()
     {
-        return $this->belongsTo(Payroll::class, 'payroll_id');
+        return $this->belongsTo(Payroll::class);
+    }
+
+    public function cashAdvanceBreakdown()
+    {
+        return CashAdvanceDeduction::where('payroll_id', $this->payroll_id)->get();
     }
 
     protected $casts = [

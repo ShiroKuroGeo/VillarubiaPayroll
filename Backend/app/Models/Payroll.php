@@ -21,15 +21,23 @@ class Payroll extends Model
 {
     protected $table = 'payrolls';
 
-    public function employee(){
+    public function employee()
+    {
         return $this->belongsTo(Employee::class, 'employee_id');
     }
 
-    public function cashadvances(){
+    public function cashadvances()
+    {
         return $this->hasMany(CashAdvance::class);
     }
 
-    public function deductions(){
+    public function deductions()
+    {
         return $this->hasOne(Deduction::class);
+    }
+
+    public function cashAdvanceDeductions()
+    {
+        return $this->hasMany(CashAdvanceDeduction::class);
     }
 }

@@ -169,7 +169,7 @@
                             <tr>
                                 <th>Employee</th>
                                 <th>Department</th>
-                                <th>Amount Installment.</th>
+                                <th>Amount.</th>
                                 <th>Request Date</th>
                                 <th>Status</th>
                                 <th>Action</th>
@@ -200,12 +200,20 @@
                                         {{ request.employee.location }}
                                     </div>
                                 </td>
-                                <td>
+                                <td v-if="request.payment_type === 'Installment'">
                                     <span class="money">
                                         {{ formatCurrency(request.installment_amount) }}
                                     </span>
                                     <div class="date-sub">
                                         Total Balance: {{ formatCurrency(request.installment_amount * request.installment_count) }}
+                                    </div>
+                                </td>
+                                <td v-if="request.payment_type === 'Custom'">
+                                    <span class="money">
+                                        {{ formatCurrency(request.custom_amount) }}
+                                    </span>
+                                    <div class="date-sub">
+                                        Total Balance: {{ formatCurrency(request.balance) }}
                                     </div>
                                 </td>
                                 <td>
@@ -268,9 +276,14 @@
                         <div class="avatar-lg">
                             <img :src="storageImage(selectedRequest.employee.image)" style="object-fit: cover; border-radius: 50%; border: 1px dashed gray;" width="45" height="45" alt="">
                         </div>
-                        <div>
-                            <div class="profile-name">
-                                {{ selectedRequest.employee.last_name }}, {{ selectedRequest.employee.first_name }}
+                        <div class="profile-main">
+                            <div class="profile-name-row">
+                                <div class="profile-name">
+                                    {{ selectedRequest.employee.last_name }}, {{ selectedRequest.employee.first_name }}
+                                </div>
+                                <span class="badge-type" :class="selectedRequest?.payment_type === 'Custom' ? 'badge-type--custom' : 'badge-type--installment'">
+                                    {{ selectedRequest?.payment_type }}
+                                </span>
                             </div>
                             <div class="profile-position">
                                 {{ selectedRequest.employee.phone_number }}
@@ -280,13 +293,14 @@
                             </div>
                         </div>
                     </div>
+
                     <div class="request-grid">
                         <div class="request-info">
                             <div class="info-label">
-                                Requested Amount/Balance
+                                Amount Requested
                             </div>
                             <div class="info-value money">
-                                {{ formatCurrency(selectedRequest?.balance || 0) }}
+                                {{ formatCurrency(selectedRequest?.amount || 0) }}
                             </div>
                         </div>
                         <div class="request-info">
@@ -308,6 +322,37 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- Type-specific deduction plan, so the admin knows what they're approving -->
+                    <div v-if="selectedRequest?.payment_type === 'Installment'" class="plan-box">
+                        <div class="info-label">Deduction Plan</div>
+                        <div class="plan-row">
+                            <span>Per payroll</span>
+                            <strong>{{ formatCurrency(selectedRequest?.installment_amount || 0) }}</strong>
+                        </div>
+                        <div class="plan-row">
+                            <span>Number of payrolls</span>
+                            <strong>{{ selectedRequest?.installment_count || 0 }}</strong>
+                        </div>
+                        <p class="plan-note">
+                            Deducted automatically every payroll cutoff until fully paid — no further action needed after approval.
+                        </p>
+                    </div>
+                    <div v-else class="plan-box">
+                        <div class="info-label">Deduction Plan</div>
+                        <div class="plan-row">
+                            <span>First deduction</span>
+                            <strong>{{ formatCurrency(selectedRequest?.custom_amount || selectedRequest?.amount || 0) }}</strong>
+                        </div>
+                        <div class="plan-row">
+                            <span>Target cutoff</span>
+                            <strong>{{ selectedRequest?.target_cutoff_start ? formatDate(selectedRequest.target_cutoff_start) : 'Not set yet' }}</strong>
+                        </div>
+                        <p class="plan-note">
+                            Only deducts once, on the targeted cutoff. If the amount doesn't cover the full request, you'll need to set the next deduction manually after this one clears.
+                        </p>
+                    </div>
+
                     <div class="reason-box">
                         <div class="info-label">
                             Reason for Request
@@ -384,6 +429,8 @@
                 </div>
             </div>
         </div>
+
+        <!-- VIEW / DETAILS MODAL — redesigned -->
         <div v-if="showViewModal" class="modal-backdrop" @click.self="closeModals">
             <div class="employee-modal">
                 <div class="modal-header">
@@ -404,9 +451,14 @@
                         <div class="avatar-lg">
                             <img :src="storageImage(selectedRequest.employee.image)" style="object-fit: cover; border-radius: 50%; border: 1px dashed gray;" width="45" height="45" alt="">
                         </div>
-                        <div>
-                            <div class="profile-name">
-                                {{ selectedRequest.employee.last_name }}, {{ selectedRequest.employee.first_name }}
+                        <div class="profile-main">
+                            <div class="profile-name-row">
+                                <div class="profile-name">
+                                    {{ selectedRequest.employee.last_name }}, {{ selectedRequest.employee.first_name }}
+                                </div>
+                                <span class="badge-type" :class="selectedRequest?.payment_type === 'Custom' ? 'badge-type--custom' : 'badge-type--installment'">
+                                    {{ selectedRequest?.payment_type }}
+                                </span>
                             </div>
                             <div class="profile-position">
                                 {{ selectedRequest?.employee.phone_number }}
@@ -416,17 +468,73 @@
                             </div>
                         </div>
                     </div>
-                    <div class="details-list">
-                        <div class="detail-row">
-                            <span>Balance</span>
-                            <strong>{{ formatCurrency(selectedRequest?.balance || 0) }}</strong>
+
+                    <!-- Balance ledger strip -->
+                    <div class="ledger-strip">
+                        <div class="ledger-cell">
+                            <div class="info-label">Requested</div>
+                            <div class="ledger-value">{{ formatCurrency(selectedRequest?.amount || 0) }}</div>
                         </div>
-                        <div class="detail-row">
-                            <span>Next Deduction</span>
-                            <div class="">
-                                <input type="number" class="form-control" v-model="selectedRequest.amount">
+                        <div class="ledger-divider">−</div>
+                        <div class="ledger-cell">
+                            <div class="info-label">Already Deducted</div>
+                            <div class="ledger-value">{{ formatCurrency((selectedRequest?.amount || 0) - (selectedRequest?.balance || 0)) }}</div>
+                        </div>
+                        <div class="ledger-divider">=</div>
+                        <div class="ledger-cell ledger-cell--highlight">
+                            <div class="info-label">Balance Remaining</div>
+                            <div class="ledger-value ledger-value--big">{{ formatCurrency(selectedRequest?.balance || 0) }}</div>
+                        </div>
+                    </div>
+
+                    <!-- Installment: read-only, auto-deducting -->
+                    <div v-if="selectedRequest?.payment_type === 'Installment'" class="auto-note">
+                        <span class="auto-note-icon">↻</span>
+                        <div>
+                            <div class="auto-note-title">Deducts automatically every payroll</div>
+                            <div class="auto-note-sub">
+                                {{ formatCurrency(selectedRequest?.installment_amount || 0) }} per cutoff ·
+                                {{ selectedRequest?.installment_count || 0 }} payroll{{ selectedRequest?.installment_count === 1 ? '' : 's' }} remaining.
+                                No manual action needed.
                             </div>
                         </div>
+                    </div>
+
+                    <!-- Custom: set next targeted deduction -->
+                    <div v-else-if="selectedRequest?.status !== 'Rejected'" class="deduction-set-box">
+                        <div class="info-label">Set Next Deduction</div>
+                        <p class="deduction-set-sub">
+                            Custom deductions only happen once, on the exact payroll cutoff you target below. Pick how much to take and which cutoff it should apply to.
+                        </p>
+
+                        <div v-if="selectedRequest?.balance <= 0" class="fully-paid-note">
+                            This cash advance is fully paid off — nothing left to schedule.
+                        </div>
+
+                        <template v-else>
+                            <div class="deduction-fields">
+                                <div class="form-group">
+                                    <label>Amount to deduct</label>
+                                    <input type="number" min="1" :max="selectedRequest.balance" step="1" v-model.number="nextDeductionAmount" />
+                                    <div v-if="nextDeductionAmount > selectedRequest.balance" class="field-hint field-hint--error">
+                                        Can't exceed the remaining balance of {{ formatCurrency(selectedRequest.balance) }}.
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label>Target payroll cutoff</label>
+                                    <input type="date" v-model="nextDeductionDate" @change="validateCutoffDate" />
+                                    <div v-if="cutoffDateError" class="field-hint field-hint--error">
+                                        {{ cutoffDateError }}
+                                    </div>
+                                    <div v-else-if="nextDeductionDate" class="field-hint">
+                                        Confirmed payroll cutoff date.
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+
+                    <div class="details-list">
                         <div class="detail-row">
                             <span>Request Date</span>
                             <strong>{{ formatDate(selectedRequest?.requested_date) }}</strong>
@@ -459,7 +567,7 @@
                     <button type="button" class="btn btn-secondary-ledger" @click="closeModals">
                         Close
                     </button>
-                    <button type="button" class="btn btn-mini-view" @click="setDeduction">
+                    <button v-if="selectedRequest?.payment_type === 'Custom' && selectedRequest?.balance > 0" type="button" class="btn btn-primary-ledger" :disabled="!canSetDeduction" @click="setDeduction">
                         Set Deduction
                     </button>
                 </div>
@@ -476,7 +584,8 @@ import {
     computed,
     onBeforeUnmount,
     onMounted,
-    ref
+    ref,
+    watch
 } from 'vue'
 
 defineOptions({
@@ -590,6 +699,43 @@ const paymentReference = ref('')
 
 const paymentNotes = ref('')
 
+// --- Set-deduction state (Custom CAs only) ---
+const nextDeductionAmount = ref(null)
+const nextDeductionDate = ref('')
+const cutoffDateError = ref('')
+
+function validateCutoffDate() {
+
+    cutoffDateError.value = ''
+
+    if (!nextDeductionDate.value) return
+
+    // Payroll cutoffs start on Sunday under the current schedule
+    // (payout Saturday minus 6 days). Reject anything else up front
+    // so a mismatched target_cutoff_start can't be saved.
+    const parsed = new Date(nextDeductionDate.value + 'T00:00:00')
+
+    if (parsed.getDay() !== 0) {
+        cutoffDateError.value = 'This date is not a confirmed payroll cutoff date. Cutoffs start on Sunday.'
+    }
+}
+
+const canSetDeduction = computed(() => {
+    if (!selectedRequest.value) return false
+    if (!nextDeductionAmount.value || nextDeductionAmount.value <= 0) return false
+    if (nextDeductionAmount.value > selectedRequest.value.balance) return false
+    if (!nextDeductionDate.value) return false
+    if (cutoffDateError.value) return false
+    return true
+})
+
+// Reset the set-deduction fields whenever a different request is opened
+watch(selectedRequest, (val) => {
+    nextDeductionAmount.value = val?.balance || null
+    nextDeductionDate.value = ''
+    cutoffDateError.value = ''
+})
+
 function openReviewModal(request) {
     selectedRequest.value = request
     adminNotes.value = request.adminNotes || ''
@@ -681,10 +827,25 @@ function closeModals() {
 }
 
 const setDeduction = async () => {
+
+    if (!canSetDeduction.value) return
+
+    // Writes to custom_amount / target_cutoff_start on the CA — NOT
+    // the original `amount` field. Backend endpoint needs to accept
+    // both fields (the old call only ever sent amount_deducted).
     await cashAdvanceStore.nextDeduction({
         cash_advance_id: selectedRequest.value.id,
-        amount_deducted: selectedRequest.value.amount,
+        custom_amount: nextDeductionAmount.value,
+        target_cutoff_start: nextDeductionDate.value,
     });
+
+    getCashAdvances({
+        "employee_id": null,
+        "status": null,
+        "per_page": 100,
+    });
+
+    closeModals()
 }
 
 function formatStatus(status) {
@@ -895,13 +1056,18 @@ onBeforeUnmount(() => {
     font-family: inherit;
 }
 
+.btn:disabled {
+    opacity: .5;
+    cursor: not-allowed;
+}
+
 .btn-primary-ledger {
     background: var(--ink, #1C2B4A);
     color: #F3DFA6;
     border-color: var(--ink, #1C2B4A);
 }
 
-.btn-primary-ledger:hover {
+.btn-primary-ledger:hover:not(:disabled) {
     background: #28395E;
 }
 
@@ -1270,6 +1436,30 @@ onBeforeUnmount(() => {
 }
 
 
+/* TYPE BADGE (view modal) */
+
+.badge-type {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: .6rem;
+    font-weight: 600;
+    padding: .25rem .5rem;
+    border-radius: 5px;
+    letter-spacing: .03em;
+    display: inline-block;
+    white-space: nowrap;
+}
+
+.badge-type--installment {
+    background: var(--amber-bg, #F6EEDB);
+    color: var(--gold-dark, #9C7726);
+}
+
+.badge-type--custom {
+    background: #E4E9F4;
+    color: var(--ink-2, #28395E);
+}
+
+
 /* ACTIONS */
 
 .action-group {
@@ -1457,6 +1647,18 @@ onBeforeUnmount(() => {
     font-size: 1rem;
 }
 
+.profile-main {
+    min-width: 0;
+    flex: 1;
+}
+
+.profile-name-row {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    flex-wrap: wrap;
+}
+
 .profile-name {
     font-family: 'Fraunces', serif;
     font-size: .95rem;
@@ -1472,6 +1674,145 @@ onBeforeUnmount(() => {
     font-size: .68rem;
     color: var(--slate, #6B7280);
     margin-top: .1rem;
+}
+
+
+/* LEDGER STRIP (view modal balance breakdown) */
+
+.ledger-strip {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr auto 1fr;
+    align-items: center;
+    gap: .6rem;
+    background: var(--paper, #F2F1EA);
+    border-radius: 8px;
+    padding: .9rem 1rem;
+    margin-bottom: 1.1rem;
+}
+
+.ledger-cell {
+    min-width: 0;
+}
+
+.ledger-cell--highlight .ledger-value {
+    color: var(--ink, #1C2B4A);
+}
+
+.ledger-divider {
+    font-family: 'IBM Plex Mono', monospace;
+    color: var(--slate, #6B7280);
+    font-size: .85rem;
+}
+
+.ledger-value {
+    font-family: 'IBM Plex Mono', monospace;
+    font-weight: 600;
+    font-size: .82rem;
+    color: var(--ink-2, #28395E);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.ledger-value--big {
+    font-size: 1rem;
+}
+
+
+/* AUTO-DEDUCT NOTE (installment) */
+
+.auto-note {
+    display: flex;
+    gap: .7rem;
+    align-items: flex-start;
+    background: var(--amber-bg, #F6EEDB);
+    border: 1px solid #E7D9B5;
+    border-radius: 8px;
+    padding: .8rem .9rem;
+    margin-bottom: 1.1rem;
+}
+
+.auto-note-icon {
+    font-size: 1.1rem;
+    line-height: 1;
+    color: var(--gold-dark, #9C7726);
+}
+
+.auto-note-title {
+    font-weight: 600;
+    font-size: .82rem;
+    color: var(--ink, #1C2B4A);
+}
+
+.auto-note-sub {
+    font-size: .74rem;
+    color: var(--slate, #6B7280);
+    margin-top: .15rem;
+    line-height: 1.4;
+}
+
+
+/* DEDUCTION PLAN BOX (review modal) */
+
+.plan-box {
+    background: var(--paper, #F2F1EA);
+    border-radius: 8px;
+    padding: .85rem 1rem;
+    margin-bottom: 1.1rem;
+}
+
+.plan-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: .82rem;
+    padding: .35rem 0;
+}
+
+.plan-row span {
+    color: var(--slate, #6B7280);
+}
+
+.plan-row strong {
+    color: var(--ink, #1C2B4A);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: .8rem;
+}
+
+.plan-note {
+    font-size: .72rem;
+    color: var(--slate, #6B7280);
+    line-height: 1.45;
+    margin: .5rem 0 0;
+}
+
+
+/* SET-DEDUCTION BOX (custom) */
+
+.deduction-set-box {
+    background: var(--paper, #F2F1EA);
+    border-radius: 8px;
+    padding: .9rem 1rem 1rem;
+    margin-bottom: 1.1rem;
+}
+
+.deduction-set-sub {
+    font-size: .74rem;
+    color: var(--slate, #6B7280);
+    line-height: 1.45;
+    margin: .2rem 0 .8rem;
+}
+
+.fully-paid-note {
+    font-size: .78rem;
+    color: var(--green, #2F8F5B);
+    font-weight: 600;
+}
+
+.deduction-fields {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: .8rem;
 }
 
 
@@ -1561,6 +1902,15 @@ onBeforeUnmount(() => {
     box-shadow: 0 0 0 3px rgba(199, 154, 61, .12);
 }
 
+.field-hint {
+    font-size: .68rem;
+    color: var(--slate, #6B7280);
+}
+
+.field-hint--error {
+    color: var(--red, #C24D3B);
+}
+
 
 /* PAYMENT SUMMARY */
 
@@ -1610,9 +1960,6 @@ onBeforeUnmount(() => {
 .detail-row>span:first-child {
     color: var(--slate, #6B7280);
 }
-
-
-/* LAYOUT UTILITIES */
 
 .d-flex {
     display: flex;
@@ -1700,6 +2047,19 @@ onBeforeUnmount(() => {
 
     .modal-footer--split .btn {
         flex: 1;
+    }
+
+    .ledger-strip {
+        grid-template-columns: 1fr;
+        text-align: left;
+    }
+
+    .ledger-divider {
+        display: none;
+    }
+
+    .deduction-fields {
+        grid-template-columns: 1fr;
     }
 }
 </style>

@@ -5,6 +5,7 @@ namespace App\Http\Services;
 use App\Models\CashAdvance;
 use App\Models\CashAdvanceDeduction;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
 
 class CashAdvanceServices
@@ -14,10 +15,12 @@ class CashAdvanceServices
         try {
             $validation = $request->validate([
                 'employee_id' => ['required', 'integer', 'exists:employees,id'],
-                'amount' => ['required', 'numeric', 'min:1'],
-                'installment_amount' => ['required', 'numeric', 'min:1'],
-                'installment_count' => ['required', 'numeric', 'min:1'],
-                'requested_date' => ['required', 'date'],
+                'amount' => ['nullable', 'numeric', 'min:1'],
+                'balance' => ['nullable', 'numeric', 'min:1'],
+                'custom_amount' => ['nullable', 'numeric', 'min:1'],
+                'installment_amount' => ['nullable', 'numeric', 'min:1'],
+                'installment_count' => ['nullable', 'numeric', 'min:1'],
+                'requested_date' => ['nullable', 'date'],
                 'reason' => ['nullable', 'string'],
             ]);
         } catch (\Throwable $th) {
@@ -25,9 +28,19 @@ class CashAdvanceServices
         }
 
         try {
+            if($request->payment_type == 'Custom'){
+                if (!Carbon::parse($request->target_cutoff_start)->isSaturday()) {
+                    return response_return('Target cutoff date is not a saturday. ', [], 422);
+                }
+            }
+
             $createCashAdvance = CashAdvance::create([
                 'employee_id' => $validation['employee_id'],
                 'amount' => $validation['amount'],
+                'balance' => $validation['balance'],
+                'custom_amount' => $validation['custom_amount'],
+                'target_cutoff_start' => $request->target_cutoff_start,
+                'payment_type' => $request->payment_type,
                 'installment_amount' => $validation['installment_amount'],
                 'installment_count' => $validation['installment_count'],
                 'requested_date' => $validation['requested_date'],
@@ -41,7 +54,7 @@ class CashAdvanceServices
 
             return response_return('Successfully submitted cash advance request.', $createCashAdvance->toArray(), 201);
         } catch (\Throwable $th) {
-            return response_return('Error occurred in submitting cash advance request.', [], 500);
+            return response_return($th->getMessage(), [], 500);
         }
     }
 
