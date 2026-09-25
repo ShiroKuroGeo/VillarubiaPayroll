@@ -666,7 +666,6 @@
     </div>
 </template>
 
-
 <script setup>
 
 import { useAttendanceStore } from '@/stores/useAttendance';
@@ -1185,14 +1184,6 @@ function closeModal() {
 
 const toHMS = (value) => (value && value.length === 5 ? `${value}:00` : value);
 
-const formatTimeUpdate = (time) => {
-    if (!time) {
-        return null
-    }
-
-    return time.substring(0, 5)
-}
-
 const saveBiometrics = async () => {
     if (editingAttendance.value) {
         await attendanceStore.updateAttendance({
@@ -1346,7 +1337,6 @@ onBeforeUnmount(() => {
 
 })
 </script>
-
 
 <style scoped>
 .main {

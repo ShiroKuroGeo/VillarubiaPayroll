@@ -25,23 +25,15 @@ class PayrollServices
     {
         $today = Carbon::now();
 
-        // if (!$today->isSaturday()) {
-        //     throw new \Exception(
-        //         'Payroll can only be generated on Saturday.',
-        //         422
-        //     );
-        // }
+        if (!$today->isSaturday()) {
+            throw new \Exception(
+                'Payroll can only be generated on Saturday.',
+                422
+            );
+        }
 
-        // $cutoffEnd = $today->copy()->startOfDay();
-
-        // $cutoffStart = $cutoffEnd
-        //     ->copy()
-        //     ->subDays(6)
-        //     ->startOfDay();
-
-        $cutoffStart = Carbon::create(2026, 9, 14)->startOfDay();
-        $cutoffEnd   = Carbon::create(2026, 9, 19)->endOfDay();
-
+        $cutoffEnd = $today->copy()->startOfDay();
+        $cutoffStart = $cutoffEnd->copy()->subDays(6)->startOfDay();
         $payoutDate = $cutoffEnd->copy();
 
         $checkAttendance = Attendance::whereBetween(
@@ -1563,11 +1555,8 @@ class PayrollServices
         DB::beginTransaction();
 
         try {
-            // $cutoffStart = Carbon::now()->startOfWeek(Carbon::SUNDAY)->toDateString();
-            // $cutoffEnd = Carbon::now()->endOfWeek(Carbon::SATURDAY)->toDateString();
-
-            $cutoffEnd = Carbon::create(2026, 9, 19)->toDateString();
-            $cutoffStart = Carbon::create(2026, 9, 14)->toDateString();
+            $cutoffStart = Carbon::now()->startOfWeek(Carbon::SUNDAY)->toDateString();
+            $cutoffEnd = Carbon::now()->endOfWeek(Carbon::SATURDAY)->toDateString();
 
             $payrolls = Payroll::where('cutoff_start', $cutoffStart)
                 ->where('cutoff_end', $cutoffEnd)
@@ -1593,7 +1582,7 @@ class PayrollServices
                 $ca = $cad->cashAdvance;
 
                 if (!$ca) {
-                    continue; 
+                    continue;
                 }
 
                 if ($ca->payment_type === 'Custom') {

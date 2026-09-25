@@ -293,7 +293,6 @@
                             </div>
                         </div>
                     </div>
-
                     <div class="request-grid">
                         <div class="request-info">
                             <div class="info-label">
@@ -621,32 +620,26 @@ const statusFilters = [
     { label: 'Paid', value: 'Deducted/Paid' },
     { label: 'Rejected', value: 'Rejected' }
 ]
-
 const filteredRequests = computed(() => {
-
-    const search =
-        searchQuery.value
-            .toLowerCase()
-            .trim()
+    const search = searchQuery.value.toLowerCase().trim()
 
     return cashAdvanceData.value.filter(request => {
+        const firstName = request.employee.first_name?.toLowerCase() ?? ''
+        const lastName = request.employee.last_name?.toLowerCase() ?? ''
+        const fullName = `${firstName} ${lastName}`
 
         const matchesSearch =
             !search ||
-            request.employeeName.toLowerCase().includes(search) ||
-            request.department.toLowerCase().includes(search) ||
-            request.reason.toLowerCase().includes(search)
-
+            firstName.includes(search) ||
+            lastName.includes(search) ||
+            fullName.includes(search) 
 
         const matchesFilter =
             activeFilter.value === 'all' ||
             request.status === activeFilter.value
 
-
         return matchesSearch && matchesFilter
-
     })
-
 })
 
 const pendingRequests = computed(() =>
@@ -1911,9 +1904,6 @@ onBeforeUnmount(() => {
     color: var(--red, #C24D3B);
 }
 
-
-/* PAYMENT SUMMARY */
-
 .payment-employee {
     font-family: 'Fraunces', serif;
     font-size: 1.05rem;
@@ -1935,9 +1925,6 @@ onBeforeUnmount(() => {
     background: var(--paper, #F2F1EA);
     border-radius: 7px;
 }
-
-
-/* DETAILS LIST */
 
 .details-list {
     margin-bottom: 1.1rem;

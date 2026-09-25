@@ -44,7 +44,7 @@
                 <div class="generate-card">
                     <div class="generate-main">
                         <div class="stamp gold">PAYROLL</div>
-                        <div class="generate-title">It's payroll day</div>
+                        <div class="generate-title">It's payroll day </div>
                         <div class="generate-sub">
                             Generate this week's payroll to view and release employee payouts.
                         </div>
@@ -55,10 +55,35 @@
                                 <p>Payroll can only be generated on Saturday.</p>
                             </div>
                         </div>
+                        <div class="">
+                            <div class="generation-checklist">
+                                <label class="check-row">
+                                    <input type="checkbox" v-model="checks.attendance" />
+                                    <div>
+                                        <div class="check-title">Verify Attendance</div>
+                                        <div class="check-sub">Confirms time-in / time-out and overtime hours are imported for this cutoff before calculating gross pay.</div>
+                                    </div>
+                                </label>
+                                <label class="check-row">
+                                    <input type="checkbox" v-model="checks.cashAdvances" />
+                                    <div>
+                                        <div class="check-title">Include Cash Advance Deductions</div>
+                                        <div class="check-sub">Applies Installment and targeted Custom deductions that are due this cutoff.</div>
+                                    </div>
+                                </label>
+                                <label class="check-row">
+                                    <input type="checkbox" v-model="checks.sss" />
+                                    <div>
+                                        <div class="check-title">Include SSS contribution</div>
+                                        <div class="check-sub">Optional — posts any pending SSS entries for this cutoff. Leave unchecked to defer them to the next run.</div>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
                         <div v-if="generateError" class="generate-error">
                             {{ generateError }}
                         </div>
-                        <button class="generate-btn" :disabled="generating" @click="triggerPayrollLoading">
+                        <button class="generate-btn" :disabled="generating || !checks.attendance || !checks.cashAdvances || !checks.sss" @click="triggerPayrollLoading">
                             {{ generating ? 'Generating…' : 'Generate Payroll' }}
                         </button>
                         <button class="generate-btn2" @click="showGenerateOnly = !showGenerateOnly">
@@ -475,8 +500,13 @@ const generateModal = ref(false);
 const loaderRef = ref(null);
 const showGenerateOnly = ref(false)
 
+const checks = ref({
+    attendance: false,
+    cashAdvances: false,
+    sss: true,
+})
+
 const hasGeneratedToday = computed(() => lastReportDate.value === getTodayString())
-const canGenerateReport = computed(() => isSaturday.value && !hasGeneratedToday.value)
 
 async function checkPayrollGenerated(data) {
     try {
@@ -485,13 +515,8 @@ async function checkPayrollGenerated(data) {
             payrollGenerated.value = false
             return
         }
-
         const result = await response.data
-
         payrollData.value = response.data
-
-        console.log(response.data)
-
         payrollGenerated.value = Boolean(result?.data?.length)
     } catch (err) {
         console.error('Failed to check existing payroll', err)
@@ -520,7 +545,8 @@ async function handleGeneratePayroll() {
         await payrollStore.generatePayroll();
         await checkPayrollGenerated({
             "per_page": 100
-        })
+        });
+        showGenerateOnly.value = true;
     } catch (err) {
         generateError.value = err.message || 'Something went wrong while generating payroll.'
     } finally {
@@ -529,10 +555,10 @@ async function handleGeneratePayroll() {
 }
 
 const triggerPayrollLoading = () => {
-    // if (!isSaturday.value) {
-    //     showStatusAlert('Saturday Payroll', 'You can only generate payroll in Saturday Afternoon.')
-    //     return
-    // }
+    if (!isSaturday.value) {
+        showStatusAlert('Saturday Payroll', 'You can only generate payroll in Saturday Afternoon.')
+        return
+    }
 
     loaderRef.value?.startLoading(
         handleLoadingDone,
@@ -778,10 +804,10 @@ const undoGenerate = async () => {
 
     const confirm = await showConfirm('Undoing Payroll', 'Are you sure want to undo the payroll', 'Yes. Please.');
 
-    if(!confirm) {
+    if (!confirm) {
         return;
     }
-    
+
     await payrollStore.undoGenerate({
         'date': '2026-06-09'
     });
@@ -2177,5 +2203,40 @@ onBeforeUnmount(() => {
     .settings-list {
         grid-template-columns: 1fr;
     }
+}
+
+.generation-checklist {
+    background: var(--paper, #F2F1EA);
+    border-radius: 8px;
+    padding: .9rem 1rem 1rem;
+}
+
+.check-row {
+    display: flex;
+    align-items: flex-start;
+    gap: .6rem;
+    padding: .5rem 0;
+    cursor: pointer;
+}
+
+.check-row input[type="checkbox"] {
+    margin-top: .2rem;
+    accent-color: var(--gold, #C79A3D);
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+}
+
+.check-title {
+    font-size: .84rem;
+    font-weight: 600;
+    color: var(--ink, #1C2B4A);
+}
+
+.check-sub {
+    font-size: .72rem;
+    color: var(--slate, #6B7280);
+    line-height: 1.4;
+    margin-top: .1rem;
 }
 </style>

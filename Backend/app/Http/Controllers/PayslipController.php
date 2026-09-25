@@ -60,11 +60,8 @@ class PayslipController extends Controller
     {
         try {
 
-            // $cutoffStart = Carbon::now()->startOfWeek(Carbon::SUNDAY)->toDateString();
-            // $cutoffEnd = Carbon::now()->endOfWeek(Carbon::SATURDAY)->toDateString();
-
-            $cutoffStart = Carbon::create(2026, 9, 14)->toDateString();
-            $cutoffEnd = Carbon::create(2026, 9, 19)->toDateString();
+            $cutoffStart = Carbon::now()->startOfWeek(Carbon::SUNDAY)->toDateString();
+            $cutoffEnd = Carbon::now()->endOfWeek(Carbon::SATURDAY)->toDateString();
 
             $payrolls = Payroll::with([
                 'employee',

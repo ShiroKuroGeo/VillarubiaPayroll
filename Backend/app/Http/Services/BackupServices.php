@@ -9,15 +9,8 @@ use Carbon\Carbon;
 
 class BackupServices
 {
-    // How stale a backup can get before the dashboard flags it.
     const STALE_AFTER_HOURS = 48;
 
-    /**
-     * Called by the backup script itself after each run — NOT meant to be
-     * hit from the frontend UI. Lock this route down hard (e.g. a shared
-     * script secret/token, or restrict to localhost) since anyone who can
-     * call this can spoof "backup succeeded" logs.
-     */
     public function logBackup(Request $request)
     {
         try {
@@ -50,10 +43,6 @@ class BackupServices
         }
     }
 
-    /**
-     * Drives the informational (non-blocking) dashboard banner.
-     * This never restricts anything in the app — it only reports status.
-     */
     public function getBackupStatus()
     {
         try {
