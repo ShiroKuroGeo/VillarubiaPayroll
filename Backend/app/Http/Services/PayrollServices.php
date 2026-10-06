@@ -830,18 +830,15 @@ class PayrollServices
 
         try {
 
-            // $cutoffStart =
-            //     Carbon::now()
-            //     ->startOfWeek(Carbon::SUNDAY)
-            //     ->toDateString();
+            $cutoffStart =
+                Carbon::now()
+                ->startOfWeek(Carbon::SUNDAY)
+                ->toDateString();
 
-            // $cutoffEnd =
-            //     Carbon::now()
-            //     ->endOfWeek(Carbon::SATURDAY)
-            //     ->toDateString();
-
-            $cutoffStart = \Carbon\Carbon::create(2026, 9, 14)->startOfDay();
-            $cutoffEnd   = \Carbon\Carbon::create(2026, 9, 19)->endOfDay();
+            $cutoffEnd =
+                Carbon::now()
+                ->endOfWeek(Carbon::SATURDAY)
+                ->toDateString();
 
             $query = Payroll::with([
                 'employee',

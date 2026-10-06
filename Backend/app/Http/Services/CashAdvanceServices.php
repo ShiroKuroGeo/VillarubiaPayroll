@@ -28,6 +28,15 @@ class CashAdvanceServices
         }
 
         try {
+
+            $existingCashAdvance = CashAdvance::where('employee_id', $validation['employee_id'])
+                ->whereIn('status', ['Pending', 'Approved'])
+                ->first();
+
+            if ($existingCashAdvance) {
+                return response_return('You already have a pending or approved cash advance request. You can update the existing request.', [], 422);
+            }
+
             if($request->payment_type == 'Custom'){
                 if (!Carbon::parse($request->target_cutoff_start)->isSaturday()) {
                     return response_return('Target cutoff date is not a saturday. ', [], 422);
@@ -138,7 +147,7 @@ class CashAdvanceServices
                 $query->where('status', $validation['status']);
             }
 
-            $cashAdvances = $query->orderByDesc('requested_date')
+            $cashAdvances = $query->where('status','!=', 'Deducted/Paid')->orderByDesc('requested_date')
                 ->paginate($validation['per_page'] ?? 15);
 
             return response_return('Successfully retrieved cash advances.', $cashAdvances->toArray(), 200);
@@ -172,41 +181,128 @@ class CashAdvanceServices
 
     public function nextDeduction(Request $request)
     {
+        $validated = $request->validate([
+            'cash_advance_id' => ['required', 'integer', 'exists:cash_advances,id'],
+            'amount_deducted' => ['nullable', 'numeric', 'min:0'],
+        ]);
+
+        try {
+            $cashAdvance = CashAdvance::findOrFail($validated['cash_advance_id']);
+
+            $maxAllowed = $cashAdvance->payment_type === 'Installment'
+                ? $cashAdvance->installment_amount
+                : $cashAdvance->balance;
+
+            $amountToDeduct = $validated['amount_deducted'] ?? $maxAllowed;
+            $message = 'Updated cash advance for deduction successfully.';
+
+            if ($amountToDeduct > $maxAllowed) {
+                $amountToDeduct = $maxAllowed;
+                $message = "Amount to deduct exceeded allowed limit. Adjusted to {$maxAllowed}.";
+            }
+
+            if ($amountToDeduct > $cashAdvance->balance) {
+                $amountToDeduct = $cashAdvance->balance;
+                $message = "Deduction capped at remaining balance of {$cashAdvance->balance}.";
+            }
+
+            if($cashAdvance->payment_type === 'Custom') {
+                $updated = $cashAdvance->update([
+                    'custom_amount' => $amountToDeduct,
+                    'target_cutoff_start' => $request->target_cutoff_start,
+                ]);
+            }
+
+            if (!$updated) {    
+                return response_return('Failed to update cash advance deductions. Please try again.', [], 409);
+            }
+
+            return response_return($message, [
+                'deducted_amount' => $amountToDeduct,
+                'remaining_balance' => $cashAdvance->fresh()->balance,
+            ], 200);
+
+        } catch (\Throwable $th) {
+            return response_return('Error occurred while processing cash advance deduction.', [], 500);
+        }
+    }
+
+    // public function nextDeduction(Request $request)
+    // {
+    //     try {
+    //         $validation = $request->validate([
+    //             'cash_advance_id' => ['required', 'integer', 'exists:cash_advances,id'],
+    //             'amount_deducted' => ['nullable', 'integer'],
+    //         ]);
+    //     } catch (\Throwable $th) {
+    //         return response_return('Error occurred in validating the request.', [], 422);
+    //     }
+
+    //     try {
+
+    //         $balance = CashAdvance::where('id', $validation['cash_advance_id'])->first();
+
+    //         if (!$balance) {
+    //             return response_return('Cash advance record was not found.', [], 409);
+    //         }
+
+    //         $message = '';
+
+    //         if($balance->payment_type === 'Installment') {
+    //             if ($validation['amount_deducted'] > $balance->installment_amount) {
+    //                 $validation['amount_deducted'] = $balance->installment_amount;
+    //                 $message = 'Amount to be deduction is higher than the installment amount. Automatically change to how much installment amount.';
+    //             }
+    //         } else {
+    //             if ($validation['amount_deducted'] > $balance->custom_amount) {
+    //                 $validation['amount_deducted'] = $balance->custom_amount;
+    //                 $message = 'Amount to be deduction is higher than the custom amount. Automatically change to how much custom amount.';
+    //             }
+    //         }
+
+    //         $updateCashAdvance = $balance->update([
+    //             'installment_amount' => $validation['amount_deducted'],
+    //             'balance' => $balance->balance - $validation['amount_deducted'],
+    //         ]);
+
+    //         if (!$updateCashAdvance) {
+    //             return response_return('Updated cash advances for deductions is not recorded. Please try again.', [], 409);
+    //         }
+    //         return response_return($message ?? 'Updated cash advances for deductions is successfully updated.', [], 200);
+    //     } catch (\Throwable $th) {
+    //         return response_return('Error occurred in retrieving cash advance.', [], 500);
+    //     }
+    // }
+
+    public function updateBalance(Request $request)
+    {
         try {
             $validation = $request->validate([
                 'cash_advance_id' => ['required', 'integer', 'exists:cash_advances,id'],
-                'amount_deducted' => ['nullable', 'integer'],
+                'balance' => ['required', 'numeric', 'min:0'],
             ]);
         } catch (\Throwable $th) {
             return response_return('Error occurred in validating the request.', [], 422);
         }
 
         try {
+            $cashAdvance = CashAdvance::find($validation['cash_advance_id']);
 
-            $balance = CashAdvance::where('id', $validation['cash_advance_id'])->first();
-
-            if (!$balance) {
+            if (!$cashAdvance) {
                 return response_return('Cash advance record was not found.', [], 409);
             }
 
-            $message = '';
-
-            if ($validation['amount_deducted'] > $balance->balance) {
-                $validation['amount_deducted'] = $balance->balance;
-                $message = 'Amount to be deduction is higher than the balance. Automatically change to how much balance.';
-            }
-
-            $updateCashAdvance = $balance->update([
-                'installment_amount' => $validation['amount_deducted'],
-                'balance' => $balance->balance - $validation['amount_deducted'],
+            $updateCashAdvance = $cashAdvance->update([
+                'balance' => $validation['balance'] + $cashAdvance->balance,
             ]);
 
             if (!$updateCashAdvance) {
-                return response_return('Updated cash advances for deductions is not recorded. Please try again.', [], 409);
+                return response_return('Failed to update cash advance balance. Please try again.', [], 409);
             }
-            return response_return($message ?? 'Updated cash advances for deductions is successfully updated.', [], 200);
+
+            return response_return('Successfully updated cash advance balance.', [], 200);
         } catch (\Throwable $th) {
-            return response_return('Error occurred in retrieving cash advance.', [], 500);
+            return response_return('Error occurred while updating cash advance balance.', [], 500);
         }
     }
 }

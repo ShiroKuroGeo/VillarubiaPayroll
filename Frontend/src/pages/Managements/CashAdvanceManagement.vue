@@ -237,6 +237,9 @@
                                         <button v-if="request.status === 'Deducted/Paid' || request.status === 'Rejected' || request.status === 'Approved'" class="btn-mini btn-mini-view" @click="openViewModal(request)">
                                             View
                                         </button>
+                                        <button v-if="request.status === 'Deducted/Paid' || request.status === 'Rejected' || request.status === 'Approved'" class="btn-mini btn-mini-view" @click="openUpdateModal(request)">
+                                            Update
+                                        </button>
                                     </div>
                                 </td>
                             </tr>
@@ -429,6 +432,92 @@
             </div>
         </div>
 
+        <div v-if="showUpdateModal" class="modal-backdrop" @click.self="closeUpdateModal">
+            <div class="employee-modal payment-modal">
+                <div class="modal-header">
+                    <div>
+                        <div class="modal-title">
+                            Update Cash Advance
+                        </div>
+                        <div class="panel-sub">
+                            Adjust deduction amount for this cash advance
+                        </div>
+                    </div>
+                    <button class="modal-close" @click="closeUpdateModal">
+                        ×
+                    </button>
+                </div>
+
+                <div class="modal-body">
+                    <div class="payment-summary">
+                        <div class="info-label">
+                            Employee
+                        </div>
+                        <div class="payment-employee">
+                            {{ selectedRequest?.employee?.last_name }}, {{ selectedRequest?.employee?.first_name }}
+                        </div>
+                        <div class="grid grid-cols-2 gap-3 mt-3">
+                            <div>
+                                <div class="info-label">Current Balance</div>
+                                <div class="payment-amount">
+                                    {{ formatCurrency(selectedRequest?.balance || 0) }}
+                                </div>
+                            </div>
+                            <div>
+                                <div class="info-label">Payment Type</div>
+                                <div class="payment-type-badge font-semibold mt-1">
+                                    {{ selectedRequest?.payment_type || 'N/A' }}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="info-label mt-3">
+                            Max Allowed Deduction ({{ selectedRequest?.payment_type }})
+                        </div>
+                        <div class="text-sm font-medium text-gray-700 mt-1">
+                            {{ formatCurrency(
+                                selectedRequest?.payment_type === 'Installment'
+                                    ? selectedRequest?.installment_amount
+                                    : selectedRequest?.custom_amount || 0
+                            ) }}
+                        </div>
+
+                        <div class="form-group full mt-4">
+                            <label for="amountDeducted">
+                                Amount to Deduct <span class="text-red-500">*</span>
+                            </label>
+                            <input 
+                                id="amountDeducted"
+                                v-model.number="deductionForm.amount_deducted" 
+                                type="number" 
+                                step="0.01"
+                                min="0"
+                                :max="selectedRequest?.payment_type === 'Installment' ? selectedRequest?.installment_amount : selectedRequest?.custom_amount"
+                                placeholder="Enter amount to deduct"
+                                class="form-control"
+                            />
+                            <small class="text-gray-500 mt-1 block">
+                                Leaving empty or entering a higher value will automatically cap at the max allowed limit.
+                            </small>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary-ledger" @click="closeModals">
+                        Cancel
+                    </button>
+                    <button 
+                        type="button" 
+                        class="btn btn-success-ledger" 
+                        :disabled="isSubmitting"
+                        @click="updateDeduction"
+                    >
+                        {{ isSubmitting ? 'Updating...' : 'Save Added CA' }}
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <!-- VIEW / DETAILS MODAL — redesigned -->
         <div v-if="showViewModal" class="modal-backdrop" @click.self="closeModals">
             <div class="employee-modal">
@@ -521,7 +610,7 @@
                                 </div>
                                 <div class="form-group">
                                     <label>Target payroll cutoff</label>
-                                    <input type="date" v-model="nextDeductionDate" @change="validateCutoffDate" />
+                                    <input type="date" v-model="nextDeductionDate" />
                                     <div v-if="cutoffDateError" class="field-hint field-hint--error">
                                         {{ cutoffDateError }}
                                     </div>
@@ -620,6 +709,13 @@ const statusFilters = [
     { label: 'Paid', value: 'Deducted/Paid' },
     { label: 'Rejected', value: 'Rejected' }
 ]
+
+const deductionForm = ref({
+    cash_advance_id: null,
+    amount_deducted: null,
+});
+const isSubmitting = ref(false);
+
 const filteredRequests = computed(() => {
     const search = searchQuery.value.toLowerCase().trim()
 
@@ -653,6 +749,33 @@ const approvedRequests = computed(() =>
 const paidRequests = computed(() =>
     cashAdvanceData.value.filter(request => request.status === 'paidDeducted/Paid')
 )
+
+const updateDeduction = async () => {
+    alert()
+    if (!selectedRequest.value) return
+    isSubmitting.value = true
+
+    try {
+        
+        await cashAdvanceStore.updateBalance({
+            cash_advance_id: selectedRequest.value.id,
+            balance: deductionForm.value.amount_deducted,
+            target_cutoff_start: selectedRequest.value.target_cutoff_start,
+        });
+
+        await getCashAdvances({
+            "employee_id": null,
+            "status": null,
+            "per_page": 100,
+        });
+
+        closeUpdateModal()
+    } catch (error) {
+        console.error('Error updating deduction:', error)
+    } finally {
+        isSubmitting.value = false
+    }
+}
 
 const pendingCount = computed(() => pendingRequests.value.length)
 
@@ -703,9 +826,6 @@ function validateCutoffDate() {
 
     if (!nextDeductionDate.value) return
 
-    // Payroll cutoffs start on Sunday under the current schedule
-    // (payout Saturday minus 6 days). Reject anything else up front
-    // so a mismatched target_cutoff_start can't be saved.
     const parsed = new Date(nextDeductionDate.value + 'T00:00:00')
 
     if (parsed.getDay() !== 0) {
@@ -807,6 +927,24 @@ function openViewModal(request) {
 
 }
 
+const showUpdateModal = ref(false);
+
+function openUpdateModal(request) {
+
+    selectedRequest.value = request
+
+    showUpdateModal.value = true
+
+}
+
+function closeUpdateModal() {
+
+    showUpdateModal.value = false
+
+    selectedRequest.value = null
+
+}
+
 function closeModals() {
 
     showReviewModal.value = false
@@ -823,9 +961,6 @@ const setDeduction = async () => {
 
     if (!canSetDeduction.value) return
 
-    // Writes to custom_amount / target_cutoff_start on the CA — NOT
-    // the original `amount` field. Backend endpoint needs to accept
-    // both fields (the old call only ever sent amount_deducted).
     await cashAdvanceStore.nextDeduction({
         cash_advance_id: selectedRequest.value.id,
         custom_amount: nextDeductionAmount.value,

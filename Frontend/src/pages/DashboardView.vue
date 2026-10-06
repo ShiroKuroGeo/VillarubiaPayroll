@@ -38,7 +38,7 @@
                             {{ value.date }}
                         </div>
                         <div class="stat-value">
-                            {{ value.count }}
+                            {{ formatCurrency(value.count) }}
                         </div>
                         <div class="stat-delta text-success">
                             {{ value.sub }}
@@ -120,6 +120,22 @@ const props = defineProps({
 
 const start = ref(null);
 const end = ref(null);
+
+
+function formatCurrency(amount) {
+
+    return new Intl.NumberFormat(
+        'en-PH',
+        {
+            style: 'currency',
+            currency: 'PHP',
+            minimumFractionDigits: 2
+        }
+    ).format(
+        Number(amount || 0)
+    )
+
+}
 
 const overviewStore = useOverviewStore();
 

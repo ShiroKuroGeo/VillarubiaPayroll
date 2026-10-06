@@ -12,9 +12,7 @@ class UserServices
 
     public function createUser(Request $request)
     {
-
         try {
-
             $validation = $request->validate([
                 'name' => ['required'],
                 'email' => ['required', 'email'],

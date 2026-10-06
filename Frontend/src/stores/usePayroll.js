@@ -29,7 +29,6 @@ export const usePayrollStore = defineStore('payrollStore', () => {
     const payrollList = async (data) => {
         try {
             const payrollLists = await api.post('payroll/list', data);
-
             return payrollLists.data;
         } catch (err) {
             const status = err.response?.status || 500;

@@ -109,7 +109,27 @@ export const useCashAdvanceStore = defineStore('cashAdvanceStore', () => {
         }
     }
 
-    return { createCashAdvance, getCashAdvances, reviewCashAdvance, attachToPayroll, nextDeduction }
+    const updateBalance = async (data) => {
+        try {
+            const response = await api.post(`cash_advance/update_balance`, data);
+            await showStatusAlert(response.status, response.data.message);
+            return response.data.data;
+        } catch (err) {
+            const status = err.response?.status || 500;
+
+            const message =
+                err.response?.data?.message ||
+                err.response?.data?.error ||
+                err.message ||
+                'An unexpected error occurred.';
+
+            showStatusAlert(status, message);
+
+            return message;
+        }
+    }
+
+    return { createCashAdvance, getCashAdvances, reviewCashAdvance, attachToPayroll, nextDeduction, updateBalance };
 
 
 });

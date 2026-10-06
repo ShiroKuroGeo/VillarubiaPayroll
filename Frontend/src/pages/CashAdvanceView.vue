@@ -35,13 +35,13 @@
                             <div class="form-group full">
                                 <label>How should this be deducted?</label>
                                 <div class="type-toggle" role="radiogroup">
-                                    <button type="button" class="type-option" :class="{ active: form.payment_type === 'Installment' }" role="radio" :aria-checked="form.payment_type === 'Installment'" @click="setPaymentType('Installment')">
-                                        <span class="type-option-title">Installment</span>
-                                        <span class="type-option-desc">Split evenly, deducted every payroll</span>
-                                    </button>
                                     <button type="button" class="type-option" :class="{ active: form.payment_type === 'Custom' }" role="radio" :aria-checked="form.payment_type === 'Custom'" @click="setPaymentType('Custom')">
                                         <span class="type-option-title">Custom</span>
                                         <span class="type-option-desc">You choose the amount and the payroll date</span>
+                                    </button>
+                                    <button type="button" class="type-option" :class="{ active: form.payment_type === 'Installment' }" role="radio" :aria-checked="form.payment_type === 'Installment'" @click="setPaymentType('Installment')">
+                                        <span class="type-option-title">Installment</span>
+                                        <span class="type-option-desc">Split evenly, deducted every payroll</span>
                                     </button>
                                 </div>
                                 <p class="type-explainer">
@@ -179,6 +179,7 @@
 
 import { useCashAdvanceStore } from '@/stores/useCashAdvance';
 import { useEmployeeStore } from '@/stores/useEmployee';
+import { showStatusAlert } from '@/utils/Swals';
 import {
     onMounted,
     ref,
@@ -194,7 +195,7 @@ function defaultForm() {
     return {
         employee_id: 0,
         amount: null,
-        payment_type: 'Installment',
+        payment_type: 'Custom',
 
         // Installment fields
         installment_amount: 0,
@@ -247,7 +248,9 @@ const canSubmit = computed(() => {
 })
 
 function setPaymentType(type) {
-    form.value.payment_type = type
+    showStatusAlert('info', 'Payment type cannot be changed at this time. Only custom is allowed', 2000);
+    return;
+    // form.value.payment_type = type
 }
 
 function resetForm() {
