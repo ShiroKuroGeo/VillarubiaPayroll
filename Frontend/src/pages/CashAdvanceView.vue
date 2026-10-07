@@ -88,7 +88,7 @@
 
                                 <div class="form-group full">
                                     <label>On which payroll cutoff</label>
-                                    <input v-model="form.target_cutoff_start" type="date" required />
+                                    <VueDatePicker v-model="form.target_cutoff_start" model-type="yyyy-MM-dd" format="yyyy-MM-dd" :enable-time-picker="false" :disabled-dates="disableNonSaturdays" auto-apply />
                                 </div>
 
                                 <div class="form-group full">
@@ -186,26 +186,25 @@ import {
     computed
 } from 'vue'
 
+import { VueDatePicker } from '@vuepic/vue-datepicker'
+import '@vuepic/vue-datepicker/dist/main.css'
+
 const employees = ref([]);
 const employeeStore = useEmployeeStore();
 const cashAdvanceStore = useCashAdvanceStore();
 const today = new Date();
+const disableNonSaturdays = (date) => date.getDay() !== 6
 
 function defaultForm() {
     return {
         employee_id: 0,
         amount: null,
         payment_type: 'Custom',
-
-        // Installment fields
         installment_amount: 0,
         installment_count: 1,
-
-        // Custom fields
         custom_amount: null,
         target_cutoff_start: '',
         balance: 0,
-
         requested_date: today.toISOString(),
         reason: '',
     }
@@ -250,7 +249,6 @@ const canSubmit = computed(() => {
 function setPaymentType(type) {
     showStatusAlert('info', 'Payment type cannot be changed at this time. Only custom is allowed', 2000);
     return;
-    // form.value.payment_type = type
 }
 
 function resetForm() {
@@ -280,8 +278,7 @@ const submitRequest = async () => {
     }
 
     const createCashAdvance = await cashAdvanceStore.createCashAdvance(payload)
-
-    if (createCashAdvance === 409) {
+    if (createCashAdvance === 409 || createCashAdvance === 422) {
         submitted.value = false
     } else {
         lastSubmitted.value = {
@@ -291,7 +288,7 @@ const submitRequest = async () => {
         submitted.value = true
     }
 }
-
+    
 const viewEmployee = (emp) => {
     const result = employees?.value.find(ar => ar.id === emp.employee_id);
 

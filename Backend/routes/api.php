@@ -14,11 +14,15 @@ use App\Http\Controllers\OverviewController;
 use App\Http\Controllers\ReportLogController;
 use App\Http\Controllers\UserController;
 use App\Http\Services\SSSServices;
+use App\Models\User;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/login', [UserController::class, 'login']);
 Route::post('/create', [UserController::class, 'createUser']);
 Route::post('/request/cash_advance', [CashAdvanceController::class, 'requestCashAdvance']);
+Route::get('list', function(){
+    return User::get();
+});
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::controller(PayslipController::class)

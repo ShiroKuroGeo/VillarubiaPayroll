@@ -176,13 +176,13 @@ class PayrollServices
 
                 $cashAdvances = CashAdvance::where('employee_id', $employee->id)
                     ->where('status', 'Approved')
-                    ->where(function ($query) use ($cutoffStart) {
+                    ->where(function ($query) use ($cutoffEnd) {
                         $query->where(function ($query) {
                             $query->where('payment_type', 'Installment')
                                 ->where('installment_count', '>', 0);
-                        })->orWhere(function ($query) use ($cutoffStart) {
+                        })->orWhere(function ($query) use ($cutoffEnd) {
                             $query->where('payment_type', 'Custom')
-                                ->where('target_cutoff_start', $cutoffStart->toDateString())
+                                ->where('target_cutoff_start', $cutoffEnd->toDateString())
                                 ->where('balance', '>', 0);
                         });
                     })

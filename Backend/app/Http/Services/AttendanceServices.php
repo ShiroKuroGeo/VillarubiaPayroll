@@ -647,6 +647,11 @@ class AttendanceServices
     private function applyAttendanceRecord(int $employeeId, array $record, string $workStartTime, string $workEndTime): void
     {
         $date = $record['date'];
+
+        $scheduledStart = Carbon::parse($date . ' ' . $workStartTime);
+        $scheduledEnd = Carbon::parse($date . ' ' . $workEndTime);
+        $scheduledEndNoLunch = $scheduledEnd->copy()->subHour();
+
         $bnIn = $record['before_noon_in'];
         $bnOut = $record['before_noon_out'];
         $anIn = $record['after_noon_in'];
@@ -654,117 +659,35 @@ class AttendanceServices
         $otIn = $record['overtime_in'];
         $otOut = $record['overtime_out'];
 
-        if (!$bnIn && !$anIn) {
-            Attendance::updateOrCreate(
-                ['employee_id' => $employeeId, 'date' => $date],
-                [
-                    'time_in' => null,
-                    'time_out' => null,
-                    'before_noon_in' => null,
-                    'before_noon_out' => null,
-                    'after_noon_in' => null,
-                    'after_noon_out' => null,
-                    'overtime_in' => null,
-                    'overtime_out' => null,
-                    'hours_worked' => 0,
-                    'overtime_hours' => 0,
-                    'status' => 'Absent',
-                    'remarks' => 'No biometric logs found',
-                ]
-            );
+        $metrics = $this->computeAttendanceMetrics(
+            $bnIn,
+            $bnOut,
+            $anIn,
+            $anOut,
+            $otIn,
+            $otOut,
+            $scheduledStart,
+            $scheduledEnd,
+            $scheduledEndNoLunch
+        );
 
-            return;
-        }
-
-        $scheduledStart = Carbon::parse($date . ' ' . $workStartTime);
-
-        $scheduledEnd = Carbon::parse($date . ' ' . $workEndTime);
-
-        $scheduledEndNoLunch = $scheduledEnd->copy()->subHour();
-
-        $timeIn = $bnIn ?? $anIn;
-        $timeOut = $otOut ?? $anOut ?? $bnOut;
-
-        $remarks = [];
-        $status = 'Present';
-
-        if ($bnIn && $bnOut && !$anIn && !$anOut) {
-            $status = 'Half Day';
-            $remarks[] = 'Only morning session recorded';
-        } else {
-            if (!$bnOut) {
-                $remarks[] = 'Missing before-noon time-out';
-            }
-
-            if ($bnIn && !$anIn) {
-                $remarks[] = 'Missing after-noon time-in';
-            }
-
-            if (!$anOut && !$otOut) {
-                $remarks[] = 'Missing time-out';
-            }
-        }
-
-        if ($status === 'Present' && $timeIn && $timeIn->gt($scheduledStart)) {
-            $status = 'Late';
-            $remarks[] = 'Late by ' . $scheduledStart->diffInMinutes($timeIn) . ' minute(s)';
-        }
-
-        $hoursWorked = 0;
-        $overtimeHours = 0;
-
-        if ($timeIn && $timeOut && $timeOut->gt($timeIn)) {
-
-            $totalMinutes = $timeIn->diffInMinutes($timeOut);
-
-            $hasLunchBreak = $bnOut && $anIn && $anIn->gt($bnOut);
-
-            if ($hasLunchBreak) {
-                $totalMinutes -= $bnOut->diffInMinutes($anIn);
-                $remarks[] = 'Straight time';
-            } else {
-                $remarks[] = 'Normal time';
-            }
-
-            $totalMinutes = max($totalMinutes, 0);
-            $hoursWorked = round($totalMinutes / 60, 2);
-
-            if ($status !== 'Half Day') {
-
-                $standardMinutes = 8 * 60;
-
-                if ($totalMinutes < $standardMinutes) {
-                    $shortHours = round(($standardMinutes - $totalMinutes) / 60, 2);
-                    $remarks[] = 'Undertime by ' . $shortHours . ' hour(s)';
-                }
-
-                $overtimeCutoff = $hasLunchBreak ? $scheduledEnd : $scheduledEndNoLunch;
-
-                if ($timeOut->gt($overtimeCutoff)) {
-                    $overtimeHours = intdiv($overtimeCutoff->diffInMinutes($timeOut), 60);
-
-                    if ($overtimeHours > 0) {
-                        $remarks[] = $overtimeHours . ' hour(s) overtime';
-                    }
-                }
-            }
-        }
+        $isAbsent = $metrics['status'] === 'Absent';
 
         Attendance::updateOrCreate(
             ['employee_id' => $employeeId, 'date' => $date],
             [
-                'time_in' => $timeIn?->format('H:i:s'),
-                'time_out' => $timeOut?->format('H:i:s'),
-                'before_noon_in' => $bnIn?->format('H:i:s'),
-                'before_noon_out' => $bnOut?->format('H:i:s'),
-                'after_noon_in' => $anIn?->format('H:i:s'),
-                'after_noon_out' => $anOut?->format('H:i:s'),
-                'overtime_in' => $otIn?->format('H:i:s'),
-                'overtime_out' => $otOut?->format('H:i:s'),
-                'hours_worked' => $hoursWorked,
-                'overtime_hours' => $overtimeHours,
-                'status' => $status,
-                'remarks' => $remarks ? implode(' - ', $remarks) : 'Generated from biometric logs',
+                'time_in' => $metrics['time_in'],
+                'time_out' => $metrics['time_out'],
+                'before_noon_in' => $isAbsent ? null : $bnIn?->format('H:i:s'),
+                'before_noon_out' => $isAbsent ? null : $bnOut?->format('H:i:s'),
+                'after_noon_in' => $isAbsent ? null : $anIn?->format('H:i:s'),
+                'after_noon_out' => $isAbsent ? null : $anOut?->format('H:i:s'),
+                'overtime_in' => $isAbsent ? null : $otIn?->format('H:i:s'),
+                'overtime_out' => $isAbsent ? null : $otOut?->format('H:i:s'),
+                'hours_worked' => $metrics['hours_worked'],
+                'overtime_hours' => $metrics['overtime_hours'],
+                'status' => $metrics['status'],
+                'remarks' => $metrics['remarks'],
             ]
         );
     }

@@ -183,7 +183,7 @@ class CashAdvanceServices
     {
         $validated = $request->validate([
             'cash_advance_id' => ['required', 'integer', 'exists:cash_advances,id'],
-            'amount_deducted' => ['nullable', 'numeric', 'min:0'],
+            'custom_amount' => ['nullable', 'numeric', 'min:0'],
         ]);
 
         try {
@@ -193,7 +193,7 @@ class CashAdvanceServices
                 ? $cashAdvance->installment_amount
                 : $cashAdvance->balance;
 
-            $amountToDeduct = $validated['amount_deducted'] ?? $maxAllowed;
+            $amountToDeduct = $validated['custom_amount'] ?? $maxAllowed;
             $message = 'Updated cash advance for deduction successfully.';
 
             if ($amountToDeduct > $maxAllowed) {

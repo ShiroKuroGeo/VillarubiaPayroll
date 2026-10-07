@@ -235,10 +235,10 @@
                                             Review
                                         </button>
                                         <button v-if="request.status === 'Deducted/Paid' || request.status === 'Rejected' || request.status === 'Approved'" class="btn-mini btn-mini-view" @click="openViewModal(request)">
-                                            View
+                                            Set Deduct
                                         </button>
                                         <button v-if="request.status === 'Deducted/Paid' || request.status === 'Rejected' || request.status === 'Approved'" class="btn-mini btn-mini-view" @click="openUpdateModal(request)">
-                                            Update
+                                            New Advance
                                         </button>
                                     </div>
                                 </td>
@@ -480,21 +480,11 @@
                                     : selectedRequest?.custom_amount || 0
                             ) }}
                         </div>
-
                         <div class="form-group full mt-4">
                             <label for="amountDeducted">
                                 Amount to Deduct <span class="text-red-500">*</span>
                             </label>
-                            <input 
-                                id="amountDeducted"
-                                v-model.number="deductionForm.amount_deducted" 
-                                type="number" 
-                                step="0.01"
-                                min="0"
-                                :max="selectedRequest?.payment_type === 'Installment' ? selectedRequest?.installment_amount : selectedRequest?.custom_amount"
-                                placeholder="Enter amount to deduct"
-                                class="form-control"
-                            />
+                            <input id="amountDeducted" v-model.number="deductionForm.amount_added" type="number" step="0.01" min="0" placeholder="Enter amount to deduct" class="form-control" />
                             <small class="text-gray-500 mt-1 block">
                                 Leaving empty or entering a higher value will automatically cap at the max allowed limit.
                             </small>
@@ -503,15 +493,10 @@
                 </div>
 
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary-ledger" @click="closeModals">
+                    <button type="button" class="btn btn-secondary-ledger" @click="closeUpdateModal">
                         Cancel
                     </button>
-                    <button 
-                        type="button" 
-                        class="btn btn-success-ledger" 
-                        :disabled="isSubmitting"
-                        @click="updateDeduction"
-                    >
+                    <button type="button" class="btn btn-success-ledger" :disabled="isSubmitting" @click="updateDeduction">
                         {{ isSubmitting ? 'Updating...' : 'Save Added CA' }}
                     </button>
                 </div>
@@ -610,7 +595,7 @@
                                 </div>
                                 <div class="form-group">
                                     <label>Target payroll cutoff</label>
-                                    <input type="date" v-model="nextDeductionDate" />
+                                    <VueDatePicker v-model="nextDeductionDate" model-type="yyyy-MM-dd" format="yyyy-MM-dd" :enable-time-picker="false" :disabled-dates="disableNonSaturdays" auto-apply />
                                     <div v-if="cutoffDateError" class="field-hint field-hint--error">
                                         {{ cutoffDateError }}
                                     </div>
@@ -674,7 +659,9 @@ import {
     onMounted,
     ref,
     watch
-} from 'vue'
+} from 'vue';
+import { VueDatePicker } from '@vuepic/vue-datepicker'
+import '@vuepic/vue-datepicker/dist/main.css'
 
 defineOptions({
     name: 'CashAdvanceManagementPage'
@@ -712,9 +699,11 @@ const statusFilters = [
 
 const deductionForm = ref({
     cash_advance_id: null,
-    amount_deducted: null,
+    amount_added: null,
 });
 const isSubmitting = ref(false);
+
+const disableNonSaturdays = (date) => date.getDay() !== 6
 
 const filteredRequests = computed(() => {
     const search = searchQuery.value.toLowerCase().trim()
@@ -728,7 +717,7 @@ const filteredRequests = computed(() => {
             !search ||
             firstName.includes(search) ||
             lastName.includes(search) ||
-            fullName.includes(search) 
+            fullName.includes(search)
 
         const matchesFilter =
             activeFilter.value === 'all' ||
@@ -756,10 +745,10 @@ const updateDeduction = async () => {
     isSubmitting.value = true
 
     try {
-        
+
         await cashAdvanceStore.updateBalance({
             cash_advance_id: selectedRequest.value.id,
-            balance: deductionForm.value.amount_deducted,
+            balance: deductionForm.value.amount_added,
             target_cutoff_start: selectedRequest.value.target_cutoff_start,
         });
 
@@ -883,13 +872,6 @@ const rejectRequest = async (selectedRequest) => {
     showReviewModal.value = false
 }
 
-function openPaymentModal(request) {
-    selectedRequest.value = request
-    paymentReference.value = generatePaymentReference()
-    paymentNotes.value = ''
-    showPaymentModal.value = true
-}
-
 const markAsPaid = async () => {
 
     if (!selectedRequest.value) return
@@ -930,19 +912,13 @@ function openViewModal(request) {
 const showUpdateModal = ref(false);
 
 function openUpdateModal(request) {
-
     selectedRequest.value = request
-
     showUpdateModal.value = true
-
 }
 
 function closeUpdateModal() {
-
-    showUpdateModal.value = false
-
     selectedRequest.value = null
-
+    showUpdateModal.value = false
 }
 
 function closeModals() {
@@ -958,7 +934,6 @@ function closeModals() {
 }
 
 const setDeduction = async () => {
-
     if (!canSetDeduction.value) return
 
     await cashAdvanceStore.nextDeduction({

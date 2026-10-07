@@ -19,7 +19,7 @@
                     {{ error }}
                 </div>
                 <button type="submit" class="login-button">
-                    Sign in
+                    {{ isLoading ? 'Reaching....' : 'Sign in' }}
                 </button>
             </form>
         </div>
@@ -39,14 +39,17 @@ const userStore = useUserStore();
 const email = ref('')
 const password = ref('')
 const error = ref('')
+const isLoading = ref(false);
 
 const login = async () => {
+    isLoading.value = true;
+
     const login_user = await userStore.login({
         'email': email.value,
         'password': password.value,
-    }); 
-
-    console.log(login_user.data.data)
+    });
+    
+    isLoading.value = false;
 
     if(login_user.data.role === 'admin') {
        router.push({ name: 'admin.dashboard' });
