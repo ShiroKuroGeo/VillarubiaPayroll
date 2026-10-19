@@ -83,7 +83,8 @@
                         <div v-if="generateError" class="generate-error">
                             {{ generateError }}
                         </div>
-                        <button class="generate-btn" :disabled="generating || !checks.attendance || !checks.cashAdvances || !checks.sss" @click="triggerPayrollLoading">
+                        <!-- Only attendance verification is required. Cash advances and SSS are optional toggles. -->
+                        <button class="generate-btn" :disabled="generating || !checks.attendance" @click="load">
                             {{ generating ? 'Generating…' : 'Generate Payroll' }}
                         </button>
                         <button class="generate-btn2" @click="showGenerateOnly = !showGenerateOnly">
@@ -381,6 +382,98 @@
                 </div>
             </template>
         </div>
+
+        <!-- PRE-GENERATE PREVIEW MODAL -->
+        <div v-if="modalGenerate" class="modal-backdrop">
+            <div class="salary-modal">
+                <div class="modal-header">
+                    <div>
+                        <div class="section-header">
+                            <div>
+                                <div class="section-title">Payroll details</div>
+                                <div class="panel-sub">{{ formatDate(cutoffStart) }} – {{ formatDate(cutoffEnd) }}</div>
+                            </div>
+                        </div>
+                    </div>
+                    <button class="close-btn" @click="modalGenerate = false" aria-label="Close">
+                        ×
+                    </button>
+                </div>
+
+                <div class="modal-body">
+                    <div v-if="filteredRows.length" class="card-list">
+                        <div v-for="row in pagedRows" :key="row.employee_id" class="emp-card">
+                            <div class="emp-card-head">
+                                <div class="emp-avatar">{{ initials(row.employee_name) }}</div>
+                                <div class="emp-card-name">{{ row.employee_name }}</div>
+                            </div>
+
+                            <div class="emp-card-stats">
+                                <div class="stat-cell">
+                                    <div class="info-label">Earnings</div>
+                                    <div class="stat-big">
+                                        total Attendance
+                                        {{ row.total_attendance }}
+                                        <span class="stat-unit">day{{ row.total_attendance === 1 ? '' : 's' }}</span>
+                                    </div>
+                                    <div class="stat-big">
+                                        total Overtime Hours
+                                        {{ row.total_attendance }}
+                                        <span class="stat-unit">hour{{ row.total_attendance === 1 ? '' : 's' }}</span>
+                                    </div>
+                                    <div v-if="row.total_attendance === 0" class="field-hint field-hint--error">
+                                        No attendance imported
+                                    </div>
+                                </div>
+
+                                <div class="stat-cell">
+                                    <div class="info-label">Deductions</div>
+                                    <div class="stat-big">
+                                        Cash Advances
+                                        {{ row.total_overtime }}
+                                        <span class="stat-unit">hr{{ row.total_overtime === 1 ? '' : 's' }}</span>
+                                    </div>
+                                    <div class="stat-big">
+                                        SSS
+                                        {{ row.total_overtime }}
+                                        <span class="stat-unit">hr{{ row.total_overtime === 1 ? '' : 's' }}</span>
+                                    </div>
+                                    <div class="stat-big">
+                                        Lates
+                                        {{ row.total_overtime }}
+                                        <span class="stat-unit">hr{{ row.total_overtime === 1 ? '' : 's' }}</span>
+                                    </div>
+                                    <div class="date-sub">{{ row.raw_overtime }} logged</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div v-else-if="!loading" class="empty-state">
+                        <div class="empty-title">No employees found</div>
+                        <div class="empty-sub">Nothing to preview for this cutoff.</div>
+                    </div>
+                    <div v-else class="empty-state">
+                        Loading…
+                    </div>
+
+                    <div v-if="totalPages > 1" class="pager">
+                        <button class="btn btn-secondary-ledger" :disabled="page === 1" @click="page--">Previous</button>
+                        <span class="pager-info">Page {{ page }} of {{ totalPages }} · {{ filteredRows.length }} employees</span>
+                        <button class="btn btn-secondary-ledger" :disabled="page === totalPages" @click="page++">Next</button>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button class="cancel-btn" @click="modalGenerate = false">
+                        Cancel
+                    </button>
+                    <button class="save-btn" @click="triggerPayrollLoading">
+                        Generate
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <GenerateLoading ref="loaderRef" />
         <div v-if="showModal" class="modal-backdrop">
             <div class="salary-modal">
@@ -462,7 +555,7 @@ import GenerateLoading from '@/components/GenerateLoading.vue'
 import { usePayrollStore } from '@/stores/usePayroll'
 import { storageImage } from '@/utils/image'
 import { showConfirm, showStatusAlert } from '@/utils/Swals'
-import { computed, onMounted, onBeforeUnmount, ref } from 'vue'
+import { computed, onMounted, onBeforeUnmount, ref, watch } from 'vue'
 defineOptions({
     name: 'PayrollPage'
 })
@@ -475,6 +568,76 @@ const liveClock = ref('--:--:--')
 
 const now = ref(new Date())
 const payrollStore = usePayrollStore();
+const modalGenerate = ref(false);
+
+// ---------------------------------------------------------------
+// PRE-GENERATE PREVIEW (cards, 3 per page, client-side paging)
+// ---------------------------------------------------------------
+const PER_PAGE = 3
+
+const rows = ref([])
+const page = ref(1)
+const search = ref('')
+const loading = ref(false)
+const cutoffStart = ref('');
+const cutoffEnd = ref('');
+
+const filteredRows = computed(() => {
+    const q = search.value.trim().toLowerCase()
+
+    if (!q) return rows.value
+
+    return rows.value.filter(row =>
+        row.employee_name.toLowerCase().includes(q)
+    )
+})
+
+const totalPages = computed(() =>
+    Math.max(Math.ceil(filteredRows.value.length / PER_PAGE), 1)
+)
+
+const pagedRows = computed(() => {
+    const start = (page.value - 1) * PER_PAGE
+    return filteredRows.value.slice(start, start + PER_PAGE)
+})
+
+const missingAttendanceCount = computed(() =>
+    rows.value.filter(row => row.total_attendance === 0).length
+)
+
+// New search -> back to the first page
+watch(search, () => {
+    page.value = 1
+})
+
+function initials(name) {
+    // "Dela Cruz, Juan" -> "DJ"
+    const [last = '', first = ''] = (name || '').split(',').map(s => s.trim())
+    return ((last[0] || '') + (first[0] || '')).toUpperCase()
+}
+
+const load = async () => {
+    modalGenerate.value = true
+    loading.value = true
+    search.value = ''
+    page.value = 1
+
+    try {
+        const res = await payrollStore.fetchDetails();
+        const payload = res.data
+
+        cutoffStart.value = payload.cutoff_start;
+        cutoffEnd.value = payload.cutoff_end;
+        rows.value = payload.employees ?? []
+    } catch (err) {
+        console.error('Failed to load payroll preview', err)
+        rows.value = []
+    } finally {
+        loading.value = false
+    }
+}
+
+// ---------------------------------------------------------------
 
 let clockTimer = null
 
@@ -490,8 +653,6 @@ function tickClock() {
         )
 }
 
-const getTodayString = () => new Date().toISOString().split('T')[0]
-
 const isSaturday = computed(() => now.value.getDay() === 6)
 const payrollGenerated = ref(false)
 const generating = ref(false)
@@ -505,8 +666,6 @@ const checks = ref({
     cashAdvances: false,
     sss: true,
 })
-
-const hasGeneratedToday = computed(() => lastReportDate.value === getTodayString())
 
 async function checkPayrollGenerated(data) {
     try {
@@ -523,6 +682,16 @@ async function checkPayrollGenerated(data) {
     }
 }
 
+const payrollData = ref([]);
+
+const activeEmployees = computed(() => {
+
+    return payrollData.value.filter(
+        employee => employee.status !== 'Separated/Terminated'
+    )
+
+})
+
 const totalDeductions = computed(() => {
     return activeEmployees.value.reduce(
         (total, employee) => total + Number(employee.totalDeductions || 0),
@@ -530,9 +699,12 @@ const totalDeductions = computed(() => {
     )
 })
 
+// The table reads employee.earnings.basicSalary, so read the same field here
+// (falls back to employee.basicSalary if the payload ever exposes it flat).
 const totalBasicSalary = computed(() => {
     return activeEmployees.value.reduce(
-        (total, employee) => total + Number(employee.basicSalary || 0),
+        (total, employee) =>
+            total + Number(employee.earnings?.basicSalary ?? employee.basicSalary ?? 0),
         0
     )
 })
@@ -557,6 +729,7 @@ async function handleGeneratePayroll() {
 const triggerPayrollLoading = () => {
     if (!isSaturday.value) {
         showStatusAlert('Saturday Payroll', 'You can only generate payroll in Saturday Afternoon.')
+        modalGenerate.value = false;
         return
     }
 
@@ -564,6 +737,8 @@ const triggerPayrollLoading = () => {
         handleLoadingDone,
         handleLoadingCancel
     );
+
+    modalGenerate.value = false;
 }
 
 const handleLoadingDone = async () => {
@@ -587,7 +762,6 @@ const todayLabel =
     )
 
 const payPeriod = ref('')
-const payrollData = ref([]);
 const searchQuery = ref('')
 const paymentFilter = ref('all')
 const statusFilters = [
@@ -607,7 +781,7 @@ const statusFilters = [
 
 const filteredPayrollData = computed(() => {
 
-    const search =
+    const q =
         searchQuery.value
             .trim()
             .toLowerCase()
@@ -621,13 +795,13 @@ const filteredPayrollData = computed(() => {
 
         .filter(employee => {
             const matchesSearch =
-                !search ||
+                !q ||
                 employee.employeeName
                     .toLowerCase()
-                    .includes(search) ||
-                employee.department
+                    .includes(q) ||
+                (employee.department || '')
                     .toLowerCase()
-                    .includes(search)
+                    .includes(q)
 
             const matchesPayment =
                 paymentFilter.value === 'all' ||
@@ -636,14 +810,6 @@ const filteredPayrollData = computed(() => {
 
             return matchesSearch && matchesPayment
         })
-})
-
-const activeEmployees = computed(() => {
-
-    return payrollData.value.filter(
-        employee => employee.status !== 'Separated/Terminated'
-    )
-
 })
 
 const activeEmployeeCount = computed(() => {
@@ -731,8 +897,6 @@ function openPayModal(employee) {
         reference: ''
     }
 
-    console.log(employee)
-
     showModal.value = true
 
 }
@@ -808,6 +972,8 @@ const undoGenerate = async () => {
         return;
     }
 
+    // NOTE: '2026-06-09' is a hardcoded leftover. The backend undoGenerate()
+    // currently ignores this value and uses its own hardcoded cutoff.
     await payrollStore.undoGenerate({
         'date': '2026-06-09'
     });
@@ -915,21 +1081,11 @@ onBeforeUnmount(() => {
 
 </script>
 
-
 <style scoped>
-/* =====================================================
-   BASE
-===================================================== */
-
 .main {
     flex: 1;
     min-width: 0;
 }
-
-
-/* =====================================================
-   TOPBAR
-===================================================== */
 
 .topbar {
 
@@ -1102,6 +1258,10 @@ onBeforeUnmount(() => {
     font-size: 1.05rem;
 }
 
+.section-header {
+    margin-bottom: 1rem;
+}
+
 
 .panel-sub {
     font-size: .78rem;
@@ -1205,7 +1365,8 @@ onBeforeUnmount(() => {
     width: 44px;
     height: 44px;
     border-radius: 50%;
-    border: 2px dashed;
+    border: 2px dashed var(--gold, #C79A3D);
+    color: var(--gold-dark, #9C7726);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1233,10 +1394,23 @@ onBeforeUnmount(() => {
     border-color: #6D94B6;
 }
 
+.stamp.red {
+    color: var(--red, #C24D3B);
+    border-color: #E5B7AE;
+}
+
 
 /* =====================================================
    SEARCH / FILTERS / ADD BUTTON
 ===================================================== */
+
+.toolbar {
+    display: flex;
+    gap: .7rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+    align-items: center;
+}
 
 .search-box {
     display: flex;
@@ -1511,31 +1685,39 @@ onBeforeUnmount(() => {
     font-size: .85rem;
 }
 
+.empty-title {
+    font-family: 'Fraunces', serif;
+    color: var(--ink, #1C2B4A);
+    font-size: 1rem;
+    font-weight: 600;
+}
 
-/* =====================================================
-   MODAL
-===================================================== */
+.empty-sub {
+    font-size: .75rem;
+    margin-top: .2rem;
+}
 
 .modal-backdrop {
     position: fixed;
     inset: 0;
-    background: rgba(28, 43, 74, .45);
+    background: rgba(30, 27, 22, .45);
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 1rem;
-    z-index: 9;
+    z-index: 1000;
 }
 
 
 .salary-modal {
-    width: min(560px, 100%);
+    width: min(760px, 100%);
     max-height: 90vh;
     overflow-y: auto;
+    padding: 0;
     background: var(--paper-2, #FBFAF6);
-    border: 1px solid var(--line, #DCD8CB);
-    border-radius: 12px;
-    box-shadow: 0 20px 50px rgba(28, 43, 74, .2);
+    /* border: 1px solid var(--line, #DCD8CB); */
+    /* border-radius: 12px; */
+    /* box-shadow: 0 20px 50px rgba(28, 43, 74, .2); */
 }
 
 
@@ -1544,7 +1726,7 @@ onBeforeUnmount(() => {
     align-items: flex-start;
     justify-content: space-between;
     gap: 1rem;
-    padding: 1.25rem 1.4rem;
+    padding: 1.2rem 1.3rem;
     border-bottom: 1px solid var(--line, #DCD8CB);
 }
 
@@ -1560,7 +1742,7 @@ onBeforeUnmount(() => {
 
 .modal-title {
     font-family: 'Fraunces', serif;
-    font-size: 1.35rem;
+    font-size: 1.2rem;
     font-weight: 600;
     color: var(--ink, #1C2B4A);
     margin-top: .1rem;
@@ -1727,6 +1909,145 @@ onBeforeUnmount(() => {
 
 
 /* =====================================================
+   PREVIEW CARDS (pre-generate modal)
+===================================================== */
+
+.info-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: .63rem;
+    font-weight: 600;
+    letter-spacing: .07em;
+    text-transform: uppercase;
+    color: var(--slate, #6B7280);
+    margin-bottom: .3rem;
+}
+
+.date-sub {
+    font-size: .65rem;
+    color: var(--slate, #6B7280);
+    margin-top: .1rem;
+}
+
+.field-hint {
+    font-size: .68rem;
+    margin-top: .2rem;
+}
+
+.field-hint--error {
+    color: var(--red, #C24D3B);
+}
+
+.missing-banner {
+    background: var(--red-bg, #F7E9E6);
+    border: 1px solid #E5B7AE;
+    color: var(--red, #C24D3B);
+    border-radius: 7px;
+    padding: .55rem .8rem;
+    font-size: .76rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+}
+
+.card-list {
+    display: grid;
+    gap: .75rem;
+}
+
+.emp-card {
+    background: var(--paper-2, #FBFAF6);
+    border: 1px solid var(--line, #DCD8CB);
+    border-radius: 10px;
+    padding: .9rem 1rem;
+}
+
+.emp-card-head {
+    display: flex;
+    align-items: center;
+    gap: .65rem;
+    padding-bottom: .75rem;
+    margin-bottom: .75rem;
+    border-bottom: 1px dashed var(--line, #DCD8CB);
+}
+
+.emp-avatar {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: var(--amber-bg, #F6EEDB);
+    color: var(--gold-dark, #9C7726);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Fraunces', serif;
+    font-weight: 600;
+    font-size: .78rem;
+    flex-shrink: 0;
+}
+
+.emp-card-name {
+    font-family: 'Fraunces', serif;
+    font-weight: 600;
+    font-size: .95rem;
+}
+
+.emp-card-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: .75rem;
+}
+
+.stat-cell {
+    background: var(--paper, #F2F1EA);
+    border-radius: 7px;
+    padding: .7rem .8rem;
+}
+
+.stat-big {
+    font-family: 'IBM Plex Mono', monospace;
+    font-weight: 600;
+    font-size: 1.15rem;
+    color: var(--ink, #1C2B4A);
+}
+
+.stat-unit {
+    font-size: .7rem;
+    font-weight: 500;
+    color: var(--slate, #6B7280);
+}
+
+.pager {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: .75rem;
+    padding-top: 1rem;
+    margin-top: 1rem;
+    border-top: 1px solid var(--line, #DCD8CB);
+}
+
+.pager-info {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: .7rem;
+    color: var(--slate, #6B7280);
+}
+
+.btn-secondary-ledger {
+    background: var(--paper-2, #FBFAF6);
+    color: var(--ink-2, #28395E);
+    border-color: var(--line, #DCD8CB);
+}
+
+.btn-secondary-ledger:hover:not(:disabled) {
+    background: var(--paper, #F2F1EA);
+}
+
+.btn:disabled {
+    opacity: .5;
+    cursor: not-allowed;
+}
+
+
+/* =====================================================
    BUTTONS / LAYOUT HELPERS
 ===================================================== */
 
@@ -1735,6 +2056,9 @@ onBeforeUnmount(() => {
     padding: .45rem .9rem;
     border: 1px solid transparent;
     cursor: pointer;
+    font-size: .8rem;
+    font-weight: 600;
+    font-family: inherit;
 }
 
 
@@ -1888,7 +2212,15 @@ onBeforeUnmount(() => {
         flex: 1;
     }
 
+    .emp-card-stats {
+        grid-template-columns: 1fr;
+    }
+
 }
+
+/* =====================================================
+   GENERATE GATE
+===================================================== */
 
 .generate-gate {
     width: 100%;
@@ -1920,24 +2252,6 @@ onBeforeUnmount(() => {
     padding: 2rem 1.75rem;
     border-right: 1px solid #eef2f6;
     background: #fbfaf6;
-}
-
-.stamp {
-    position: absolute;
-    top: 14px;
-    right: 14px;
-    width: 44px;
-    height: 44px;
-    border-radius: 50%;
-    border: 2px dashed var(--gold, #C79A3D);
-    color: var(--gold-dark, #9C7726);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: .58rem;
-    font-weight: 600;
-    transform: rotate(-8deg);
 }
 
 .generate-title {
@@ -2004,10 +2318,6 @@ onBeforeUnmount(() => {
 
 .generate-btn {
     margin-top: auto;
-    padding-top: 1.5rem;
-}
-
-.generate-btn {
     width: 100%;
     padding: 12px 18px;
     border: none;
@@ -2032,9 +2342,6 @@ onBeforeUnmount(() => {
 
 .generate-btn2 {
     margin-top: 5px;
-}
-
-.generate-btn2 {
     width: 100%;
     padding: 12px 18px;
     border: none;
@@ -2050,11 +2357,6 @@ onBeforeUnmount(() => {
 .generate-btn2:hover:not(:disabled) {
     background: #818583;
     transform: translateY(-1px);
-}
-
-.generate-btn:disabled {
-    opacity: .6;
-    cursor: not-allowed;
 }
 
 /* ===== RIGHT: checklist, fills remaining width/height ===== */

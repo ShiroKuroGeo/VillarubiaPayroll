@@ -1650,4 +1650,54 @@ class PayrollServices
             );
         }
     }
+
+
+    public function generateDetails()
+    {
+        try {
+            $cutoffStart = Carbon::now()->startOfWeek(Carbon::SUNDAY)->toDateString();
+            $cutoffEnd   = Carbon::now()->endOfWeek(Carbon::SATURDAY)->toDateString();
+
+            $paidStatuses = ['Present', 'Late', 'Half Day'];
+
+            $employees = Employee::select('id', 'first_name', 'last_name')
+                ->whereNotIn('status', ['Separated', 'Terminated', 'Separated-Terminated'])
+                ->whereNull('deleted_at')
+                ->orderBy('last_name')
+                ->get();
+
+            $stats = Attendance::select(
+                'employee_id',
+                DB::raw('COUNT(*) as total_days'),
+                DB::raw('COALESCE(SUM(overtime_hours), 0) as raw_overtime')
+            )
+                ->whereIn('employee_id', $employees->pluck('id'))
+                ->whereBetween('date', [$cutoffStart, $cutoffEnd])
+                ->whereIn('status', $paidStatuses)
+                ->groupBy('employee_id')
+                ->get()
+                ->keyBy('employee_id');
+
+            $rows = $employees->map(function ($employee) use ($stats) {
+                $s   = $stats->get($employee->id);
+                $raw = (float) ($s->raw_overtime ?? 0);
+
+                return [
+                    'employee_id'      => $employee->id,
+                    'employee_name'    => $employee->last_name . ', ' . $employee->first_name,
+                    'total_attendance' => (int) ($s->total_days ?? 0),
+                    'total_overtime'   => round($raw, 0, PHP_ROUND_HALF_UP),
+                    'raw_overtime'     => round($raw, 2),
+                ];
+            })->values();
+
+            return response_return('Payroll preview retrieved', [
+                'cutoff_start' => $cutoffStart,
+                'cutoff_end'   => $cutoffEnd,
+                'employees'    => $rows,
+            ], 200);
+        } catch (\Throwable $th) {
+            return response_return($th->getMessage(), [], 500);
+        }
+    }
 }

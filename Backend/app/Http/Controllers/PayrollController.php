@@ -37,4 +37,8 @@ class PayrollController extends Controller
         return $this->payrollServices->undoGenerate($request);
     }
 
+    public function generateDetails(){
+        return $this->payrollServices->generateDetails();
+    }
+
 }
