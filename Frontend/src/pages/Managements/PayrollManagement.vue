@@ -411,16 +411,17 @@
                             <div class="emp-card-stats">
                                 <div class="stat-cell">
                                     <div class="info-label">Earnings</div>
-                                    <div class="stat-big">
-                                        total Attendance
-                                        {{ row.total_attendance }}
-                                        <span class="stat-unit">day{{ row.total_attendance === 1 ? '' : 's' }}</span>
+
+                                    <div class="line-row">
+                                        <span>Total attendance</span>
+                                        <strong>{{ row.total_attendance }} day{{ row.total_attendance === 1 ? '' : 's' }}</strong>
                                     </div>
-                                    <div class="stat-big">
-                                        total Overtime Hours
-                                        {{ row.total_attendance }}
-                                        <span class="stat-unit">hour{{ row.total_attendance === 1 ? '' : 's' }}</span>
+                                    <div class="line-row">
+                                        <span>Total overtime</span>
+                                        <strong>{{ row.total_overtime }} hr{{ row.total_overtime === 1 ? '' : 's' }}</strong>
                                     </div>
+                                    <div class="date-sub">{{ row.raw_overtime }} hrs logged before rounding</div>
+
                                     <div v-if="row.total_attendance === 0" class="field-hint field-hint--error">
                                         No attendance imported
                                     </div>
@@ -428,24 +429,26 @@
 
                                 <div class="stat-cell">
                                     <div class="info-label">Deductions</div>
-                                    <div class="stat-big">
-                                        Cash Advances
-                                        {{ row.total_overtime }}
-                                        <span class="stat-unit">hr{{ row.total_overtime === 1 ? '' : 's' }}</span>
+
+                                    <div class="line-row">
+                                        <span>Cash advances</span>
+                                        <strong>{{ formatCurrency(row.cash_advance) }}</strong>
                                     </div>
-                                    <div class="stat-big">
-                                        SSS
-                                        {{ row.total_overtime }}
-                                        <span class="stat-unit">hr{{ row.total_overtime === 1 ? '' : 's' }}</span>
+                                    <div class="line-row">
+                                        <span>SSS</span>
+                                        <strong>{{ formatCurrency(row.sss) }}</strong>
                                     </div>
-                                    <div class="stat-big">
-                                        Lates
-                                        {{ row.total_overtime }}
-                                        <span class="stat-unit">hr{{ row.total_overtime === 1 ? '' : 's' }}</span>
+                                    <div class="line-row">
+                                        <span>Lates</span>
+                                        <strong>{{ formatCurrency(row.late) }}</strong>
                                     </div>
-                                    <div class="date-sub">{{ row.raw_overtime }} logged</div>
+                                    <div class="line-row line-row--total">
+                                        <span>Total</span>
+                                        <strong>{{ formatCurrency(row.total_deductions) }}</strong>
+                                    </div>
                                 </div>
                             </div>
+
                         </div>
                     </div>
                     <div v-else-if="!loading" class="empty-state">
@@ -473,7 +476,6 @@
                 </div>
             </div>
         </div>
-
         <GenerateLoading ref="loaderRef" />
         <div v-if="showModal" class="modal-backdrop">
             <div class="salary-modal">
@@ -2540,5 +2542,35 @@ onBeforeUnmount(() => {
     color: var(--slate, #6B7280);
     line-height: 1.4;
     margin-top: .1rem;
+}
+
+.line-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: .75rem;
+    padding: .3rem 0;
+    font-size: .78rem;
+}
+
+.line-row span {
+    color: var(--slate, #6B7280);
+}
+
+.line-row strong {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: .78rem;
+    color: var(--ink, #1C2B4A);
+    white-space: nowrap;
+}
+
+.line-row--total {
+    margin-top: .3rem;
+    padding-top: .5rem;
+    border-top: 1px dashed var(--line, #DCD8CB);
+}
+
+.line-row--total strong {
+    color: var(--red, #C24D3B);
 }
 </style>

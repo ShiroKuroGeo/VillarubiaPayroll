@@ -631,10 +631,10 @@
                         <div class="info-label">Reason</div>
                         <div class="reason-content">{{ selectedRequest?.reason }}</div>
                     </div>
-                    <div v-if="selectedRequest?.adminNotes" class="reason-box mt-3">
+                    <!-- <div v-if="selectedRequest?.adminNotes" class="reason-box mt-3">
                         <div class="info-label">Admin Notes</div>
                         <div class="reason-content">{{ selectedRequest.adminNotes }}</div>
-                    </div>
+                    </div> -->
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary-ledger" @click="closeModals">

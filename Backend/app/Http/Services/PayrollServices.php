@@ -1666,28 +1666,81 @@ class PayrollServices
                 ->orderBy('last_name')
                 ->get();
 
-            $stats = Attendance::select(
-                'employee_id',
-                DB::raw('COUNT(*) as total_days'),
-                DB::raw('COALESCE(SUM(overtime_hours), 0) as raw_overtime')
-            )
-                ->whereIn('employee_id', $employees->pluck('id'))
-                ->whereBetween('date', [$cutoffStart, $cutoffEnd])
-                ->whereIn('status', $paidStatuses)
-                ->groupBy('employee_id')
-                ->get()
-                ->keyBy('employee_id');
+            $ids = $employees->pluck('id');
 
-            $rows = $employees->map(function ($employee) use ($stats) {
-                $s   = $stats->get($employee->id);
-                $raw = (float) ($s->raw_overtime ?? 0);
+            $attendances = Attendance::whereIn('employee_id', $ids)
+                ->whereBetween('date', [$cutoffStart, $cutoffEnd])
+                ->get()
+                ->groupBy('employee_id');
+
+            $cashAdvances = CashAdvance::whereIn('employee_id', $ids)
+                ->where('status', 'Approved')
+                ->where(function ($query) use ($cutoffEnd) {
+                    $query->where(function ($q) {
+                        $q->where('payment_type', 'Installment')
+                            ->where('installment_count', '>', 0);
+                    })->orWhere(function ($q) use ($cutoffEnd) {
+                        $q->where('payment_type', 'Custom')
+                            ->where('target_cutoff_start', $cutoffEnd)
+                            ->where('balance', '>', 0);
+                    });
+                })
+                ->get()
+                ->groupBy('employee_id');
+
+            $sssEntries = SSSContribution::whereIn('employee_id', $ids)
+                ->where('status', 'Pending')
+                ->whereNull('payroll_id')
+                ->get()
+                ->groupBy('employee_id');
+
+            $gracePeriodMinutes = (float) (Maintenance::where('name', 'Grace Period')->value('value') ?? 0);
+            $lateDeductionPerMinute = (float) (Maintenance::where('name', 'Late Deduction (Per Minute)')->value('value') ?? 0);
+            $workStartTime = Maintenance::where('name', 'Work Start Time')->value('value') ?? '08:00:00';
+
+            $rows = $employees->map(function ($employee) use (
+                $attendances,
+                $cashAdvances,
+                $sssEntries,
+                $paidStatuses,
+                $gracePeriodMinutes,
+                $lateDeductionPerMinute,
+                $workStartTime
+            ) {
+                $att  = $attendances->get($employee->id, collect());
+                $paid = $att->whereIn('status', $paidStatuses);
+
+                $rawOvertime = (float) $paid->sum('overtime_hours');
+
+                $caTotal = $cashAdvances->get($employee->id, collect())->sum(function ($ca) {
+                    $amount = $ca->payment_type === 'Custom'
+                        ? min((float) $ca->custom_amount, (float) $ca->balance)
+                        : (float) $ca->installment_amount;
+
+                    return max(round($amount, 2), 0);
+                });
+
+                $sssTotal = round((float) $sssEntries->get($employee->id, collect())->sum('amount'), 2);
+
+                $lateTotal = $this->calculateLateDeduction(
+                    $att,
+                    $workStartTime,
+                    $gracePeriodMinutes,
+                    $lateDeductionPerMinute
+                );
 
                 return [
                     'employee_id'      => $employee->id,
                     'employee_name'    => $employee->last_name . ', ' . $employee->first_name,
-                    'total_attendance' => (int) ($s->total_days ?? 0),
-                    'total_overtime'   => round($raw, 0, PHP_ROUND_HALF_UP),
-                    'raw_overtime'     => round($raw, 2),
+
+                    'total_attendance' => $paid->count(),
+                    'total_overtime'   => round($rawOvertime, 0, PHP_ROUND_HALF_UP),
+                    'raw_overtime'     => round($rawOvertime, 2),
+
+                    'cash_advance'     => round($caTotal, 2),
+                    'sss'              => $sssTotal,
+                    'late'             => $lateTotal,
+                    'total_deductions' => round($caTotal + $sssTotal + $lateTotal, 2),
                 ];
             })->values();
 
