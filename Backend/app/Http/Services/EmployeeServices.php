@@ -202,6 +202,10 @@ class EmployeeServices
                 ->with('job')
                 ->orderByRaw('deleted_at IS NOT NULL');
 
+            $query->whereNot(function ($q) {
+                $q->where('first_name', 'Jojet');
+            });
+
             if (!empty($validation['status'])) {
                 $query->where('status', $validation['status']);
             }
@@ -239,7 +243,11 @@ class EmployeeServices
         }
 
         try {
-            $checkEmployee = Employee::with('job')->where('id', $validation['employee_id'])->first();
+            $checkEmployee = Employee::with('job')->where('id', $validation['employee_id'])->whereNot('first_name', 'Jojet')->first();
+
+            // $query->whereNot(function ($q) {
+            //     $q->where('first_name', 'Jojet');
+            // });
 
             if (!$checkEmployee) {
                 return response_return('Employee selected was not found. Please try again.', [], 409);

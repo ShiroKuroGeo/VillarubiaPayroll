@@ -338,7 +338,7 @@
                                 <th rowspan="2" class="text-center">Date</th>
                                 <th colspan="2" class="text-center" style="background-color: #FEFCE8; color: #854D0E; text-align: center;">Before Noon</th>
                                 <th colspan="2" class="text-center" style="background-color: #EFF6FF; color: #1E40AF; text-align: center;">After Noon</th>
-                                <th colspan="2" class="text-center" style="background-color: #F0FDF4; color: #166534; text-align: center;">Overtime</th>
+                                <!-- <th colspan="2" class="text-center" style="background-color: #F0FDF4; color: #166534; text-align: center;">Overtime</th> -->
                                 <th rowspan="2" class="text-center">Worked Hrs</th>
                                 <th rowspan="2" class="text-center">Overtime Hrs</th>
                                 <th rowspan="2" class="text-center">Status</th>
@@ -349,8 +349,8 @@
                                 <th style="background-color: #FEFCE8; color: #854D0E; text-align: center;">Time Out</th>
                                 <th style="background-color: #EFF6FF; color: #1E40AF; text-align: center;">Time In</th>
                                 <th style="background-color: #EFF6FF; color: #1E40AF; text-align: center;">Time Out</th>
-                                <th style="background-color: #F0FDF4; color: #166534; text-align: center;">Time In</th>
-                                <th style="background-color: #F0FDF4; color: #166534; text-align: center;">Time Out</th>
+                                <!-- <th style="background-color: #F0FDF4; color: #166534; text-align: center;">Time In</th> -->
+                                <!-- <th style="background-color: #F0FDF4; color: #166534; text-align: center;">Time Out</th> -->
                             </tr>
                         </thead>
                         <tbody>
@@ -395,12 +395,12 @@
                                 <td class="text-center money" style="background-color: #EFF6FF; color: #1E40AF; text-align: center;">
                                     {{ formatTime(record.pmTimeOut) || '—' }}
                                 </td>
-                                <td class="text-center money" style="background-color: #F0FDF4; color: #166534; text-align: center;">
+                                <!-- <td class="text-center money" style="background-color: #F0FDF4; color: #166534; text-align: center;">
                                     {{ formatTime(record.overIn) || '—' }}
                                 </td>
                                 <td class="text-center money" style="background-color: #F0FDF4; color: #166534; text-align: center;">
                                     {{ formatTime(record.overOut) || '—' }}
-                                </td>
+                                </td> -->
                                 <td class="text-center money allowance">
                                     {{ record.hoursWorked }} hrs
                                 </td>
@@ -1306,6 +1306,8 @@ const employeelists = async () => {
         value: ar.name,
         label: ar.name,
     }));
+
+
 
     employeeNameList.value = [
         {

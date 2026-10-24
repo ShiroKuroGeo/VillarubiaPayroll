@@ -169,7 +169,7 @@
                             <tr>
                                 <th>Employee</th>
                                 <th>Department</th>
-                                <th>Amount.</th>
+                                <th>Deduction Amount.</th>
                                 <th>Request Date</th>
                                 <th>Status</th>
                                 <th>Action</th>
@@ -202,7 +202,7 @@
                                 </td>
                                 <td v-if="request.payment_type === 'Installment'">
                                     <span class="money">
-                                        {{ formatCurrency(request.installment_amount) }}
+                                        Total Deduct: {{ formatCurrency(request.installment_amount) }}
                                     </span>
                                     <div class="date-sub">
                                         Total Balance: {{ formatCurrency(request.installment_amount * request.installment_count) }}
@@ -210,7 +210,7 @@
                                 </td>
                                 <td v-if="request.payment_type === 'Custom'">
                                     <span class="money">
-                                        {{ formatCurrency(request.custom_amount) }}
+                                        Total Deduct: {{ formatCurrency(request.custom_amount) }}
                                     </span>
                                     <div class="date-sub">
                                         Total Balance: {{ formatCurrency(request.balance) }}
