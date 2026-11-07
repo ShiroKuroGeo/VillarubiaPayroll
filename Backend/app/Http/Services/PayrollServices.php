@@ -1588,7 +1588,7 @@ class PayrollServices
                         'status' => 'Approved',
                         'payroll_id' => null,
                         'custom_amount' => $cad->amount,
-                        'target_cutoff_start' => $cad->cutoff_start,
+                        'target_cutoff_start' => $cad->cutoffEnd,
                     ]);
                 } else {
                     $ca->update([

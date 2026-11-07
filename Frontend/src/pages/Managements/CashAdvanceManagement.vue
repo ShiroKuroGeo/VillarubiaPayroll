@@ -170,7 +170,7 @@
                                 <th>Employee</th>
                                 <th>Department</th>
                                 <th>Deduction Amount.</th>
-                                <th>Request Date</th>
+                                <th>Deduction Date</th>
                                 <th>Status</th>
                                 <th>Action</th>
                             </tr>
@@ -218,7 +218,7 @@
                                 </td>
                                 <td>
                                     <div class="date-text">
-                                        {{ formatDate(request.requested_date) }}
+                                        {{ formatDate(request.target_cutoff_start) }}
                                     </div>
                                     <div class="date-sub">
                                         {{ formatDateTime(request.created_at) }}
