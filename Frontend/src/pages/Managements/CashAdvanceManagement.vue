@@ -631,10 +631,6 @@
                         <div class="info-label">Reason</div>
                         <div class="reason-content">{{ selectedRequest?.reason }}</div>
                     </div>
-                    <!-- <div v-if="selectedRequest?.adminNotes" class="reason-box mt-3">
-                        <div class="info-label">Admin Notes</div>
-                        <div class="reason-content">{{ selectedRequest.adminNotes }}</div>
-                    </div> -->
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary-ledger" @click="closeModals">
@@ -653,13 +649,7 @@
 import router from '@/router';
 import { useCashAdvanceStore } from '@/stores/useCashAdvance'
 import { storageImage } from '@/utils/image';
-import {
-    computed,
-    onBeforeUnmount,
-    onMounted,
-    ref,
-    watch
-} from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { VueDatePicker } from '@vuepic/vue-datepicker'
 import '@vuepic/vue-datepicker/dist/main.css'
 
@@ -675,7 +665,6 @@ const cashAdvanceStore = useCashAdvanceStore();
 const liveClock = ref('--:--:--')
 let clockTimer = null
 function tickClock() {
-
     liveClock.value =
         new Date().toLocaleTimeString(
             'en-US',
@@ -707,7 +696,6 @@ const disableNonSaturdays = (date) => date.getDay() !== 6
 
 const filteredRequests = computed(() => {
     const search = searchQuery.value.toLowerCase().trim()
-
     return cashAdvanceData.value.filter(request => {
         const firstName = request.employee.first_name?.toLowerCase() ?? ''
         const lastName = request.employee.last_name?.toLowerCase() ?? ''
@@ -740,7 +728,6 @@ const paidRequests = computed(() =>
 )
 
 const updateDeduction = async () => {
-    alert()
     if (!selectedRequest.value) return
     isSubmitting.value = true
 
